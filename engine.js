@@ -213,7 +213,8 @@
   }
 
   function score(c,d,missing,finds){
-    if(missing.some(m=>m.key==="income"||m.key==="cost")) return {value:null,label:"onvoldoende informatie"};\n    if(missing.length>=3) return {value:null,label:"onvoldoende informatie"};
+    if(missing.some(m=>m.key==="income"||m.key==="cost")) return {value:null,label:"onvoldoende informatie"};
+    if(missing.length>=3) return {value:null,label:"onvoldoende informatie"};
     let x=50;
     if(d.cashflow.status==="strong")x+=15; else if(d.cashflow.status==="ok")x+=8; else if(d.cashflow.status==="thin")x+=2; else if(d.cashflow.status==="weak")x-=20;
     if(d.liquidity.status==="strong")x+=15; else if(d.liquidity.status==="solid")x+=10; else if(d.liquidity.status==="thin")x+=2; else if(d.liquidity.status==="weak")x-=15;
