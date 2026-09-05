@@ -1,114 +1,190 @@
 <!doctype html>
-<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1d6b55"><title>De Geldcheck</title>
+<html lang="nl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d6b55"><title>De Geldcheck</title>
 <style>
-:root{--bg:#f4f2ec;--card:#fffefa;--ink:#171a17;--muted:#73766f;--green:#1d6b55;--line:#dedbd3;--warn:#fff1d7;--good:#e8f1ed}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;color:var(--ink);padding-bottom:32px}.top{padding:20px 18px 8px;font-weight:900;font-size:21px}.top i{color:var(--green);font-style:normal}.wrap{max-width:680px;margin:auto;padding:10px 14px}.hero{padding:22px 6px 18px}.eyebrow{font-size:12px;font-weight:900;letter-spacing:.13em;color:var(--green)}h1{font-size:42px;line-height:.98;letter-spacing:-.055em;margin:8px 0 13px}p{color:var(--muted);line-height:1.5}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:12px;box-shadow:0 10px 30px #2221}textarea,input{width:100%;border:1px solid var(--line);border-radius:16px;background:#fff;padding:15px;font:inherit;font-size:17px;outline:none}textarea{min-height:170px;resize:vertical}label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}.btn{width:100%;border:0;border-radius:16px;background:var(--green);color:white;padding:16px;font-weight:900;font-size:17px;margin-top:14px}.btn:active{transform:scale(.99)}.hidden{display:none}.resultHead{background:var(--green);color:white;border-radius:19px;padding:18px}.resultHead small{font-weight:900;letter-spacing:.12em;opacity:.7}.resultHead h2{font-size:25px;line-height:1.08;margin:7px 0}.resultHead p{color:#fff;opacity:.88;margin:0}.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.fact{border:1px solid var(--line);border-radius:16px;padding:13px}.fact b{font-size:21px;display:block}.fact span{font-size:11px;color:var(--muted)}.ask{background:var(--warn);border-radius:16px;padding:14px;margin-top:9px}.ask b{display:block;margin-bottom:3px}.known{background:var(--good);border-radius:16px;padding:14px;margin-top:9px}.known b{display:block;margin-bottom:3px}.section{margin-top:18px}h3{font-size:16px;margin:0 0 9px}.note{font-size:12px;color:var(--muted);margin-top:16px}
-</style></head><body><div class="top">DE GELDCHECK<i>.</i></div><main class="wrap">
-<section class="hero"><div class="eyebrow">MOBIELE GELDCHECK</div><h1>Hoe sta je er financieel voor?</h1><p>Vertel het zoals je het zelf zou vertellen. De Geldcheck haalt feiten uit je verhaal en vraagt alleen wat nog echt ontbreekt.</p></section>
-<section class="card"><label>Jouw situatie</label><textarea id="text" placeholder="Bijvoorbeeld: 100k belegd, 2k kosten per maand, salaris 3k netto, hypotheek 240k tegen 3,5%"></textarea><label>Wat wil je weten?</label><input id="q" placeholder="Bijvoorbeeld: is dat genoeg?"><button class="btn" id="go">Analyseer mijn situatie</button></section>
-<section class="card hidden" id="out"><div class="resultHead"><small>KERNCONCLUSIE</small><h2 id="title"></h2><p id="summary"></p></div><div class="facts" id="facts"></div><div class="section"><h3>Dit heb ik begrepen</h3><div id="known"></div></div><div class="section" id="missingSection"><h3>Dit wil ik nog van je weten</h3><div id="questions"></div></div><div class="note">Bij iedere druk op Analyseer wordt je volledige tekst opnieuw gelezen. Bekende informatie hoort dus niet opnieuw gevraagd te worden.</div></section>
-</main><script>
-const euro=n=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+:root{--bg:#f4f2ec;--card:#fffefa;--ink:#171a17;--muted:#73766f;--green:#1d6b55;--green2:#e8f1ed;--line:#dedbd3;--warn:#fff1d7;--red:#f8e8e4;--blue:#eaf0f3}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Arial,sans-serif;color:var(--ink);padding-bottom:40px}
+.top{padding:20px 18px 8px;font-weight:900;font-size:21px}.top i{color:var(--green);font-style:normal}.wrap{max-width:720px;margin:auto;padding:10px 14px}.hero{padding:22px 6px 18px}.eyebrow{font-size:12px;font-weight:900;letter-spacing:.13em;color:var(--green)}h1{font-size:42px;line-height:.98;letter-spacing:-.055em;margin:8px 0 13px}h2{font-size:24px;letter-spacing:-.035em;margin:0}h3{font-size:16px;margin:0 0 9px}p{color:var(--muted);line-height:1.5}
+.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:12px;box-shadow:0 10px 30px #2221}
+textarea,input{width:100%;border:1px solid var(--line);border-radius:16px;background:#fff;padding:15px;font:inherit;font-size:17px;outline:none}textarea{min-height:180px;resize:vertical}label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}.btn{width:100%;border:0;border-radius:16px;background:var(--green);color:white;padding:16px;font-weight:900;font-size:17px;margin-top:14px}.btn:active{transform:scale(.99)}.hidden{display:none!important}
+.resultHead{background:var(--green);color:white;border-radius:20px;padding:19px}.resultHead small{font-weight:900;letter-spacing:.12em;opacity:.7}.resultHead h2{font-size:28px;line-height:1.05;margin:7px 0}.resultHead p{color:#fff;opacity:.9;margin:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.fact,.tile{border:1px solid var(--line);border-radius:16px;padding:13px;background:#fff}.fact b,.tile b{font-size:20px;display:block}.fact span,.tile span{font-size:11px;color:var(--muted)}
+.section{margin-top:20px}.item{border-radius:16px;padding:14px;margin-top:8px;border:1px solid var(--line);background:#fff}.item b{display:block;margin-bottom:4px}.good{background:var(--green2)}.warn{background:var(--warn)}.bad{background:var(--red)}.info{background:var(--blue)}
+.badge{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.08em;border-radius:999px;padding:4px 7px;margin-bottom:7px;background:#efede8;color:#585b56}.badge.fact{background:#e7f0ec;color:#1d6b55}.badge.calc{background:#eaf0f3;color:#385360}.badge.assume{background:#fff1d7;color:#6d4a1b}.badge.unknown{background:#f8e8e4;color:#6a332e}
+.priority{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start}.priority .n{width:32px;height:32px;border-radius:10px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900}
+.mini{font-size:12px;color:var(--muted)}.line{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}.line:last-child{border-bottom:0}.line span{color:var(--muted)}.note{font-size:12px;color:var(--muted);margin-top:16px}
+details{margin-top:12px}summary{font-weight:850;cursor:pointer}.scenario{border-left:4px solid var(--green)}
+@media(max-width:520px){.grid{grid-template-columns:1fr 1fr}.hero h1{font-size:39px}}
+</style></head><body>
+<div class="top">DE GELDCHECK<i>.</i></div>
+<main class="wrap">
+<section class="hero"><div class="eyebrow">MOBIELE GELDCHECK</div><h1>Hoe sta je er financieel voor?</h1><p>Vertel je situatie gewoon in je eigen woorden. De Geldcheck zoekt eerst naar de feiten, rekent daarna en geeft alleen een oordeel als er genoeg bewijs is.</p></section>
+
+<section class="card">
+<label>Jouw situatie</label>
+<textarea id="text" placeholder="Bijvoorbeeld: ik ben 55, salaris 3k netto, kosten 2k per maand, 100k belegd, hypotheek 240k tegen 3,5%..."></textarea>
+<label>Wat wil je weten?</label>
+<input id="q" placeholder="Bijvoorbeeld: is dat genoeg voor later?">
+<button class="btn" id="go">Analyseer mijn situatie</button>
+</section>
+
+<section class="card hidden" id="out">
+<div class="resultHead"><small>KERNCONCLUSIE</small><h2 id="title"></h2><p id="summary"></p></div>
+<div class="grid" id="facts"></div>
+
+<div class="section"><h3>Zo lees ik jouw situatie</h3><div id="interpretation"></div></div>
+<div class="section"><h3>Mijn 3 prioriteiten</h3><div id="priorities"></div></div>
+<div class="section" id="missingSection"><h3>Dit wil ik nog van je weten</h3><div id="questions"></div></div>
+<div class="section" id="scenarioSection"><h3>Relevante scenario’s</h3><div id="scenarios"></div></div>
+
+<details><summary>Waarom komt de tool tot deze uitkomst?</summary><div class="section" id="audit"></div></details>
+<div class="note">Dit is een Geldcheck: overzicht, cashflow, weerbaarheid en scenario’s. Geen individueel product-, hypotheek-, pensioen-, fiscaal of beleggingsadvies.</div>
+</section>
+</main>
+
+<script>
+const euro=n=>n==null||!Number.isFinite(n)?'—':new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
+const pct=n=>n==null?'—':(n*100).toFixed(1).replace('.',',')+'%';
 function amt(s){
- if(!s)return null;
- let x=String(s).toLowerCase().replace(/€/g,'').trim();
- const km=x.match(/([\d.,]+)\s*k\b/);
- if(km)return parseFloat(km[1].replace('.','').replace(',','.'))*1000;
- x=x.replace(/\./g,'').replace(',','.');
- const m=x.match(/[\d.]+/);
- return m?parseFloat(m[0]):null;
+ if(!s)return null; let x=String(s).toLowerCase().replace(/€/g,'').trim();
+ const km=x.match(/([\d.,]+)\s*k\b/); if(km)return parseFloat(km[1].replace('.','').replace(',','.'))*1000;
+ x=x.replace(/\./g,'').replace(',','.'); const m=x.match(/[\d.]+/); return m?parseFloat(m[0]):null;
 }
-function first(patterns,raw){
- for(const r of patterns){const m=raw.match(r);if(m)return m}
- return null;
-}
-function analyze(){
- const raw=document.getElementById('text').value.trim();
- if(!raw){alert('Vul eerst kort je situatie in.');return}
- const q=document.getElementById('q').value.trim();
+function grab(raw,patterns,group=1){for(const r of patterns){const m=raw.match(r);if(m)return m[group]}return null}
+function has(raw,re){return re.test(raw)}
+function addFact(a,label,value,conf=.9,src='tekst'){if(value!=null)a.push({label,value,conf,src,type:'FACT'})}
+function parseCase(raw,q){
  const low=raw.toLowerCase();
+ const c={raw,q,facts:[],unknowns:[],assumptions:[],age:null,retireAge:null,income:null,cost:null,assets:[],mortgage:null,mortgageRate:null,mortgagePayment:null,mortgageEndAge:null,aow:null,alimony:null,alimonyEndYears:null,otherPension:null,returnExp:null,cash:null};
 
- let cost=null,income=null,asset=null,assetType=null,mortgage=null,mortgageRate=null;
+ let v=grab(raw,[/\b(?:ik ben|leeftijd)\s*(\d{2})\b/i]); if(v)c.age=+v;
+ v=grab(raw,[/(?:pensioen|stoppen met werken|vanaf)[^\d]{0,20}(\d{2})\b/i]); if(v)c.retireAge=+v;
 
- let m=first([
-   /(€?\s*[\d.,]+\s*k?)\s*(?:aan\s*)?(?:kosten|lasten|uitgaven)(?:\s*per\s*maand|\s*p\/m)?/i,
-   /(?:kosten|lasten|uitgaven)[^\d€]{0,20}(€?\s*[\d.,]+\s*k?)/i
- ],raw); if(m)cost=amt(m[1]);
+ v=grab(raw,[/(?:salaris|loon|inkomen)[^\d€]{0,15}(€?\s*[\d.,]+\s*k?)(?:\s*netto)?/i,/(€?\s*[\d.,]+\s*k?)\s*netto(?:\s*(?:salaris|inkomen|p\/m|per maand))?/i]); if(v)c.income=amt(v);
+ v=grab(raw,[/(€?\s*[\d.,]+\s*k?)\s*(?:aan\s*)?(?:kosten|lasten|uitgaven)(?:\s*per\s*maand|\s*p\/m)?/i,/(?:kosten|lasten|uitgaven)[^\d€]{0,20}(€?\s*[\d.,]+\s*k?)/i]); if(v)c.cost=amt(v);
 
- m=first([
-   /(?:salaris|loon|inkomen)[^\d€]{0,15}(€?\s*[\d.,]+\s*k?)(?:\s*netto)?/i,
-   /(€?\s*[\d.,]+\s*k?)\s*netto(?:\s*(?:salaris|inkomen|per maand|p\/m))?/i,
-   /(?:netto)[^\d€]{0,12}(€?\s*[\d.,]+\s*k?)/i
- ],raw); if(m)income=amt(m[1]);
+ v=grab(raw,[/(?:hypotheek|hypotheekschuld)[^\n.]{0,45}(€?\s*[\d.,]+\s*k)\b/i,/(?:hypotheek|hypotheekschuld)[^\n.]{0,45}€?\s*([\d.]{4,})\b/i]); if(v)c.mortgage=amt(v);
+ v=grab(raw,[/(?:hypotheek|rente)[^\n.]{0,30}(\d+(?:[.,]\d+)?)\s*%/i,/(\d+(?:[.,]\d+)?)\s*%[^\n.]{0,20}hypotheek/i]); if(v)c.mortgageRate=parseFloat(v.replace(',','.'))/100;
+ v=grab(raw,[/(?:hypotheeklast|hypotheek|woonlast)[^\n.]{0,30}(€?\s*[\d.,]+\s*k?)\s*(?:p\/m|per maand)/i]); if(v)c.mortgagePayment=amt(v);
+ v=grab(raw,[/(?:hypotheek[^\n.]{0,40}(?:loopt tot|afgelost.*(?:op|rond)|tot mijn)\s*)(\d{2})/i]); if(v)c.mortgageEndAge=+v;
 
- m=first([
-   /(?:hypotheek|hypotheekschuld)[^\n.]{0,50}?(€?\s*[\d.,]+\s*k)\b/i,
-   /(?:hypotheek|hypotheekschuld)[^\n.]{0,50}?€?\s*([\d.]{4,})\b/i
- ],raw); if(m)mortgage=amt(m[1]);
+ v=grab(raw,[/(?:aow)[^\d€]{0,20}(€?\s*[\d.,]+\s*k?)/i]); if(v)c.aow=amt(v);
+ if(/geen.*(?:werkgevers)?pensioen|verder niks opgebouwd|geen pensioen opgebouwd/i.test(low))c.otherPension=0;
 
- m=first([
-   /(?:hypotheek|rente)[^\n.]{0,30}?(\d+(?:[.,]\d+)?)\s*%/i,
-   /(\d+(?:[.,]\d+)?)\s*%[^\n.]{0,20}hypotheek/i
- ],raw); if(m)mortgageRate=parseFloat(m[1].replace(',','.'));
+ v=grab(raw,[/(?:alimentatie)[^\d€]{0,18}(€?\s*[\d.,]+\s*k?)/i]); if(v)c.alimony=amt(v);
+ v=grab(raw,[/alimentatie[^\n.]{0,50}(?:stopt|eindigt)[^\d]{0,12}(\d+)\s*jaar/i]); if(v)c.alimonyEndYears=+v;
 
- if(/beleg|aandel|etf|portfolio/i.test(low)) assetType='beleggingen';
- else if(/spaargeld|spaarrekening|cash/i.test(low)) assetType='spaargeld';
- else if(/overwaarde/i.test(low)) assetType='overwaarde';
+ v=grab(raw,[/(?:verwacht rendement|rendement)[^\d]{0,10}(\d+(?:[.,]\d+)?)\s*%/i]); if(v)c.returnExp=parseFloat(v.replace(',','.'))/100;
 
- m=first([
-   /(?:ik heb|wij hebben|vermogen|spaargeld|beleggingen|belegd)[^\d€]{0,20}(€?\s*[\d.,]+\s*k)\b/i,
-   /(€?\s*[\d.,]+\s*k)\s*(?:belegd|aan beleggingen|spaargeld|vermogen)\b/i
- ],raw);
- if(m)asset=amt(m[1]);
- if(asset==null){
-   const all=[...raw.matchAll(/€?\s*[\d.,]+\s*k\b/gi)].map(x=>amt(x[0]));
-   const candidates=all.filter(x=>x!==cost&&x!==income&&x!==mortgage);
-   if(candidates.length)asset=candidates[0];
+ const assetMatches=[...raw.matchAll(/€?\s*[\d.,]+\s*k\b/gi)].map(m=>({txt:m[0],val:amt(m[0]),idx:m.index}));
+ const used=new Set([c.income,c.cost,c.mortgage,c.aow,c.alimony].filter(x=>x!=null));
+ for(const m of assetMatches){
+   const ctx=low.slice(Math.max(0,m.idx-35),Math.min(low.length,m.idx+45));
+   if(/beleg|aandel|etf|portfolio|vermogen/.test(ctx) && !used.has(m.val)) c.assets.push({type:/beleg|aandel|etf|portfolio/.test(ctx)?'beleggingen':'vermogen',amount:m.val});
+   if(/spaargeld|spaarrekening|cash/.test(ctx) && !used.has(m.val)){c.assets.push({type:'spaargeld',amount:m.val});c.cash=m.val}
+ }
+ if(!c.assets.length){
+   const first=assetMatches.find(x=>!used.has(x.val)); if(first)c.assets.push({type:'vermogen onbekend',amount:first.val});
+ }
+ c.assets=c.assets.filter((x,i,a)=>a.findIndex(y=>y.type===x.type&&y.amount===x.amount)===i);
+
+ addFact(c.facts,'Netto inkomen',c.income,.94);
+ addFact(c.facts,'Maandkosten',c.cost,.90);
+ c.assets.forEach(x=>addFact(c.facts,x.type,x.amount,.85));
+ addFact(c.facts,'Hypotheek',c.mortgage,.92);
+ if(c.mortgageRate!=null)addFact(c.facts,'Hypotheekrente',c.mortgageRate,.92);
+ addFact(c.facts,'AOW',c.aow,.86);
+ addFact(c.facts,'Alimentatie',c.alimony,.90);
+
+ if(c.income==null)c.unknowns.push(['Netto inkomen','Wat komt er netto per maand binnen?','Nodig voor draagkracht en vrije ruimte.']);
+ if(c.cost==null)c.unknowns.push(['Maandkosten','Wat geef je gemiddeld per maand uit?','Nodig voor cashflow en buffer.']);
+ if(c.assets.some(x=>x.type==='vermogen onbekend'))c.unknowns.push(['Vermogenssoort','Waar bestaat je vermogen uit?','Spaargeld, beleggingen en overwaarde zijn niet hetzelfde.']);
+ if(c.mortgage!=null && c.mortgageEndAge==null)c.unknowns.push(['Hypotheeklooptijd','Wanneer is je hypotheek afgelost en welke vorm heeft hij?','Belangrijk voor toekomstige woonlasten.']);
+ if(/pensioen|later|stoppen met werken|aow/i.test((q||'')+' '+low)){
+   if(c.age==null)c.unknowns.push(['Leeftijd','Hoe oud ben je nu?','Bepaalt de horizon.']);
+   if(c.retireAge==null)c.unknowns.push(['Pensioenleeftijd','Vanaf welke leeftijd wil je van je vermogen leven?','Bepaalt de opbouw- en onttrekkingsfase.']);
+   if(c.aow==null)c.unknowns.push(['AOW','Welke AOW schatting gebruik je?','Bepaalt hoeveel vermogen moet aanvullen.']);
  }
 
- const known=[];
- if(asset!=null)known.push(['Vermogen',euro(asset)+(assetType?' · '+assetType:'')]);
- if(cost!=null)known.push(['Maandkosten',euro(cost)]);
- if(income!=null)known.push(['Netto inkomen',euro(income)+' p/m']);
- if(mortgage!=null)known.push(['Hypotheek',euro(mortgage)+(mortgageRate!=null?' · '+mortgageRate.toFixed(1).replace('.',',')+'%':'')]);
+ return c;
+}
+function model(c){
+ const out={calcs:[],warnings:[],strengths:[],priorities:[],scenarios:[],headline:'',summary:'',score:50};
+ const liquid=c.cash??(c.assets.find(x=>x.type==='spaargeld')?.amount??null);
+ const invested=c.assets.find(x=>x.type==='beleggingen')?.amount??c.assets.find(x=>x.type==='vermogen')?.amount??null;
+ const free=(c.income!=null&&c.cost!=null)?c.income-c.cost:null;
 
- const missing=[];
- if(income==null)missing.push(['Wat komt er netto per maand binnen?','Dit bepaalt of je maandlasten structureel draagbaar zijn.']);
- if(asset!=null&&!assetType)missing.push(['Waar bestaat de '+euro(asset)+' uit?','Spaargeld, beleggingen en overwaarde zijn financieel niet hetzelfde.']);
- if(mortgage==null&&!/geen hypotheek/i.test(low))missing.push(['Heb je een hypotheek of andere grote schuld?','Schuld en rente kunnen de conclusie sterk veranderen.']);
- if(mortgage!=null&&!/looptijd|eindigt|afgelost|annu|aflossingsvrij/i.test(low))missing.push(['Hoe lang loopt je hypotheek nog en is die annuïtair of aflossingsvrij?','Dat bepaalt je toekomstige woonlasten.']);
-
- let free=null;
- if(income!=null&&cost!=null)free=income-cost;
-
- let title,summary;
- if(missing.length>=2){
-   title='Ik begrijp al meer, maar nog niet genoeg voor een definitief oordeel.';
- }else if(missing.length===1){
-   title='Bijna compleet — nog één belangrijke vraag.';
- }else{
-   title='Je basisgegevens zijn voldoende voor een eerste analyse.';
+ if(free!=null){out.calcs.push(['Theoretische maandruimte',free,'Inkomen minus genoemde maandkosten.']); if(free>0){out.strengths.push('De bekende cashflow is positief.');out.score+=10}else{out.warnings.push('De bekende cashflow is negatief.');out.score-=20}}
+ if(liquid!=null&&c.cost!=null){const m=liquid/c.cost;out.calcs.push(['Buffer in maanden',m,'Liquide buffer gedeeld door maandkosten.']); if(m>=6){out.strengths.push('De liquide buffer oogt ruim ten opzichte van de genoemde maandkosten.');out.score+=10}else if(m<3){out.warnings.push('De liquide buffer oogt beperkt ten opzichte van de genoemde maandkosten.');out.score-=10}}
+ if(c.mortgage!=null){out.strengths.push('De hypotheek is expliciet in beeld, waardoor toekomstige woonlasten gericht kunnen worden doorgerekend.')}
+ if(c.alimony!=null&&c.alimonyEndYears!=null){out.scenarios.push({title:'Na einde alimentatie',text:'Als overige lasten gelijk blijven, verbetert de maandcashflow over '+c.alimonyEndYears+' jaar met ongeveer '+euro(c.alimony)+' per maand.'});}
+ if(c.age!=null&&c.retireAge!=null&&invested!=null){
+   const yrs=Math.max(0,c.retireAge-c.age); const rs=[.03,.05,.07,(c.returnExp??.10)];
+   [...new Set(rs.map(x=>x.toFixed(4)))].map(Number).forEach(r=>{
+      const fv=invested*Math.pow(1+r,yrs);
+      out.scenarios.push({title:'Pensioenvermogen bij '+Math.round(r*100)+'%',text:euro(invested)+' groeit zonder extra inleg in '+yrs+' jaar indicatief naar '+euro(fv)+'.'});
+   });
+   if(c.aow!=null&&c.cost!=null){
+      const alimonyAtRetire=(c.alimony!=null&&c.alimonyEndYears!=null&&c.alimonyEndYears<=yrs)?0:(c.alimony||0);
+      const need=Math.max(0,c.cost-alimonyAtRetire-c.aow-(c.otherPension||0));
+      out.calcs.push(['Indicatieve pensioen-gap p/m',need,'Huidige maandkosten minus bekende AOW/pensioen en eventueel vervallen alimentatie.']);
+      if(need===0)out.strengths.push('Op basis van de huidige-euro invoer dekt AOW/pensioen de bekende maandkosten.');
+      else out.warnings.push('Vanaf pensioen moet vermogen naar verwachting een deel van de maandkosten aanvullen.');
+   }
  }
- summary='Ik herken nu ';
- const bits=[];
- if(asset!=null)bits.push(euro(asset)+' '+(assetType||'vermogen'));
- if(cost!=null)bits.push(euro(cost)+' maandkosten');
- if(income!=null)bits.push(euro(income)+' netto inkomen');
- if(mortgage!=null)bits.push(euro(mortgage)+' hypotheek'+(mortgageRate!=null?' tegen '+mortgageRate.toFixed(1).replace('.',',')+'%':''));
- summary+=bits.length?bits.join(', '):'nog te weinig harde cijfers';
- summary+='. ';
- if(free!=null)summary+='Op basis van alleen inkomen minus genoemde kosten is er ongeveer '+euro(free)+' per maand ruimte. ';
- if(asset!=null&&cost!=null)summary+='Het genoemde vermogen staat gelijk aan ongeveer '+Math.floor(asset/cost)+' maanden van deze uitgaven, vóór rendement en zonder rekening te houden met belasting of andere verplichtingen. ';
- if(q)summary+='Voor je vraag “'+q+'” wil ik alleen nog informatie vragen die de uitkomst echt kan veranderen.';
+ const highMissing=c.unknowns.length;
+ if(highMissing>=3){out.headline='Nog te weinig informatie voor een financieel oordeel.';out.summary='Ik herken al een deel van je situatie, maar meerdere gegevens kunnen de conclusie nog sterk veranderen.';out.score-=15}
+ else if(highMissing===2){out.headline='Ik begrijp de basis, maar twee punten bepalen nog de uitkomst.';out.summary='Er is genoeg informatie voor een eerste richting, nog niet voor een definitief oordeel.'}
+ else if(highMissing===1){out.headline='Bijna compleet — nog één belangrijke vraag.';out.summary='De hoofdlijnen zijn duidelijk. Eén ontbrekend gegeven kan de uitkomst nog wezenlijk veranderen.'}
+ else {out.headline=out.score>=65?'Je financiële basis oogt stevig.':'Je financiële basis is voldoende in beeld.';out.summary='Er is genoeg informatie voor een eerste financiële weerbaarheidsscan.'}
 
- document.getElementById('title').textContent=title;
- document.getElementById('summary').textContent=summary;
- document.getElementById('facts').innerHTML=known.map(x=>'<div class="fact"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join('');
- document.getElementById('known').innerHTML=known.map(x=>'<div class="known"><b>'+x[0]+'</b>'+x[1]+'</div>').join('');
- document.getElementById('questions').innerHTML=missing.map(x=>'<div class="ask"><b>'+x[0]+'</b>'+x[1]+'</div>').join('');
- document.getElementById('missingSection').classList.toggle('hidden',missing.length===0);
+ c.unknowns.slice(0,3).forEach(x=>out.priorities.push({title:x[1],text:x[2]}));
+ if(out.priorities.length<3 && free!=null)out.priorities.push({title:'Controleer of de theoretische ruimte echt op je rekening zichtbaar is.',text:'Vergelijk 6–12 maanden saldogroei met de berekende maandruimte.'});
+ if(out.priorities.length<3 && c.mortgage!=null)out.priorities.push({title:'Maak de hypotheek een levensfase.',text:'Kijk niet alleen naar de schuld nu, maar ook naar de last en restschuld op je doelmoment.'});
+ if(out.priorities.length<3)out.priorities.push({title:'Maak je jaaruitgaven compleet.',text:'Vakantie, onderhoud, auto, kleding en incidentele uitgaven verdwijnen anders uit het maandbeeld.'});
+ out.priorities=out.priorities.slice(0,3);
+ return out;
+}
+function render(){
+ const raw=document.getElementById('text').value.trim(),q=document.getElementById('q').value.trim(); if(!raw){alert('Vul eerst je situatie in.');return}
+ const c=parseCase(raw,q),m=model(c);
+ document.getElementById('title').textContent=m.headline;
+ let sm=m.summary;
+ if(q)sm+=' Voor je vraag “'+q+'” geef ik alleen een hard antwoord als de bewijsbasis voldoende is.';
+ document.getElementById('summary').textContent=sm;
+
+ const tiles=[];
+ if(c.income!=null)tiles.push([euro(c.income),'netto inkomen p/m']);
+ if(c.cost!=null)tiles.push([euro(c.cost),'maandkosten']);
+ c.assets.slice(0,2).forEach(x=>tiles.push([euro(x.amount),x.type]));
+ if(c.mortgage!=null)tiles.push([euro(c.mortgage),'hypotheek']);
+ document.getElementById('facts').innerHTML=tiles.map(x=>'<div class="fact"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
+
+ const interp=[];
+ c.facts.forEach(x=>interp.push('<div class="item good"><span class="badge fact">FEIT</span><b>'+x.label+'</b>'+ (x.label==='Hypotheekrente'?pct(x.value):euro(x.value)) +'</div>'));
+ m.calcs.forEach(x=>interp.push('<div class="item info"><span class="badge calc">BEREKENING</span><b>'+x[0]+'</b>'+ (x[0].includes('maanden')?x[1].toFixed(1)+' maanden':euro(x[1])) +'<div class="mini">'+x[2]+'</div></div>'));
+ if(c.age!=null&&c.retireAge!=null)interp.push('<div class="item warn"><span class="badge assume">AANNAME</span><b>Levensfasehorizon</b>'+ (c.retireAge-c.age) +' jaar tot doelmoment.</div>');
+ document.getElementById('interpretation').innerHTML=interp.join('');
+
+ document.getElementById('priorities').innerHTML=m.priorities.map((x,i)=>'<div class="item priority"><div class="n">'+(i+1)+'</div><div><b>'+x.title+'</b><div class="mini">'+x.text+'</div></div></div>').join('');
+
+ document.getElementById('questions').innerHTML=c.unknowns.map(x=>'<div class="item warn"><span class="badge unknown">ONBEKEND</span><b>'+x[1]+'</b>'+x[2]+'</div>').join('');
+ document.getElementById('missingSection').classList.toggle('hidden',c.unknowns.length===0);
+
+ document.getElementById('scenarios').innerHTML=m.scenarios.map(x=>'<div class="item scenario"><b>'+x.title+'</b>'+x.text+'</div>').join('');
+ document.getElementById('scenarioSection').classList.toggle('hidden',m.scenarios.length===0);
+
+ const audit=[
+   ['Evidence gate',c.unknowns.length===0?'voldoende voor eerste analyse':c.unknowns.length+' materiële onbekenden'],
+   ['Cashflow',c.income!=null&&c.cost!=null?'berekend':'niet compleet'],
+   ['Hypotheek',c.mortgage!=null?'herkend':'niet herkend'],
+   ['Pensioenmodule',c.age!=null&&c.retireAge!=null?'actief':'niet actief'],
+   ['Vermogensscenario’s',m.scenarios.length?m.scenarios.length+' scenario(s)':'geen']
+ ];
+ document.getElementById('audit').innerHTML=audit.map(x=>'<div class="line"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('');
  document.getElementById('out').classList.remove('hidden');
  document.getElementById('out').scrollIntoView({behavior:'smooth',block:'start'});
 }
-document.getElementById('go').addEventListener('click',analyze);
+document.getElementById('go').addEventListener('click',render);
 </script></body></html>
