@@ -7,7 +7,7 @@ button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;co
 .score{font-size:52px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#a33}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat{background:#f7f5ef;border-radius:18px;padding:16px}.stat b{font-size:24px;display:block}.small{font-size:12px;color:#777}.fail{color:#a33}
 </style></head><body><main>
-<div class="card"><h1>Geldcheck Stressbank 1500</h1><p>15 financiële families × 100 varianten. Hier testen we niet alleen rekenen, maar of de richting van de conclusie robuust blijft onder veel verschillende huishoudens.</p><p class="small"><b>Build S1 · engine inline</b></p><button id="run">Run 1500 inhoudelijke scenario's</button><div id="summary"></div></div>
+<div class="card"><h1>Geldcheck Stressbank 1500</h1><p>15 financiële families × 100 varianten. Hier testen we niet alleen rekenen, maar of de richting van de conclusie robuust blijft onder veel verschillende huishoudens.</p><p class="small"><b>Build M1 · metamorfische intelligentietest</b></p><button id="run">Run 1500 inhoudelijke scenario's</button><button id="meta" style="margin-top:10px;background:#111">Run intelligentietest</button><div id="summary"></div><div id="metaSummary"></div></div>
 <div id="groups"></div></main>
 <script>/* Geldcheck Generic Financial Reasoning Engine v1.0
    Goal: consistent reasoning across many household configurations.
@@ -284,6 +284,35 @@ fam.push(family('Groot belegd vermogen',function(k){var cost=3000+(k%10)*20;retu
 fam.push(family('Onvoldoende bewijs',function(k){return {age:25+k%40,goal:'health',income:null,cost:null,cash:5000+k*10,investments:0,debt:0}},function(a,e){if(a.score.value!==null)addFail(e,'score hoort null te zijn');if(a.score.label!=='onvoldoende informatie')addFail(e,'label fout')}));
 fam.push(family('Gezond gemengd huishouden',function(k){var income=4200+k*8,cost=3000+k*3;return {age:30+k%30,goal:'health',income:income,cost:cost,cash:22000+k*40,investments:60000+k*150,debt:0,annualIncluded:true}},function(a,e){if(a.dimensions.cashflow.status==='weak')addFail(e,'cashflow onterecht weak');if(a.score.value===null)addFail(e,'score ontbreekt')}));
 
+document.getElementById('meta').onclick=function(){
+ var tests=[], pass=0;
+ function T(name,base,mutate,check){
+   var a=GeldcheckEngine.analyze(base), b=GeldcheckEngine.analyze(Object.assign({},base,mutate));
+   var ok=false,msg='';
+   try{ok=check(a,b);if(!ok)msg='verwachte richting ontbreekt'}catch(e){msg=String(e)}
+   tests.push({name:name,ok:ok,msg:msg}); if(ok)pass++;
+ }
+ var healthy={age:45,goal:'health',income:5000,cost:3500,cash:25000,investments:150000,debt:0,annualIncluded:true};
+ T('Meer inkomen mag financiële positie niet verslechteren',healthy,{income:6500},function(a,b){return b.score.value>=a.score.value&&b.case.monthlySurplus>a.case.monthlySurplus});
+ T('Hogere uitgaven moeten maandruimte verlagen',healthy,{cost:4500},function(a,b){return b.case.monthlySurplus<a.case.monthlySurplus&&b.score.value<=a.score.value});
+ T('Meer cash moet liquiditeit niet verslechteren',healthy,{cash:60000},function(a,b){return b.dimensions.liquidity.bufferMonths>a.dimensions.liquidity.bufferMonths&&b.score.value>=a.score.value});
+ T('Dure schuld moet risico toevoegen',healthy,{debt:40000,debtRate:.09},function(a,b){return !a.dimensions.debt.highInterest&&b.dimensions.debt.highInterest&&b.score.value<a.score.value});
+ T('Leeftijd alleen mag huidige cashflow niet veranderen',healthy,{age:70},function(a,b){return a.case.monthlySurplus===b.case.monthlySurplus});
+ var ret={age:55,goal:'retirement',income:5000,cost:3500,cash:50000,investments:300000,debt:0,retireAge:67,aow:1500,pension:700,annualIncluded:true};
+ T('Later pensioen moet beleggingshorizon verlengen',ret,{retireAge:70},function(a,b){return b.case.retirementHorizon>a.case.retirementHorizon&&b.scenarios.investment[1].nominal>a.scenarios.investment[1].nominal});
+ T('Meer pensioeninkomen moet pensioengat verkleinen',ret,{pension:1500},function(a,b){return b.scenarios.retirement.currentEuroGap<a.scenarios.retirement.currentEuroGap});
+ T('Meer beleggingen mogen runway niet verlagen',healthy,{investments:500000},function(a,b){return b.dimensions.wealth.runwayMonths>a.dimensions.wealth.runwayMonths});
+ var buy={age:40,goal:'purchase',income:6000,cost:3500,cash:80000,investments:100000,debt:0,purchaseAmount:20000,purchaseMonths:24,annualIncluded:true};
+ T('Duurdere aankoop moet buffer na aankoop verlagen',buy,{purchaseAmount:50000},function(a,b){return b.scenarios.purchase.bufferMonthsAfter<a.scenarios.purchase.bufferMonthsAfter});
+ T('Langere spaartijd moet maandreservering verlagen',buy,{purchaseMonths:48},function(a,b){return b.scenarios.purchase.monthlyReserve<a.scenarios.purchase.monthlyReserve});
+ var cf={age:40,goal:'cashflow',income:6000,cost:4000,cash:30000,investments:50000,debt:0,annualIncluded:false,savingGrowth:500};
+ T('Werkelijke spaargroei dichter bij papier moet reconciliation verbeteren',cf,{savingGrowth:1900},function(a,b){return Math.abs(b.scenarios.reconciliation.gap)<Math.abs(a.scenarios.reconciliation.gap)});
+ T('Ontbrekend kernbewijs moet oordeel blokkeren',healthy,{income:null},function(a,b){return a.score.value!==null&&b.score.value===null});
+ var html='<div class="card"><h1>Intelligentietest</h1><div class="score '+(pass===tests.length?'ok':'bad')+'">'+pass+' / '+tests.length+'</div><b>'+ (pass===tests.length?'Alle richtingstests geslaagd':'Niet alle richtingstests geslaagd') +'</b></div>';
+ tests.forEach(function(t){html+='<div class="card"><b class="'+(t.ok?'ok':'bad')+'">'+(t.ok?'PASS':'FAIL')+'</b> · '+t.name+(t.msg?'<div class="small">'+t.msg+'</div>':'')+'</div>'});
+ document.getElementById('metaSummary').innerHTML=html;
+ document.getElementById('metaSummary').scrollIntoView({behavior:'smooth'});
+};
 document.getElementById('run').onclick=function(){
  var total=0,failed=0,groupHtml='';
  fam.forEach(function(f){
