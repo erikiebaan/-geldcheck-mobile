@@ -55,7 +55,7 @@
 <button class="btn next" style="width:100%" type="button" id="analyze">Maak mijn Geldcheck</button><div id="output"></div></section>
 <div class="nav" id="nav"><button class="btn back" type="button" id="back">Terug</button><button class="btn next" type="button" id="next">Verder</button></div>
 </div></main>
-<script src="engine.js"></script>
+<script src="engine.js?v=1.1"></script>
 <script>
 (function(){
   var currentPos=0, annual=null, route=[];
@@ -160,9 +160,41 @@
     if(c.savingsRate!==null) html+='<div class="tile"><b>'+Math.round(c.savingsRate*100)+'%</b><span>theoretische spaarquote</span></div>';
     html+='</div>';
 
-    a.topFindings.forEach(function(f){
-      html+='<div class="action"><b>'+f.title+'</b><br>'+f.text+'</div>';
-    });
+    if(a.intelligence){
+      var intel=a.intelligence;
+      if(intel.now){
+        html+='<div class="action" style="background:#dfeee8"><b>1. Waar sta je nu?</b><br><strong>'+intel.now.title+'</strong><br>'+intel.now.text+'</div>';
+      }
+      if(intel.future&&intel.future.length){
+        html+='<div class="action"><b>2. Waar ga je naartoe?</b><br>';
+        intel.future.forEach(function(x){
+          if(x.kind==='investment') html+='<strong>'+x.title+'</strong>: '+euro(x.nominal)+' nominaal · '+euro(x.real)+' in koopkracht van vandaag.<br>';
+          if(x.kind==='retirement') html+='<strong>'+x.title+'</strong>: '+(x.monthlyGap>0?'circa '+euro(x.monthlyGap)+' per maand uit vermogen/ander inkomen nodig.':'bekend pensioeninkomen dekt de huidige uitgaven in euro’s van nu.')+'<br>';
+        });
+        html+='</div>';
+      }
+      if(intel.stress&&intel.stress.length){
+        html+='<div class="action"><b>3. Wat kan er misgaan?</b><br>';
+        intel.stress.slice(0,3).forEach(function(x,i){
+          html+='<strong>'+(i+1)+'. '+x.title+'</strong> — '+x.text+'<br>';
+        });
+        if(intel.dominant) html+='<br><strong>Grootste financiële gevoeligheid:</strong> '+intel.dominant.title+'.';
+        html+='</div>';
+      }
+      if(intel.levers&&intel.levers.length){
+        html+='<div class="action"><b>4. Wat maakt bij jou het meeste verschil?</b><br>';
+        intel.levers.forEach(function(x,i){
+          html+='<strong>'+(i+1)+'. '+x.title+'</strong> — '+x.text+'.<br>';
+        });
+        html+='</div>';
+      }
+    }
+
+    if(a.topFindings.length){
+      html+='<details style="margin-top:10px"><summary><b>Bekijk onderliggende signalen</b></summary>';
+      a.topFindings.forEach(function(f){html+='<div class="action"><b>'+f.title+'</b><br>'+f.text+'</div>';});
+      html+='</details>';
+    }
 
     if(a.scenarios.reconciliation){
       var r=a.scenarios.reconciliation;
@@ -199,7 +231,7 @@
       html+='</div>';
     }
 
-    html+='<div class="small" style="margin-top:14px">Engine v1.0 · generieke dimensies: cashflow, liquiditeit, vermogen, schuld, wonen, levensfase en doel. Inflatie en rendement zijn scenario-aannames, geen voorspellingen.</div>';
+    html+='<div class="small" style="margin-top:14px">Engine v1.1 · interpretatie op basis van cashflow, liquiditeit, vermogen, schuld, wonen, levensfase, doel en gevoeligheidsanalyse. Inflatie en rendement zijn scenario-aannames, geen voorspellingen.</div>';
     el('output').innerHTML=html;
     el('output').scrollIntoView({behavior:'smooth'});
   });
