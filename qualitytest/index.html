@@ -1,0 +1,65 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Geldcheck Inhoudelijke Testbank</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}main{max-width:760px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}h1{font-size:36px;line-height:1.02;margin:0 0 10px}p{color:#777;line-height:1.45}button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}.score{font-size:48px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#a33}.row{padding:12px 0;border-top:1px solid #eee}.row:first-child{border-top:0}.row b{display:block}.tag{display:inline-block;font-size:11px;font-weight:800;border-radius:999px;padding:4px 8px;background:#eee;margin-right:5px}.pass{background:#e6f2ed;color:#176f58}.fail{background:#f7e4e1;color:#8c332d}.small{font-size:12px;color:#777}
+</style></head><body><main><div class="card"><h1>Inhoudelijke testbank</h1><p>Geen willekeurige rekensommen, maar herkenbare huishoudens met een verwachte financiële richting. We testen of de engine logisch reageert.</p><button id="run">Run inhoudelijke testbank</button><div id="summary"></div></div><div id="results"></div></main>
+<script src="../engine.js"></script><script>
+(function(){
+function hasFinding(a,needle){return a.findings.some(function(f){return (f.title+' '+f.text).toLowerCase().indexOf(needle.toLowerCase())>=0})}
+function assert(cond,msg,arr){if(!cond)arr.push(msg)}
+function mk(name,base,checks){return {name:name,base:base,checks:checks}}
+var cases=[];
+
+// 1. Negative cashflow
+cases.push(mk('Negatieve maandbasis',{age:35,goal:'health',income:2500,cost:3200,cash:5000,investments:0,debt:0,annualIncluded:true},function(a,e){assert(a.dimensions.cashflow.status==='weak','cashflow moet weak zijn',e);assert(hasFinding(a,'maandbasis is negatief'),'negatieve maandbasis finding ontbreekt',e)}));
+// 2. Strong buffer
+cases.push(mk('Ruime cashbuffer',{age:40,goal:'health',income:4500,cost:2500,cash:50000,investments:0,debt:0,annualIncluded:true},function(a,e){assert(a.dimensions.liquidity.status==='strong','buffer moet strong zijn',e);assert(hasFinding(a,'liquide buffer is ruim'),'ruime buffer finding ontbreekt',e)}));
+// 3. Thin buffer
+cases.push(mk('Lage buffer',{age:31,goal:'health',income:4000,cost:3000,cash:4000,investments:0,debt:0,annualIncluded:true},function(a,e){assert(a.dimensions.liquidity.status==='weak','buffer moet weak zijn',e);assert(hasFinding(a,'liquide buffer is kwetsbaar'),'bufferwaarschuwing ontbreekt',e)}));
+// 4. High interest debt
+cases.push(mk('Dure consumptieve schuld',{age:42,goal:'health',income:5000,cost:3200,cash:15000,investments:20000,debt:30000,debtRate:.09,annualIncluded:true},function(a,e){assert(a.dimensions.debt.highInterest===true,'schuld moet highInterest zijn',e);assert(hasFinding(a,'dure schuld'),'dure-schuld finding ontbreekt',e)}));
+// 5. Cashflow reconciliation gap
+cases.push(mk('Papier versus rekening',{age:47,goal:'cashflow',income:6800,cost:5000,cash:30000,investments:22000,debt:8700,annualIncluded:false,savingGrowth:400},function(a,e){assert(a.scenarios.reconciliation&&a.scenarios.reconciliation.material===true,'reconciliation moet materieel zijn',e);assert(hasFinding(a,'geldbeeld sluit niet aan'),'reconciliation finding ontbreekt',e)}));
+// 6. Mortgage after retirement
+cases.push(mk('Hypotheek loopt door na pensioen',{age:55,goal:'retirement',income:3000,cost:2100,cash:40000,investments:250000,debt:0,housing:'mortgage',mortgage:245000,mortgageRate:.035,mortgageEndAge:80,retireAge:67,aow:1400,pension:0,annualIncluded:true},function(a,e){assert(a.dimensions.housing.mortgageEndsAfterRetirement===true,'hypotheek moet doorlopen',e);assert(hasFinding(a,'hypotheek loopt door'),'hypotheek finding ontbreekt',e);assert(a.scenarios.retirement!==null,'retirement scenario ontbreekt',e)}));
+// 7. Pension gap
+cases.push(mk('Pensioentekort',{age:62,goal:'retirement',income:3500,cost:3000,cash:25000,investments:200000,debt:0,retireAge:67,aow:1500,pension:300,annualIncluded:true},function(a,e){assert(a.scenarios.retirement.currentEuroGap===1200,'pensioengat moet 1200 zijn',e);assert(hasFinding(a,'pensioeninkomen dekt niet'),'pensioentekort finding ontbreekt',e)}));
+// 8. Pension covered
+cases.push(mk('Pensioeninkomen dekt uitgaven',{age:64,goal:'retirement',income:4200,cost:2400,cash:50000,investments:350000,debt:0,retireAge:67,aow:1500,pension:1200,annualIncluded:true},function(a,e){assert(a.scenarios.retirement.currentEuroGap===0,'pensioengat moet nul zijn',e)}));
+// 9. Purchase fits
+cases.push(mk('Grote uitgave haalbaar',{age:38,goal:'purchase',income:6000,cost:3500,cash:80000,investments:150000,debt:0,purchaseAmount:25000,purchaseMonths:24,annualIncluded:true},function(a,e){assert(a.scenarios.purchase.fitsMonthly===true,'uitgave moet passen in maandruimte',e);assert(a.scenarios.purchase.bufferMonthsAfter>=6,'buffer na uitgave moet >=6 maanden zijn',e)}));
+// 10. Purchase doesn't fit
+cases.push(mk('Grote uitgave te zwaar',{age:33,goal:'purchase',income:3500,cost:3000,cash:7000,investments:5000,debt:0,purchaseAmount:30000,purchaseMonths:12,annualIncluded:true},function(a,e){assert(a.scenarios.purchase.fitsMonthly===false,'uitgave moet niet passen',e);assert(hasFinding(a,'past niet uit de huidige maandruimte'),'purchase risk finding ontbreekt',e)}));
+// 11. Large invested wealth
+cases.push(mk('Jong met veel belegd vermogen',{age:25,goal:'health',income:5000,cost:3500,cash:80000,investments:1500000,debt:0,annualIncluded:true},function(a,e){assert(a.case.netFinancialAssets===1580000,'netto vermogen fout',e);assert(hasFinding(a,'belegd vermogen is groot'),'wealth finding ontbreekt',e);assert(a.scenarios.investment.length===3,'investeringsscenario’s ontbreken',e)}));
+// 12. Missing evidence
+cases.push(mk('Te weinig informatie',{age:45,goal:'health',income:null,cost:null,cash:10000,investments:0,debt:0},function(a,e){assert(a.missing.length>=2,'missing evidence moet >=2 zijn',e);assert(a.score.value===null||a.score.label==='onvoldoende informatie','score moet onvoldoende info signaleren',e)}));
+
+// Generate controlled variants around each archetype to test robustness, not just exact examples.
+var expanded=[];
+cases.forEach(function(c,idx){
+  for(var k=0;k<10;k++){
+    var b=JSON.parse(JSON.stringify(c.base));
+    // small perturbations that should not change the qualitative expectation
+    if(typeof b.income==='number')b.income+=k*7;
+    if(typeof b.cost==='number')b.cost+=k*3;
+    if(typeof b.cash==='number')b.cash+=k*11;
+    if(typeof b.investments==='number')b.investments+=k*13;
+    expanded.push({name:c.name+' · variant '+(k+1),base:b,checks:c.checks});
+  }
+});
+
+document.getElementById('run').onclick=function(){
+  var total=expanded.length,failed=0,html='';
+  expanded.forEach(function(c){
+    var a=GeldcheckEngine.analyze(c.base),errors=[];
+    try{c.checks(a,errors)}catch(err){errors.push(String(err))}
+    if(errors.length)failed++;
+    html+='<div class="card row"><span class="tag '+(errors.length?'fail':'pass')+'">'+(errors.length?'FAIL':'PASS')+'</span><b>'+c.name+'</b>';
+    if(errors.length)html+='<div class="small">'+errors.join(' · ')+'</div>';
+    html+='</div>';
+  });
+  document.getElementById('summary').innerHTML='<div class="score '+(failed?'bad':'ok')+'">'+(total-failed)+' / '+total+'</div><b>'+(failed?failed+' scenario’s vragen aandacht':'Alle inhoudelijke scenario’s geslaagd')+'</b>';
+  document.getElementById('results').innerHTML=html;
+};
+})();
+</script></body></html>
