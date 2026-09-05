@@ -373,7 +373,8 @@
     const questions=nextQuestions(c,missing,d,s);
     const top=f.slice(0,3);
     const intel=intelligence(c,d,s,f,missing);
-    return {case:c,assumptions:ASSUMPTIONS,missing,dimensions:d,scenarios:s,findings:f,topFindings:top,score:sc,nextQuestions:questions,intelligence:intel};
+    const decision=retirementDecision(c);
+    return {case:c,assumptions:ASSUMPTIONS,missing,dimensions:d,scenarios:s,findings:f,topFindings:top,score:sc,nextQuestions:questions,intelligence:intel,decision};
   }
 
   global.GeldcheckEngine={analyze,normalize,ASSUMPTIONS};
