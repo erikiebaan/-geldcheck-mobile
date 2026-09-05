@@ -64,8 +64,20 @@ function parseCase(raw,q){
  v=grab(raw,[/(?:salaris|loon|inkomen)[^\d€]{0,15}(€?\s*[\d.,]+\s*k?)(?:\s*netto)?/i,/(€?\s*[\d.,]+\s*k?)\s*netto(?:\s*(?:salaris|inkomen|p\/m|per maand))?/i]); if(v)c.income=amt(v);
  v=grab(raw,[/(€?\s*[\d.,]+\s*k?)\s*(?:aan\s*)?(?:kosten|lasten|uitgaven)(?:\s*per\s*maand|\s*p\/m)?/i,/(?:kosten|lasten|uitgaven)[^\d€]{0,20}(€?\s*[\d.,]+\s*k?)/i]); if(v)c.cost=amt(v);
 
- v=grab(raw,[/(?:hypotheek|hypotheekschuld)[^\n.]{0,45}(€?\s*[\d.,]+\s*k)\b/i,/(?:hypotheek|hypotheekschuld)[^\n.]{0,45}€?\s*([\d.]{4,})\b/i]); if(v)c.mortgage=amt(v);
- v=grab(raw,[/(?:hypotheek|rente)[^\n.]{0,30}(\d+(?:[.,]\d+)?)\s*%/i,/(\d+(?:[.,]\d+)?)\s*%[^\n.]{0,20}hypotheek/i]); if(v)c.mortgageRate=parseFloat(v.replace(',','.'))/100;
+ // Mortgage: always read the number immediately after "hypotheek", never a later amount.
+ let mm=raw.match(/\b(?:hypotheek|hypotheekschuld)\b\s*(?:is|van|:)?\s*€?\s*([\d.]+(?:,\d+)?\s*k?)/i);
+ if(mm)c.mortgage=amt(mm[1]);
+ if(/\bhypotheek\b/i.test(raw) && (c.mortgage==null || c.mortgage<1000)){
+   const local=raw.match(/\bhypotheek\b([^\n;]{0,36})/i);
+   if(local){
+     const nm=local[1].match(/€?\s*([\d.]{4,}|[\d.,]+\s*k)\b/i);
+     if(nm)c.mortgage=amt(nm[1]);
+   }
+ }
+ // Rate: prefer an explicit percentage in the short mortgage phrase.
+ mm=raw.match(/\b(?:hypotheek|hypotheekschuld)\b[^\n;]{0,45}?(\d+(?:[.,]\d+)?)\s*%/i)
+   || raw.match(/\b(?:tegen|rente)\s*(\d+(?:[.,]\d+)?)\s*%/i);
+ if(mm)c.mortgageRate=parseFloat(mm[1].replace(',','.'))/100;
  v=grab(raw,[/(?:hypotheeklast|hypotheek|woonlast)[^\n.]{0,30}(€?\s*[\d.,]+\s*k?)\s*(?:p\/m|per maand)/i]); if(v)c.mortgagePayment=amt(v);
  v=grab(raw,[/(?:hypotheek[^\n.]{0,40}(?:loopt tot|afgelost.*(?:op|rond)|tot mijn)\s*)(\d{2})/i]); if(v)c.mortgageEndAge=+v;
 
@@ -164,6 +176,7 @@ function render(){
  const interp=[];
  c.facts.forEach(x=>interp.push('<div class="item good"><span class="badge fact">FEIT</span><b>'+x.label+'</b>'+ (x.label==='Hypotheekrente'?pct(x.value):euro(x.value)) +'</div>'));
  m.calcs.forEach(x=>interp.push('<div class="item info"><span class="badge calc">BEREKENING</span><b>'+x[0]+'</b>'+ (x[0].includes('maanden')?x[1].toFixed(1)+' maanden':euro(x[1])) +'<div class="mini">'+x[2]+'</div></div>'));
+ if(c.returnExp!=null)interp.push('<div class="item warn"><span class="badge assume">AANNAME</span><b>Verwacht rendement</b>'+pct(c.returnExp)+' per jaar. Dit is een scenario-aanname, geen feit.</div>');
  if(c.age!=null&&c.retireAge!=null)interp.push('<div class="item warn"><span class="badge assume">AANNAME</span><b>Levensfasehorizon</b>'+ (c.retireAge-c.age) +' jaar tot doelmoment.</div>');
  document.getElementById('interpretation').innerHTML=interp.join('');
 
@@ -178,7 +191,7 @@ function render(){
  const audit=[
    ['Evidence gate',c.unknowns.length===0?'voldoende voor eerste analyse':c.unknowns.length+' materiële onbekenden'],
    ['Cashflow',c.income!=null&&c.cost!=null?'berekend':'niet compleet'],
-   ['Hypotheek',c.mortgage!=null?'herkend':'niet herkend'],
+   ['Hypotheek',c.mortgage!=null&&c.mortgage>=1000?'herkend: '+euro(c.mortgage):'niet betrouwbaar herkend'],
    ['Pensioenmodule',c.age!=null&&c.retireAge!=null?'actief':'niet actief'],
    ['Vermogensscenario’s',m.scenarios.length?m.scenarios.length+' scenario(s)':'geen']
  ];
