@@ -33,8 +33,10 @@ details{margin-top:12px}summary{font-weight:850;cursor:pointer}.scenario{border-
 <div class="resultHead"><small>KERNCONCLUSIE</small><h2 id="title"></h2><p id="summary"></p></div>
 <div class="grid" id="facts"></div>
 
-<div class="section"><h3>Zo lees ik jouw situatie</h3><div id="interpretation"></div></div>
+<div class="section"><h3>Wat betekent dit voor jou?</h3><div id="customerMeaning"></div></div>
+<div class="section"><h3>Nu → straks</h3><div id="future"></div></div>
 <div class="section"><h3>Mijn 3 prioriteiten</h3><div id="priorities"></div></div>
+<details><summary>Bekijk feiten en berekeningen</summary><div class="section"><div id="interpretation"></div></div></details>
 <div class="section" id="missingSection"><h3>Dit wil ik nog van je weten</h3><div id="questions"></div></div>
 <div class="section" id="scenarioSection"><h3>Relevante scenario’s</h3><div id="scenarios"></div></div>
 
@@ -92,11 +94,16 @@ function parseCase(raw,q){
 
  v=grab(raw,[/(?:verwacht rendement|rendement)[^\d]{0,10}(\d+(?:[.,]\d+)?)\s*%/i]); if(v)c.returnExp=parseFloat(v.replace(',','.'))/100;
 
+ // Explicit assets first: accepts both "250k belegd" and "€250.000 aan beleggingen".
+ let av=grab(raw,[/(?:ik heb\s*)?€?\s*([\d.]{4,}|[\d.,]+\s*k)\s*(?:aan\s*)?(?:beleggingen|belegd|aandelen|etf|portfolio)/i,/(?:beleggingen|belegd vermogen|portfolio|vermogen)[^\d€]{0,20}€?\s*([\d.]{4,}|[\d.,]+\s*k)/i]);
+ if(av)c.assets.push({type:'beleggingen',amount:amt(av)});
+ av=grab(raw,[/(?:spaargeld|spaarrekening|cash)[^\d€]{0,20}€?\s*([\d.]{4,}|[\d.,]+\s*k)/i,/€?\s*([\d.]{4,}|[\d.,]+\s*k)\s*(?:aan\s*)?(?:spaargeld|op de spaarrekening)/i]);
+ if(av){c.assets.push({type:'spaargeld',amount:amt(av)});c.cash=amt(av)}
  const assetMatches=[...raw.matchAll(/€?\s*[\d.,]+\s*k\b/gi)].map(m=>({txt:m[0],val:amt(m[0]),idx:m.index}));
  const used=new Set([c.income,c.cost,c.mortgage,c.aow,c.alimony].filter(x=>x!=null));
  for(const m of assetMatches){
    const ctx=low.slice(Math.max(0,m.idx-35),Math.min(low.length,m.idx+45));
-   if(/beleg|aandel|etf|portfolio|vermogen/.test(ctx) && !used.has(m.val)) c.assets.push({type:/beleg|aandel|etf|portfolio/.test(ctx)?'beleggingen':'vermogen',amount:m.val});
+   if(/beleg|aandel|etf|portfolio|vermogen/.test(ctx) && !used.has(m.val) && !c.assets.some(x=>x.amount===m.val)) c.assets.push({type:/beleg|aandel|etf|portfolio/.test(ctx)?'beleggingen':'vermogen',amount:m.val});
    if(/spaargeld|spaarrekening|cash/.test(ctx) && !used.has(m.val)){c.assets.push({type:'spaargeld',amount:m.val});c.cash=m.val}
  }
  if(!c.assets.length){
@@ -135,10 +142,11 @@ function model(c){
  if(c.mortgage!=null){out.strengths.push('De hypotheek is expliciet in beeld, waardoor toekomstige woonlasten gericht kunnen worden doorgerekend.')}
  if(c.alimony!=null&&c.alimonyEndYears!=null){out.scenarios.push({title:'Na einde alimentatie',text:'Als overige lasten gelijk blijven, verbetert de maandcashflow over '+c.alimonyEndYears+' jaar met ongeveer '+euro(c.alimony)+' per maand.'});}
  if(c.age!=null&&c.retireAge!=null&&invested!=null){
-   const yrs=Math.max(0,c.retireAge-c.age); const rs=[.03,.05,.07,(c.returnExp??.10)];
+   const yrs=Math.max(0,c.retireAge-c.age); const inflation=.02; const rs=[.03,.05,.07,(c.returnExp??.10)];
    [...new Set(rs.map(x=>x.toFixed(4)))].map(Number).forEach(r=>{
       const fv=invested*Math.pow(1+r,yrs);
-      out.scenarios.push({title:'Pensioenvermogen bij '+Math.round(r*100)+'%',text:euro(invested)+' groeit zonder extra inleg in '+yrs+' jaar indicatief naar '+euro(fv)+'.'});
+      const real=fv/Math.pow(1+inflation,yrs);
+      out.scenarios.push({title:Math.round(r*100)+'% rendement',text:'Nominaal '+euro(fv)+' · koopkracht circa '+euro(real)+' in euro’s van nu, bij 2% inflatie.'});
    });
    if(c.aow!=null&&c.cost!=null){
       const alimonyAtRetire=(c.alimony!=null&&c.alimonyEndYears!=null&&c.alimonyEndYears<=yrs)?0:(c.alimony||0);
@@ -176,10 +184,26 @@ function render(){
  if(c.mortgage!=null)tiles.push([euro(c.mortgage),'hypotheek']);
  document.getElementById('facts').innerHTML=tiles.map(x=>'<div class="fact"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
 
+ const meaning=[];
+ const invested=c.assets.find(x=>x.type==='beleggingen')?.amount??null;
+ const free=(c.income!=null&&c.cost!=null)?c.income-c.cost:null;
+ if(free!=null)meaning.push('<div class="item '+(free>=0?'good':'bad')+'"><b>'+(free>=0?'Je bekende maandbasis is positief.':'Je bekende maandbasis vraagt aandacht.')+'</b>Op basis van wat je hebt ingevuld is de theoretische ruimte '+euro(free)+' per maand. Dit is pas echte vrije ruimte als jaarlijkse en incidentele uitgaven ook in je kosten zitten.</div>');
+ if(invested!=null&&c.age!=null&&c.retireAge!=null)meaning.push('<div class="item good"><b>Je hebt tijd én vermogen.</b>'+euro(invested)+' heeft nog '+(c.retireAge-c.age)+' jaar tot je gewenste pensioenmoment. Daarom is koopkracht en slecht-markt-risico belangrijker dan één verwacht rendement.</div>');
+ if(c.mortgage!=null&&c.mortgageEndAge!=null&&c.retireAge!=null&&c.mortgageEndAge>c.retireAge)meaning.push('<div class="item warn"><b>Je hypotheek loopt door na je pensioen.</b>Je hypotheek loopt volgens je invoer tot '+c.mortgageEndAge+', dus woonlasten moeten expliciet in de pensioenfase blijven staan.</div>');
+ document.getElementById('customerMeaning').innerHTML=meaning.join('')||'<div class="item info">Vul meer gegevens in om de persoonlijke betekenis te bepalen.</div>';
+
+ const future=[];
+ if(c.age!=null&&c.retireAge!=null&&invested!=null){
+   const yrs=c.retireAge-c.age, infl=.02;
+   [0.03,0.05,0.07].forEach(r=>{const fv=invested*Math.pow(1+r,yrs),real=fv/Math.pow(1+infl,yrs);future.push('<div class="item scenario"><b>Bij '+Math.round(r*100)+'% gemiddeld rendement</b>Op '+c.retireAge+': '+euro(fv)+' nominaal · circa '+euro(real)+' koopkracht van vandaag.</div>')});
+ }
+ document.getElementById('future').innerHTML=future.join('')||'<div class="item info">Voor een toekomstbeeld heb ik leeftijd, doelmoment en belegd vermogen nodig.</div>';
+
  const interp=[];
  c.facts.forEach(x=>interp.push('<div class="item good"><span class="badge fact">FEIT</span><b>'+x.label+'</b>'+ (x.label==='Hypotheekrente'?pct(x.value):euro(x.value)) +'</div>'));
  m.calcs.forEach(x=>interp.push('<div class="item info"><span class="badge calc">BEREKENING</span><b>'+x[0]+'</b>'+ (x[0].includes('maanden')?x[1].toFixed(1)+' maanden':euro(x[1])) +'<div class="mini">'+x[2]+'</div></div>'));
- if(c.returnExp!=null)interp.push('<div class="item warn"><span class="badge assume">AANNAME</span><b>Verwacht rendement</b>'+pct(c.returnExp)+' per jaar. Dit is een scenario-aanname, geen feit.</div>');
+ if(c.returnExp!=null)interp.push('<div class="item warn"><span class="badge assume">AANNAME</span><b>Jouw verwacht rendement</b>'+pct(c.returnExp)+' per jaar. Ik behandel dit niet als voorspelling maar als scenario.</div>');
+ if(c.age!=null&&c.retireAge!=null&&invested!=null)interp.push('<div class="item warn"><span class="badge assume">AANNAME</span><b>Inflatie in koopkrachtberekening</b>2,0% per jaar. Dit wordt later gekoppeld aan actuele brondata en een instelbare scenario-aanname.</div>');
  if(c.age!=null&&c.retireAge!=null)interp.push('<div class="item warn"><span class="badge assume">AANNAME</span><b>Levensfasehorizon</b>'+ (c.retireAge-c.age) +' jaar tot doelmoment.</div>');
  document.getElementById('interpretation').innerHTML=interp.join('');
 
@@ -196,7 +220,9 @@ function render(){
    ['Cashflow',c.income!=null&&c.cost!=null?'berekend':'niet compleet'],
    ['Hypotheek',c.mortgage!=null&&c.mortgage>=1000?'herkend: '+euro(c.mortgage):'niet betrouwbaar herkend'],
    ['Pensioenmodule',c.age!=null&&c.retireAge!=null?'actief: '+c.age+' → '+c.retireAge:'niet actief'],
-   ['Vermogensscenario’s',m.scenarios.length?m.scenarios.length+' scenario(s)':'geen']
+   ['Vermogensscenario’s',m.scenarios.length?m.scenarios.length+' scenario(s)':'geen'],
+   ['Koopkrachtcorrectie',c.age!=null&&c.retireAge!=null&&invested!=null?'actief · 2% inflatie-aanname':'niet actief'],
+   ['Klantvertaling',meaning.length?'actief':'onvoldoende data']
  ];
  document.getElementById('audit').innerHTML=audit.map(x=>'<div class="line"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('');
  document.getElementById('out').classList.remove('hidden');
