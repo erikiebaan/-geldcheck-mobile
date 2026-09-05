@@ -1,0 +1,29 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Geldcheck Testbank</title><style>body{font-family:system-ui;padding:24px;max-width:900px;margin:auto}pre{white-space:pre-wrap;background:#f5f5f5;padding:16px;border-radius:12px}.ok{color:green}.bad{color:#a00}</style></head><body><h1>Geldcheck synthetische testbank</h1><button id="run">Run 1500 scenario's</button><pre id="out">Nog niet gestart.</pre><script src="../engine.js"></script><script>
+(function(){
+function rng(seed){let s=seed>>>0;return function(){s=(1664525*s+1013904223)>>>0;return s/4294967296}}
+function pick(r,a){return a[Math.floor(r()*a.length)]}
+function run(){
+ const r=rng(20260905),fails=[],N=1500;
+ for(let i=0;i<N;i++){
+  const age=Math.floor(18+r()*70),goal=pick(r,['health','cashflow','retirement','early','purchase']);
+  const income=Math.round(r()*9000),cost=Math.round(r()*7000),cash=Math.round(r()*250000),inv=Math.round(r()*2000000),debt=Math.round(r()*100000);
+  const housing=pick(r,['rent','ownfree','mortgage']);
+  const c={age,goal,income,cost,cash,investments:inv,debt,housing,annualIncluded:r()>.35,savingGrowth:Math.round(r()*2500),
+    mortgage:housing==='mortgage'?Math.round(r()*700000):null,mortgageRate:housing==='mortgage'?0.01+r()*.07:null,mortgageEndAge:housing==='mortgage'?age+Math.floor(5+r()*35):null,
+    retireAge:(goal==='retirement'||goal==='early'||age>=50)?Math.max(age,Math.min(80,Math.floor(age+1+r()*25))):null,
+    aow:Math.round(r()*1800),pension:Math.round(r()*2500),debtRate:debt?0.01+r()*.12:null,
+    purchaseAmount:goal==='purchase'?Math.round(1000+r()*150000):null,purchaseMonths:goal==='purchase'?Math.floor(1+r()*120):null};
+  const a=GeldcheckEngine.analyze(c);
+  const cc=a.case;
+  if(!Number.isFinite(cc.netFinancialAssets))fails.push([i,'netFinancialAssets NaN',c]);
+  if(cc.cost!==null && Math.abs(cc.monthlySurplus-(cc.totalIncome-cc.cost))>.001)fails.push([i,'cashflow mismatch',c]);
+  if(cc.cost>0 && Math.abs(cc.cashBufferMonths-cc.cash/cc.cost)>.001)fails.push([i,'buffer mismatch',c]);
+  if(a.scenarios.purchase && a.scenarios.purchase.monthlyReserve<0)fails.push([i,'negative purchase reserve',c]);
+  if(a.case.retirementHorizon!==null && a.case.retirementHorizon<0 && (goal==='retirement'||goal==='early'))fails.push([i,'negative retirement horizon',c]);
+  if(a.score.value!==null && (a.score.value<0||a.score.value>100))fails.push([i,'score out of range',c]);
+ }
+ document.getElementById('out').className=fails.length?'bad':'ok';
+ document.getElementById('out').textContent='Scenario\'s: '+N+'\nFouten: '+fails.length+(fails.length?'\n\n'+JSON.stringify(fails.slice(0,10),null,2):'\n\nAlle invarianten geslaagd.');
+}
+document.getElementById('run').onclick=run;
+})();</script></body></html>
