@@ -1,0 +1,424 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Geldcheck Beslissingstest</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}main{max-width:820px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}h1{font-size:38px;line-height:1.02;margin:0 0 10px}p{color:#777;line-height:1.45}button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}.score{font-size:52px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#a33}.small{font-size:12px;color:#777}.row{padding:10px 0;border-top:1px solid #eee}</style></head><body><main>
+<div class="card"><h1>Beslissingstest 25</h1><p>25 paren. Per paar verandert één relevante variabele. De Geldcheck moet aantoonbaar in de financieel juiste richting bewegen.</p><p class="small"><b>Build D7 · nieuwe route</b></p><button id="run" onclick="document.getElementById('summary').innerHTML='<div class=&quot;small&quot; style=&quot;margin-top:16px&quot;>Knop werkt · tests draaien…</div>';">Run 25 beslissingstests</button><div id="summary"></div></div><div id="results"></div></main>
+<script>
+/* Geldcheck Generic Financial Reasoning Engine v1.2
+   Goal: consistent reasoning across many household configurations.
+   No customer-specific hardcoding. All thresholds are transparent heuristics.
+*/
+(function(global){
+  "use strict";
+
+  const ASSUMPTIONS = {
+    inflation: 0.02,
+    returnScenarios: [0.03,0.05,0.07],
+    withdrawalRefs: [0.03,0.04],
+    bufferMonths: {minimum:3, solid:6, strong:12},
+    highInterestDebt: 0.06,
+    materialSavingsGapPct: 0.20
+  };
+
+  const finite = v => typeof v === "number" && Number.isFinite(v);
+  const num = v => {
+    if(v===null || v===undefined || v==="") return null;
+    const n = Number(String(v).replace(",","."));
+    return Number.isFinite(n) ? n : null;
+  };
+  const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+  const months = (capital, monthlyCost) => finite(capital)&&finite(monthlyCost)&&monthlyCost>0 ? capital/monthlyCost : null;
+  const fv = (pv,r,y) => finite(pv)&&finite(r)&&finite(y)&&y>=0 ? pv*Math.pow(1+r,y) : null;
+  const real = (nominal,infl,y) => finite(nominal)&&finite(infl)&&finite(y) ? nominal/Math.pow(1+infl,y) : null;
+
+  function normalize(raw){
+    const c = {
+      age:num(raw.age), household:raw.household||"", kids:num(raw.kids)||0, goal:raw.goal||"health",
+      income:num(raw.income), otherIncome:num(raw.otherIncome)||0, cost:num(raw.cost),
+      annualIncluded:raw.annualIncluded===true||raw.annualIncluded==="yes",
+      savingGrowth:num(raw.savingGrowth),
+      housing:raw.housing||"", mortgage:num(raw.mortgage), mortgageRate:num(raw.mortgageRate),
+      mortgageEndAge:num(raw.mortgageEndAge), mortgagePayment:num(raw.mortgagePayment), rent:num(raw.rent),
+      cash:num(raw.cash)||0, investments:num(raw.investments)||0, debt:num(raw.debt)||0,
+      debtRate:num(raw.debtRate), debtPayment:num(raw.debtPayment),
+      retireAge:num(raw.retireAge), aow:num(raw.aow)||0, aowStartAge:num(raw.aowStartAge), pension:num(raw.pension)||0, pensionStartAge:num(raw.pensionStartAge),
+      change:raw.change||"", purchaseAmount:num(raw.purchaseAmount), purchaseMonths:num(raw.purchaseMonths)
+    };
+    c.totalIncome = (c.income||0)+(c.otherIncome||0);
+    c.netFinancialAssets = c.cash+c.investments-c.debt;
+    c.monthlySurplus = finite(c.cost) ? c.totalIncome-c.cost : null;
+    c.savingsRate = finite(c.monthlySurplus)&&c.totalIncome>0 ? c.monthlySurplus/c.totalIncome : null;
+    c.cashBufferMonths = months(c.cash,c.cost);
+    c.financialRunwayMonths = months(Math.max(0,c.netFinancialAssets),c.cost);
+    c.retirementHorizon = finite(c.age)&&finite(c.retireAge) ? c.retireAge-c.age : null;
+    if(!finite(c.aowStartAge) && finite(c.retireAge)) c.aowStartAge=Math.max(67,c.retireAge);
+    if(!finite(c.pensionStartAge) && finite(c.retireAge)) c.pensionStartAge=c.retireAge;
+    return c;
+  }
+
+  function requiredEvidence(c){
+    const req = [
+      ["age","leeftijd",finite(c.age)],
+      ["income","netto inkomen",c.totalIncome>0],
+      ["cost","maanduitgaven",finite(c.cost)&&c.cost>=0]
+    ];
+    if(c.goal==="retirement"||c.goal==="early"){
+      req.push(["retireAge","gewenste pensioenleeftijd",finite(c.retireAge)]);
+      req.push(["assets","spaargeld of beleggingen",c.cash>0||c.investments>0]);
+    }
+    if(c.goal==="purchase"){
+      req.push(["purchaseAmount","bedrag van de grote uitgave",finite(c.purchaseAmount)&&c.purchaseAmount>0]);
+      req.push(["purchaseMonths","termijn van de grote uitgave",finite(c.purchaseMonths)&&c.purchaseMonths>0]);
+    }
+    if(c.housing==="mortgage"){
+      req.push(["mortgage","hypotheekschuld",finite(c.mortgage)&&c.mortgage>=0]);
+    }
+    return req.filter(x=>!x[2]).map(x=>({key:x[0],label:x[1]}));
+  }
+
+  function dimensions(c){
+    const d = {};
+
+    d.cashflow = {
+      surplus:c.monthlySurplus,
+      savingsRate:c.savingsRate,
+      status: !finite(c.monthlySurplus) ? "unknown" :
+              c.monthlySurplus<0 ? "weak" :
+              c.savingsRate!==null && c.savingsRate>=0.20 ? "strong" :
+              c.savingsRate!==null && c.savingsRate>=0.05 ? "ok" : "thin"
+    };
+
+    d.liquidity = {
+      cash:c.cash,
+      bufferMonths:c.cashBufferMonths,
+      status: !finite(c.cashBufferMonths) ? "unknown" :
+              c.cashBufferMonths>=ASSUMPTIONS.bufferMonths.strong ? "strong" :
+              c.cashBufferMonths>=ASSUMPTIONS.bufferMonths.solid ? "solid" :
+              c.cashBufferMonths>=ASSUMPTIONS.bufferMonths.minimum ? "thin" : "weak"
+    };
+
+    d.wealth = {
+      cash:c.cash, investments:c.investments, debt:c.debt, net:c.netFinancialAssets,
+      runwayMonths:c.financialRunwayMonths,
+      investShare:(c.cash+c.investments)>0 ? c.investments/(c.cash+c.investments) : null
+    };
+
+    const annualIncome = c.totalIncome*12;
+    d.debt = {
+      nonMortgage:c.debt,
+      nonMortgageRate:c.debtRate,
+      mortgage:c.mortgage,
+      mortgageRate:c.mortgageRate,
+      debtToIncome:annualIncome>0 ? c.debt/annualIncome : null,
+      mortgageToIncome:annualIncome>0&&finite(c.mortgage) ? c.mortgage/annualIncome : null,
+      highInterest: c.debt>0 && finite(c.debtRate) && c.debtRate>=ASSUMPTIONS.highInterestDebt
+    };
+
+    d.housing = {
+      type:c.housing,
+      monthlyKnown: c.housing==="rent" ? c.rent : c.mortgagePayment,
+      mortgageEndsAfterRetirement: c.housing==="mortgage"&&finite(c.mortgageEndAge)&&finite(c.retireAge) ? c.mortgageEndAge>c.retireAge : null
+    };
+
+    d.lifeStage = {
+      age:c.age, household:c.household, kids:c.kids,
+      horizonToRetirement:c.retirementHorizon,
+      retirementRelevant: c.goal==="retirement"||c.goal==="early"||(finite(c.age)&&c.age>=50)
+    };
+
+    return d;
+  }
+
+  function scenarios(c){
+    const s = {investment:[], retirement:null, purchase:null, reconciliation:null};
+
+    if(c.investments>0){
+      let horizon = null;
+      if(finite(c.retirementHorizon)&&c.retirementHorizon>0) horizon=c.retirementHorizon;
+      else if(finite(c.age)) horizon = Math.max(5,Math.min(30,65-c.age));
+      if(finite(horizon)&&horizon>=0){
+        s.investment = ASSUMPTIONS.returnScenarios.map(r=>{
+          const nominal=fv(c.investments,r,horizon);
+          return {return:r,horizon,nominal,real:real(nominal,ASSUMPTIONS.inflation,horizon)};
+        });
+      }
+    }
+
+    if((c.goal==="retirement"||c.goal==="early"||(finite(c.age)&&c.age>=50)) && finite(c.retirementHorizon) && c.retirementHorizon>=0){
+      const monthlyPensionIncome=c.aow+c.pension;
+      const currentEuroGap=finite(c.cost)?Math.max(0,c.cost-monthlyPensionIncome):null;
+      const targetMid=s.investment.find(x=>Math.abs(x.return-0.05)<0.0001);
+      const projected=targetMid?targetMid.nominal:null;
+      const annualGap=finite(currentEuroGap)?currentEuroGap*12:null;
+      const gapPct=finite(projected)&&projected>0&&finite(annualGap)?annualGap/projected:null;
+      s.retirement={monthlyPensionIncome,currentEuroGap,projectedCapitalAt5:projected,gapWithdrawalPct:gapPct,
+        mortgageAfterRetirement: c.housing==="mortgage"&&finite(c.mortgageEndAge)&&finite(c.retireAge)?c.mortgageEndAge>c.retireAge:null};
+    }
+
+    if(c.goal==="purchase"&&finite(c.purchaseAmount)&&finite(c.purchaseMonths)&&c.purchaseMonths>0){
+      const monthlyReserve=c.purchaseAmount/c.purchaseMonths;
+      const cashAfter=c.cash-c.purchaseAmount;
+      s.purchase={monthlyReserve, fitsMonthly:finite(c.monthlySurplus)?c.monthlySurplus>=monthlyReserve:null,
+        cashAfter, bufferMonthsAfter:finite(c.cost)&&c.cost>0?cashAfter/c.cost:null};
+    }
+
+    if(c.goal==="cashflow"&&finite(c.monthlySurplus)&&finite(c.savingGrowth)){
+      const gap=c.monthlySurplus-c.savingGrowth;
+      s.reconciliation={paperSurplus:c.monthlySurplus,actualSaving:c.savingGrowth,gap,
+        material:Math.abs(gap)>Math.max(100,Math.abs(c.monthlySurplus)*ASSUMPTIONS.materialSavingsGapPct)};
+    }
+    return s;
+  }
+
+  function findings(c,d,s){
+    const arr=[];
+    const add=(kind,priority,title,text,dimension)=>arr.push({kind,priority,title,text,dimension});
+
+    if(finite(c.monthlySurplus)){
+      if(c.monthlySurplus<0) add("risk",100,"Je maandbasis is negatief.","Op basis van de bevestigde bedragen gaat er meer uit dan er binnenkomt.","cashflow");
+      else if(c.monthlySurplus>0) add("strength",55,"Je maandbasis is positief.","De theoretische ruimte is "+Math.round(c.monthlySurplus)+" per maand, vóór controle op jaar- en incidentele uitgaven.","cashflow");
+    }
+    if(!c.annualIncluded&&finite(c.cost)) add("uncertainty",75,"Je echte vrije ruimte kan lager zijn.","Niet alle jaar- en incidentele uitgaven zijn bevestigd in het maandbedrag.","cashflow");
+
+    if(finite(c.cashBufferMonths)){
+      if(c.cashBufferMonths<3) add("risk",90,"Je liquide buffer is kwetsbaar.","Spaargeld dekt minder dan drie maanden van de huidige uitgaven.","liquidity");
+      else if(c.cashBufferMonths>=12) add("strength",45,"Je liquide buffer is ruim.","Spaargeld dekt meer dan twaalf maanden van de huidige uitgaven.","liquidity");
+      else if(c.cashBufferMonths>=6) add("strength",40,"Je liquide buffer is solide.","Spaargeld dekt minstens zes maanden van de huidige uitgaven.","liquidity");
+    }
+
+    if(d.debt.highInterest) add("risk",85,"Je dure schuld verdient prioriteit.","De opgegeven rente op andere schuld is relatief hoog; vergelijk zeker aflossen met andere bestedingen.","debt");
+
+    if(s.reconciliation&&s.reconciliation.material){
+      add("insight",95,"Je geldbeeld sluit niet aan op je rekening.","De papieren maandruimte wijkt ongeveer "+Math.round(s.reconciliation.gap)+" per maand af van de werkelijke spaargroei. Zoek eerst de ontbrekende uitgaven.","cashflow");
+    }
+
+    if(d.housing.mortgageEndsAfterRetirement===true){
+      add("risk",70,"Je hypotheek loopt door na je gewenste pensioen.","De woonlast hoort daarom expliciet in de pensioenfase en niet alleen in je huidige budget.","housing");
+    }
+
+    if(s.retirement){
+      if(finite(s.retirement.currentEuroGap)&&s.retirement.currentEuroGap>0){
+        add("insight",72,"Je pensioeninkomen dekt niet alle huidige uitgaven.","In euro's van vandaag resteert circa "+Math.round(s.retirement.currentEuroGap)+" per maand dat uit vermogen of ander inkomen moet komen.","retirement");
+      }
+      if(finite(s.retirement.gapWithdrawalPct)){
+        if(s.retirement.gapWithdrawalPct>0.05) add("risk",88,"De benodigde onttrekking is hoog in het 5%-groeiscenario.","De eerste berekening vraagt om een strengere stress- en sequence-risk analyse.","retirement");
+        else if(s.retirement.gapWithdrawalPct<0.03) add("strength",50,"De benodigde onttrekking oogt beperkt tegenover het geprojecteerde vermogen.","Dit blijft gevoelig voor rendement, inflatie en marktvolgorde.","retirement");
+      }
+    }
+
+    if(s.purchase){
+      if(s.purchase.fitsMonthly===false) add("risk",90,"De geplande uitgave past niet uit de huidige maandruimte.","De benodigde reservering per maand ligt boven de berekende vrije ruimte.","goal");
+      if(finite(s.purchase.bufferMonthsAfter)&&s.purchase.bufferMonthsAfter<3) add("risk",92,"De uitgave zou je buffer te ver verlagen.","Na betaling resteert minder dan drie maanden huidige uitgaven als cashbuffer.","goal");
+      if(s.purchase.fitsMonthly===true&&finite(s.purchase.bufferMonthsAfter)&&s.purchase.bufferMonthsAfter>=6) add("strength",60,"De grote uitgave lijkt vanuit cashflow en buffer haalbaar.","Dit is nog vóór belasting, toekomstdoelen en overige onzekerheden.","goal");
+    }
+
+    if(c.investments>0&&finite(c.age)){
+      const ratio=finite(c.cost)&&c.cost>0 ? c.investments/(c.cost*12) : null;
+      if(finite(ratio)&&ratio>=20) add("strength",38,"Je belegd vermogen is groot ten opzichte van je huidige uitgaven.","Dat geeft flexibiliteit, maar maakt vermogensrisico en fiscale context belangrijker.","wealth");
+    }
+
+    return arr.sort((a,b)=>b.priority-a.priority);
+  }
+
+  function score(c,d,missing,finds){
+    if(missing.some(m=>m.key==="income"||m.key==="cost")) return {value:null,label:"onvoldoende informatie"};
+    if(missing.length>=3) return {value:null,label:"onvoldoende informatie"};
+    let x=50;
+    if(d.cashflow.status==="strong")x+=15; else if(d.cashflow.status==="ok")x+=8; else if(d.cashflow.status==="thin")x+=2; else if(d.cashflow.status==="weak")x-=20;
+    if(d.liquidity.status==="strong")x+=15; else if(d.liquidity.status==="solid")x+=10; else if(d.liquidity.status==="thin")x+=2; else if(d.liquidity.status==="weak")x-=((d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=60)?5:15);
+    if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=240)x+=15; else if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=120)x+=10; else if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=60)x+=5;
+    if(d.debt.highInterest)x-=12;
+    finds.filter(f=>f.kind==="risk"&&f.priority>=85).forEach(()=>x-=6);
+    x=clamp(Math.round(x),0,100);
+    const label=x>=80?"zeer stevig":x>=65?"stevig":x>=50?"redelijk":x>=35?"kwetsbaar":"aandacht nodig";
+    return {value:x,label};
+  }
+
+  function nextQuestions(c,missing,d,s){
+    const qs=missing.map(m=>({priority:100,title:"Vul "+m.label+" in",why:"Zonder dit gegeven kan de hoofdvraag materieel anders uitvallen."}));
+    if(!c.annualIncluded&&finite(c.cost))qs.push({priority:82,title:"Zijn vakantie, auto, onderhoud en andere jaarposten echt meegenomen?",why:"Anders overschatten we de vrije maandruimte."});
+    if(c.housing==="mortgage"&&finite(c.mortgage)&&!finite(c.mortgageEndAge))qs.push({priority:78,title:"Wanneer eindigt je hypotheek?",why:"Dat bepaalt de woonlast in latere levensfasen."});
+    if(c.debt>0&&!finite(c.debtRate))qs.push({priority:76,title:"Welke rente betaal je op de andere schuld?",why:"Dure schuld kan belangrijker zijn dan sparen of beleggen."});
+    if(c.goal==="cashflow"&&!finite(c.savingGrowth))qs.push({priority:85,title:"Hoeveel groeit je spaargeld werkelijk per maand?",why:"Daarmee kunnen we papieren ruimte en echte ruimte reconciliëren."});
+    return qs.sort((a,b)=>b.priority-a.priority).slice(0,3);
+  }
+
+  function simulateRetirement(c,retireAge,nominalReturn,crashAtRetirement){
+    if(!finite(c.age)||!finite(retireAge)||!finite(c.cost)) return null;
+    const endAge=95;
+    const realReturn=(1+nominalReturn)/(1+ASSUMPTIONS.inflation)-1;
+    let cash=Math.max(0,c.cash);
+    let invested=Math.max(0,c.investments);
+    let age=c.age;
+
+    // Accumulation until retirement in today's euros.
+    while(age<retireAge){
+      const annualSave=Math.max(0,c.monthlySurplus||0)*12;
+      invested=invested*(1+realReturn)+annualSave;
+      age+=1;
+    }
+
+    if(crashAtRetirement) invested*=0.70;
+
+    let minCapital=cash+invested;
+    let failedAge=null;
+    while(age<endAge){
+      const aowIncome=(finite(c.aowStartAge)&&age>=c.aowStartAge)?c.aow*12:0;
+      const pensionIncome=(finite(c.pensionStartAge)&&age>=c.pensionStartAge)?c.pension*12:0;
+      const annualGap=Math.max(0,c.cost*12-aowIncome-pensionIncome);
+
+      // spend cash first, then investments
+      const useCash=Math.min(cash,annualGap);
+      cash-=useCash;
+      let rem=annualGap-useCash;
+      invested=invested*(1+realReturn)-rem;
+      if(invested<0){failedAge=age;invested=0;}
+      minCapital=Math.min(minCapital,cash+invested);
+      if(failedAge!==null) break;
+      age+=1;
+    }
+    return {retireAge,nominalReturn,crashAtRetirement,endCapital:cash+invested,minCapital,failedAge,success:failedAge===null};
+  }
+
+  function retirementDecision(c){
+    if(!(c.goal==="early"||c.goal==="retirement")) return null;
+    if(!finite(c.age)||!finite(c.cost)||!finite(c.retireAge)) return null;
+    const target=Math.max(c.age,c.retireAge);
+    const conservative=simulateRetirement(c,target,0.03,true);
+    const base=simulateRetirement(c,target,0.05,false);
+    const favorable=simulateRetirement(c,target,0.07,false);
+
+    let verdict="ONVOLDOENDE INFORMATIE",tone="unknown";
+    if(base&&conservative){
+      if(conservative.success){verdict="JA, OP BASIS VAN DEZE AANNAMES";tone="yes";}
+      else if(base.success){verdict="MOGELIJK, MAAR GEVOELIG";tone="maybe";}
+      else {verdict="NOG NIET";tone="no";}
+    }
+
+    let earliest=null;
+    for(let a=Math.max(c.age,target);a<=Math.min(80,c.age+30);a++){
+      const test=simulateRetirement(c,a,0.03,true);
+      if(test&&test.success){earliest=a;break;}
+    }
+
+    const bridgeYears=finite(c.aowStartAge)?Math.max(0,c.aowStartAge-target):null;
+    return {verdict,tone,targetAge:target,earliestConservativeAge:earliest,bridgeYears,conservative,base,favorable};
+  }
+
+  function intelligence(c,d,s,finds,missing){
+    const out={now:null,future:[],stress:[],levers:[],dominant:null,decision:null};
+
+    if(missing.some(m=>m.key==="income"||m.key==="cost")){
+      out.now={title:"Nog geen financieel oordeel.",text:"Inkomen en uitgaven zijn nodig om draagkracht en vrije ruimte betrouwbaar te beoordelen."};
+      return out;
+    }
+
+    const surplus=c.monthlySurplus;
+    const buffer=c.cashBufferMonths;
+    const net=c.netFinancialAssets;
+    const invShare=(c.cash+c.investments)>0?c.investments/(c.cash+c.investments):null;
+
+    let nowTitle="Je financiële basis is in balans.";
+    if(surplus<0) nowTitle="Je vermogen kan sterk zijn, maar je maandbasis is negatief.";
+    else if(buffer!==null&&buffer<3) nowTitle="Je maandbasis kan positief zijn, maar je liquide weerbaarheid is laag.";
+    else if(d.debt.highInterest) nowTitle="Je cashflow is niet het enige verhaal: dure schuld trekt je positie omlaag.";
+    else if(surplus>0&&buffer>=6&&net>0) nowTitle="Je huidige financiële basis is stevig.";
+
+    let nowText="Je bekende maandruimte is "+Math.round(surplus)+" per maand";
+    if(buffer!==null) nowText+=", je cashbuffer dekt ongeveer "+buffer.toFixed(1)+" maanden uitgaven";
+    nowText+=" en je netto financiële vermogen exclusief woning is "+Math.round(net)+".";
+    if(invShare!==null&&invShare>0.8) nowText+=" Een groot deel van je financiële vermogen zit belegd; daardoor is marktbeweging belangrijker dan alleen je maandbudget.";
+    out.now={title:nowTitle,text:nowText};
+
+    if(c.investments>0&&finite(c.age)){
+      const horizons=[5,10,20].filter(y=>c.age+y<=95);
+      horizons.forEach(y=>{
+        const nominal=fv(c.investments,0.05,y);
+        out.future.push({years:y,title:"Over "+y+" jaar",nominal,real:real(nominal,ASSUMPTIONS.inflation,y),kind:"investment"});
+      });
+    }
+    if(s.retirement){
+      out.future.push({title:"Op je gewenste pensioenmoment",kind:"retirement",monthlyGap:s.retirement.currentEuroGap,withdrawalPct:s.retirement.gapWithdrawalPct});
+    }
+
+    if(c.investments>0){
+      out.stress.push({key:"market",title:"Beurs -30%",impact:c.investments*0.30,text:"Een daling van 30% verlaagt je belegde vermogen tijdelijk met circa "+Math.round(c.investments*0.30)+"."});
+    }
+    if(c.totalIncome>0){
+      out.stress.push({key:"income",title:"Inkomen -20% voor 12 maanden",impact:c.totalIncome*0.20*12,text:"Twintig procent minder inkomen gedurende een jaar scheelt circa "+Math.round(c.totalIncome*0.20*12)+"."});
+    }
+    if(finite(c.cost)&&c.cost>0){
+      out.stress.push({key:"expenses",title:"Uitgaven +10% voor 12 maanden",impact:c.cost*0.10*12,text:"Tien procent hogere uitgaven gedurende een jaar kost circa "+Math.round(c.cost*0.10*12)+" extra."});
+    }
+    if(c.housing==="mortgage"&&finite(c.mortgage)&&c.mortgage>0){
+      out.stress.push({key:"rate",title:"Rente +2 procentpunt",impact:c.mortgage*0.02,text:"Twee procentpunt hogere rente vertegenwoordigt bruto circa "+Math.round(c.mortgage*0.02)+" extra rente per jaar op de huidige schuld, als die volledig zou doorwerken."});
+    }
+    out.stress.sort((a,b)=>b.impact-a.impact);
+    out.dominant=out.stress[0]||null;
+
+    const leverCandidates=[];
+    if(c.totalIncome>0) leverCandidates.push({key:"income",title:"10% meer netto inkomen",impact:c.totalIncome*0.10*12,text:"ongeveer "+Math.round(c.totalIncome*0.10)+" extra per maand"});
+    if(finite(c.cost)&&c.cost>0) leverCandidates.push({key:"cost",title:"10% lagere uitgaven",impact:c.cost*0.10*12,text:"ongeveer "+Math.round(c.cost*0.10)+" extra ruimte per maand"});
+    if(c.debt>0&&finite(c.debtRate)) leverCandidates.push({key:"debt",title:"Dure schuld reduceren",impact:c.debt*c.debtRate,text:"circa "+Math.round(c.debt*c.debtRate)+" rente per jaar op de huidige schuld"});
+    if(c.investments>0) leverCandidates.push({key:"return",title:"2 procentpunt verschil in beleggingsrendement",impact:c.investments*0.02,text:"circa "+Math.round(c.investments*0.02)+" per jaar verschil vóór samengestelde groei"});
+    if(s.purchase) leverCandidates.push({key:"purchase",title:"Termijn van je grote uitgave",impact:s.purchase.monthlyReserve*12,text:"huidige reserveringsdruk "+Math.round(s.purchase.monthlyReserve)+" per maand"});
+    if(s.retirement&&finite(s.retirement.currentEuroGap)&&s.retirement.currentEuroGap>0) leverCandidates.push({key:"retirementGap",title:"Pensioengat verkleinen",impact:s.retirement.currentEuroGap*12,text:"circa "+Math.round(s.retirement.currentEuroGap)+" per maand in euro's van nu"});
+    leverCandidates.sort((a,b)=>b.impact-a.impact);
+    out.levers=leverCandidates.slice(0,3);
+
+    return out;
+  }
+
+  function analyze(raw){
+    const c=normalize(raw||{});
+    const missing=requiredEvidence(c);
+    const d=dimensions(c);
+    const s=scenarios(c);
+    const f=findings(c,d,s);
+    const sc=score(c,d,missing,f);
+    const questions=nextQuestions(c,missing,d,s);
+    const top=f.slice(0,3);
+    const intel=intelligence(c,d,s,f,missing);
+    return {case:c,assumptions:ASSUMPTIONS,missing,dimensions:d,scenarios:s,findings:f,topFindings:top,score:sc,nextQuestions:questions,intelligence:intel};
+  }
+
+  global.GeldcheckEngine={analyze,normalize,ASSUMPTIONS};
+})(window);
+
+</script><script>
+(function(){
+var tests=[];
+function A(x){return GeldcheckEngine.analyze(x)}
+function add(name,a,b,check,expect){tests.push({name:name,a:a,b:b,check:check,expect:expect})}
+var base={age:45,goal:'health',income:5000,cost:3500,cash:25000,investments:150000,debt:0,annualIncluded:true};
+add('Meer cash',base,Object.assign({},base,{cash:100000}),function(a,b){return b.score.value>=a.score.value&&b.dimensions.liquidity.bufferMonths>a.dimensions.liquidity.bufferMonths},'positie mag niet verslechteren');
+add('Minder cash',base,Object.assign({},base,{cash:1000}),function(a,b){return b.dimensions.liquidity.bufferMonths<a.dimensions.liquidity.bufferMonths&&b.score.value<=a.score.value},'liquiditeit moet slechter');
+add('Meer inkomen',base,Object.assign({},base,{income:7000}),function(a,b){return b.case.monthlySurplus>a.case.monthlySurplus&&b.score.value>=a.score.value},'maandruimte omhoog');
+add('Minder inkomen',base,Object.assign({},base,{income:3800}),function(a,b){return b.case.monthlySurplus<a.case.monthlySurplus&&b.score.value<=a.score.value},'maandruimte omlaag');
+add('Lagere uitgaven',base,Object.assign({},base,{cost:2500}),function(a,b){return b.case.monthlySurplus>a.case.monthlySurplus&&b.score.value>=a.score.value},'positie beter');
+add('Hogere uitgaven',base,Object.assign({},base,{cost:5200}),function(a,b){return b.case.monthlySurplus<a.case.monthlySurplus&&b.score.value<a.score.value},'positie slechter');
+add('Dure schuld toegevoegd',base,Object.assign({},base,{debt:100000,debtRate:.09}),function(a,b){return b.dimensions.debt.highInterest&&b.score.value<a.score.value},'risico omhoog');
+add('Meer beleggingen',base,Object.assign({},base,{investments:750000}),function(a,b){return b.dimensions.wealth.runwayMonths>a.dimensions.wealth.runwayMonths&&b.score.value>=a.score.value},'draagkracht omhoog');
+var early={age:55,goal:'early',income:5000,cost:3600,cash:5000,investments:1200000,debt:0,retireAge:55,aow:1400,aowStartAge:67,pension:500,pensionStartAge:67,annualIncluded:true};
+add('Stoppen later: 55→60',early,Object.assign({},early,{retireAge:60}),function(a,b){return b.decision&&a.decision&&(!a.decision.conservative.success||b.decision.conservative.endCapital>=a.decision.conservative.endCapital)},'later stoppen mag niet slechter');
+add('Meer vermogen bij vroeg stoppen',early,Object.assign({},early,{investments:1600000}),function(a,b){return b.decision.conservative.endCapital>a.decision.conservative.endCapital||(!a.decision.conservative.success&&b.decision.conservative.success)},'pensioenrobuustheid omhoog');
+add('Minder vermogen bij vroeg stoppen',early,Object.assign({},early,{investments:600000}),function(a,b){return !b.decision.conservative.success||b.decision.conservative.endCapital<a.decision.conservative.endCapital},'pensioenrobuustheid omlaag');
+add('Lagere uitgaven bij vroeg stoppen',early,Object.assign({},early,{cost:2800}),function(a,b){return b.decision.conservative.endCapital>a.decision.conservative.endCapital||(!a.decision.conservative.success&&b.decision.conservative.success)},'haalbaarheid beter');
+add('Hogere uitgaven bij vroeg stoppen',early,Object.assign({},early,{cost:5000}),function(a,b){return !b.decision.conservative.success||b.decision.conservative.endCapital<a.decision.conservative.endCapital},'haalbaarheid slechter');
+add('Meer AOW',early,Object.assign({},early,{aow:2000}),function(a,b){return b.decision.conservative.endCapital>=a.decision.conservative.endCapital},'latere onttrekking lager');
+add('Meer pensioen',early,Object.assign({},early,{pension:1500}),function(a,b){return b.decision.conservative.endCapital>=a.decision.conservative.endCapital},'latere onttrekking lager');
+add('AOW later',early,Object.assign({},early,{aowStartAge:70}),function(a,b){return b.decision.conservative.endCapital<=a.decision.conservative.endCapital},'brug zwaarder');
+add('Pensioen later',early,Object.assign({},early,{pensionStartAge:70}),function(a,b){return b.decision.conservative.endCapital<=a.decision.conservative.endCapital},'brug zwaarder');
+var purchase={age:40,goal:'purchase',income:6000,cost:3500,cash:80000,investments:100000,debt:0,purchaseAmount:25000,purchaseMonths:24,annualIncluded:true};
+add('Aankoop duurder',purchase,Object.assign({},purchase,{purchaseAmount:50000}),function(a,b){return b.scenarios.purchase.monthlyReserve>a.scenarios.purchase.monthlyReserve&&b.scenarios.purchase.bufferMonthsAfter<a.scenarios.purchase.bufferMonthsAfter},'druk omhoog');
+add('Meer tijd voor aankoop',purchase,Object.assign({},purchase,{purchaseMonths:48}),function(a,b){return b.scenarios.purchase.monthlyReserve<a.scenarios.purchase.monthlyReserve},'maanddruk omlaag');
+var cf={age:40,goal:'cashflow',income:6000,cost:4000,cash:30000,investments:50000,debt:0,annualIncluded:false,savingGrowth:500};
+add('Werkelijke spaargroei dichter bij papier',cf,Object.assign({},cf,{savingGrowth:1900}),function(a,b){return Math.abs(b.scenarios.reconciliation.gap)<Math.abs(a.scenarios.reconciliation.gap)},'onverklaard gat kleiner');
+add('Werkelijke spaargroei verder van papier',cf,Object.assign({},cf,{savingGrowth:0}),function(a,b){return Math.abs(b.scenarios.reconciliation.gap)>Math.abs(a.scenarios.reconciliation.gap)},'onverklaard gat groter');
+add('Inkomen ontbreekt',base,Object.assign({},base,{income:null}),function(a,b){return a.score.value!==null&&b.score.value===null},'geen schijnscore');
+add('Uitgaven ontbreken',base,Object.assign({},base,{cost:null}),function(a,b){return a.score.value!==null&&b.score.value===null},'geen schijnscore');
+add('Leeftijd alleen verandert huidige cashflow niet',base,Object.assign({},base,{age:70}),function(a,b){return a.case.monthlySurplus===b.case.monthlySurplus},'irrelevante dimensie stabiel');
+add('Huishoudlabel alleen verandert rekensom niet',base,Object.assign({},base,{household:'couple'}),function(a,b){return a.case.monthlySurplus===b.case.monthlySurplus&&a.score.value===b.score.value},'geen willekeurige verandering');
+
+document.getElementById('run').addEventListener('click',function(){try{var pass=0,html='';tests.forEach(function(t,i){var a=A(t.a),b=A(t.b),ok=false,msg='';try{ok=t.check(a,b)}catch(e){msg=String(e)}if(ok)pass++;html+='<div class="card row"><b class="'+(ok?'ok':'bad')+'">'+(ok?'PASS':'FAIL')+'</b> · '+(i+1)+'. '+t.name+'<div class="small">'+t.expect+(msg?' · '+msg:'')+'</div></div>'});document.getElementById('summary').innerHTML='<div class="score '+(pass===tests.length?'ok':'bad')+'">'+pass+' / '+tests.length+'</div><b>'+(pass===tests.length?'Alle beslissingen bewegen logisch':'Er zijn echte beslisfouten gevonden')+'</b>';document.getElementById('results').innerHTML=html}catch(err){document.getElementById('summary').innerHTML='<div class="score bad">JS FOUT</div><div class="small">'+String(err)+'</div>'}});
+if(typeof GeldcheckEngine==='undefined'){document.getElementById('summary').innerHTML='<div class="bad" style="margin-top:18px;font-weight:800">Engine kon niet laden. Ververs deze pagina.</div>'}
+})();
+</script></body></html>
