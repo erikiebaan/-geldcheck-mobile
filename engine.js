@@ -1,4 +1,4 @@
-/* Geldcheck Generic Financial Reasoning Engine v1.0
+/* Geldcheck Generic Financial Reasoning Engine v1.1
    Goal: consistent reasoning across many household configurations.
    No customer-specific hardcoding. All thresholds are transparent heuristics.
 */
@@ -234,6 +234,70 @@
     return qs.sort((a,b)=>b.priority-a.priority).slice(0,3);
   }
 
+  function intelligence(c,d,s,finds,missing){
+    const out={now:null,future:[],stress:[],levers:[],dominant:null};
+
+    if(missing.some(m=>m.key==="income"||m.key==="cost")){
+      out.now={title:"Nog geen financieel oordeel.",text:"Inkomen en uitgaven zijn nodig om draagkracht en vrije ruimte betrouwbaar te beoordelen."};
+      return out;
+    }
+
+    const surplus=c.monthlySurplus;
+    const buffer=c.cashBufferMonths;
+    const net=c.netFinancialAssets;
+    const invShare=(c.cash+c.investments)>0?c.investments/(c.cash+c.investments):null;
+
+    let nowTitle="Je financiële basis is in balans.";
+    if(surplus<0) nowTitle="Je vermogen kan sterk zijn, maar je maandbasis is negatief.";
+    else if(buffer!==null&&buffer<3) nowTitle="Je maandbasis kan positief zijn, maar je liquide weerbaarheid is laag.";
+    else if(d.debt.highInterest) nowTitle="Je cashflow is niet het enige verhaal: dure schuld trekt je positie omlaag.";
+    else if(surplus>0&&buffer>=6&&net>0) nowTitle="Je huidige financiële basis is stevig.";
+
+    let nowText="Je bekende maandruimte is "+Math.round(surplus)+" per maand";
+    if(buffer!==null) nowText+=", je cashbuffer dekt ongeveer "+buffer.toFixed(1)+" maanden uitgaven";
+    nowText+=" en je netto financiële vermogen exclusief woning is "+Math.round(net)+".";
+    if(invShare!==null&&invShare>0.8) nowText+=" Een groot deel van je financiële vermogen zit belegd; daardoor is marktbeweging belangrijker dan alleen je maandbudget.";
+    out.now={title:nowTitle,text:nowText};
+
+    if(c.investments>0&&finite(c.age)){
+      const horizons=[5,10,20].filter(y=>c.age+y<=95);
+      horizons.forEach(y=>{
+        const nominal=fv(c.investments,0.05,y);
+        out.future.push({years:y,title:"Over "+y+" jaar",nominal,real:real(nominal,ASSUMPTIONS.inflation,y),kind:"investment"});
+      });
+    }
+    if(s.retirement){
+      out.future.push({title:"Op je gewenste pensioenmoment",kind:"retirement",monthlyGap:s.retirement.currentEuroGap,withdrawalPct:s.retirement.gapWithdrawalPct});
+    }
+
+    if(c.investments>0){
+      out.stress.push({key:"market",title:"Beurs -30%",impact:c.investments*0.30,text:"Een daling van 30% verlaagt je belegde vermogen tijdelijk met circa "+Math.round(c.investments*0.30)+"."});
+    }
+    if(c.totalIncome>0){
+      out.stress.push({key:"income",title:"Inkomen -20% voor 12 maanden",impact:c.totalIncome*0.20*12,text:"Twintig procent minder inkomen gedurende een jaar scheelt circa "+Math.round(c.totalIncome*0.20*12)+"."});
+    }
+    if(finite(c.cost)&&c.cost>0){
+      out.stress.push({key:"expenses",title:"Uitgaven +10% voor 12 maanden",impact:c.cost*0.10*12,text:"Tien procent hogere uitgaven gedurende een jaar kost circa "+Math.round(c.cost*0.10*12)+" extra."});
+    }
+    if(c.housing==="mortgage"&&finite(c.mortgage)&&c.mortgage>0){
+      out.stress.push({key:"rate",title:"Rente +2 procentpunt",impact:c.mortgage*0.02,text:"Twee procentpunt hogere rente vertegenwoordigt bruto circa "+Math.round(c.mortgage*0.02)+" extra rente per jaar op de huidige schuld, als die volledig zou doorwerken."});
+    }
+    out.stress.sort((a,b)=>b.impact-a.impact);
+    out.dominant=out.stress[0]||null;
+
+    const leverCandidates=[];
+    if(c.totalIncome>0) leverCandidates.push({key:"income",title:"10% meer netto inkomen",impact:c.totalIncome*0.10*12,text:"ongeveer "+Math.round(c.totalIncome*0.10)+" extra per maand"});
+    if(finite(c.cost)&&c.cost>0) leverCandidates.push({key:"cost",title:"10% lagere uitgaven",impact:c.cost*0.10*12,text:"ongeveer "+Math.round(c.cost*0.10)+" extra ruimte per maand"});
+    if(c.debt>0&&finite(c.debtRate)) leverCandidates.push({key:"debt",title:"Dure schuld reduceren",impact:c.debt*c.debtRate,text:"circa "+Math.round(c.debt*c.debtRate)+" rente per jaar op de huidige schuld"});
+    if(c.investments>0) leverCandidates.push({key:"return",title:"2 procentpunt verschil in beleggingsrendement",impact:c.investments*0.02,text:"circa "+Math.round(c.investments*0.02)+" per jaar verschil vóór samengestelde groei"});
+    if(s.purchase) leverCandidates.push({key:"purchase",title:"Termijn van je grote uitgave",impact:s.purchase.monthlyReserve*12,text:"huidige reserveringsdruk "+Math.round(s.purchase.monthlyReserve)+" per maand"});
+    if(s.retirement&&finite(s.retirement.currentEuroGap)&&s.retirement.currentEuroGap>0) leverCandidates.push({key:"retirementGap",title:"Pensioengat verkleinen",impact:s.retirement.currentEuroGap*12,text:"circa "+Math.round(s.retirement.currentEuroGap)+" per maand in euro's van nu"});
+    leverCandidates.sort((a,b)=>b.impact-a.impact);
+    out.levers=leverCandidates.slice(0,3);
+
+    return out;
+  }
+
   function analyze(raw){
     const c=normalize(raw||{});
     const missing=requiredEvidence(c);
@@ -243,7 +307,8 @@
     const sc=score(c,d,missing,f);
     const questions=nextQuestions(c,missing,d,s);
     const top=f.slice(0,3);
-    return {case:c,assumptions:ASSUMPTIONS,missing,dimensions:d,scenarios:s,findings:f,topFindings:top,score:sc,nextQuestions:questions};
+    const intel=intelligence(c,d,s,f,missing);
+    return {case:c,assumptions:ASSUMPTIONS,missing,dimensions:d,scenarios:s,findings:f,topFindings:top,score:sc,nextQuestions:questions,intelligence:intel};
   }
 
   global.GeldcheckEngine={analyze,normalize,ASSUMPTIONS};
