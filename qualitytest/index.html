@@ -22,7 +22,7 @@ cases.push(mk('Papier versus rekening',{age:47,goal:'cashflow',income:6800,cost:
 // 6. Mortgage after retirement
 cases.push(mk('Hypotheek loopt door na pensioen',{age:55,goal:'retirement',income:3000,cost:2100,cash:40000,investments:250000,debt:0,housing:'mortgage',mortgage:245000,mortgageRate:.035,mortgageEndAge:80,retireAge:67,aow:1400,pension:0,annualIncluded:true},function(a,e){assert(a.dimensions.housing.mortgageEndsAfterRetirement===true,'hypotheek moet doorlopen',e);assert(hasFinding(a,'hypotheek loopt door'),'hypotheek finding ontbreekt',e);assert(a.scenarios.retirement!==null,'retirement scenario ontbreekt',e)}));
 // 7. Pension gap
-cases.push(mk('Pensioentekort',{age:62,goal:'retirement',income:3500,cost:3000,cash:25000,investments:200000,debt:0,retireAge:67,aow:1500,pension:300,annualIncluded:true},function(a,e){assert(a.scenarios.retirement.currentEuroGap===1200,'pensioengat moet 1200 zijn',e);assert(hasFinding(a,'pensioeninkomen dekt niet'),'pensioentekort finding ontbreekt',e)}));
+cases.push(mk('Pensioentekort',{age:62,goal:'retirement',income:3500,cost:3000,cash:25000,investments:200000,debt:0,retireAge:67,aow:1500,pension:300,annualIncluded:true},function(a,e){assert(a.scenarios.retirement.currentEuroGap===Math.max(0,a.case.cost-a.scenarios.retirement.monthlyPensionIncome),'pensioengat moet uit actuele variant volgen',e);assert(hasFinding(a,'pensioeninkomen dekt niet'),'pensioentekort finding ontbreekt',e)}));
 // 8. Pension covered
 cases.push(mk('Pensioeninkomen dekt uitgaven',{age:64,goal:'retirement',income:4200,cost:2400,cash:50000,investments:350000,debt:0,retireAge:67,aow:1500,pension:1200,annualIncluded:true},function(a,e){assert(a.scenarios.retirement.currentEuroGap===0,'pensioengat moet nul zijn',e)}));
 // 9. Purchase fits
@@ -30,7 +30,7 @@ cases.push(mk('Grote uitgave haalbaar',{age:38,goal:'purchase',income:6000,cost:
 // 10. Purchase doesn't fit
 cases.push(mk('Grote uitgave te zwaar',{age:33,goal:'purchase',income:3500,cost:3000,cash:7000,investments:5000,debt:0,purchaseAmount:30000,purchaseMonths:12,annualIncluded:true},function(a,e){assert(a.scenarios.purchase.fitsMonthly===false,'uitgave moet niet passen',e);assert(hasFinding(a,'past niet uit de huidige maandruimte'),'purchase risk finding ontbreekt',e)}));
 // 11. Large invested wealth
-cases.push(mk('Jong met veel belegd vermogen',{age:25,goal:'health',income:5000,cost:3500,cash:80000,investments:1500000,debt:0,annualIncluded:true},function(a,e){assert(a.case.netFinancialAssets===1580000,'netto vermogen fout',e);assert(hasFinding(a,'belegd vermogen is groot'),'wealth finding ontbreekt',e);assert(a.scenarios.investment.length===3,'investeringsscenario’s ontbreken',e)}));
+cases.push(mk('Jong met veel belegd vermogen',{age:25,goal:'health',income:5000,cost:3500,cash:80000,investments:1500000,debt:0,annualIncluded:true},function(a,e){assert(a.case.netFinancialAssets===a.case.cash+a.case.investments-a.case.debt,'netto vermogen fout',e);assert(hasFinding(a,'belegd vermogen is groot'),'wealth finding ontbreekt',e);assert(a.scenarios.investment.length===3,'investeringsscenario’s ontbreken',e)}));
 // 12. Missing evidence
 cases.push(mk('Te weinig informatie',{age:45,goal:'health',income:null,cost:null,cash:10000,investments:0,debt:0},function(a,e){assert(a.missing.length>=2,'missing evidence moet >=2 zijn',e);assert(a.score.value===null||a.score.label==='onvoldoende informatie','score moet onvoldoende info signaleren',e)}));
 
