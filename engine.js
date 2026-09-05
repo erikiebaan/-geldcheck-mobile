@@ -44,7 +44,9 @@
     c.savingsRate = finite(c.monthlySurplus)&&c.totalIncome>0 ? c.monthlySurplus/c.totalIncome : null;
     c.cashBufferMonths = months(c.cash,c.cost);
     c.financialRunwayMonths = months(Math.max(0,c.netFinancialAssets),c.cost);
-    c.retirementHorizon = finite(c.age)&&finite(c.retireAge) ? c.retireAge-c.age : null;\n    if(!finite(c.aowStartAge) && finite(c.retireAge)) c.aowStartAge=Math.max(67,c.retireAge);\n    if(!finite(c.pensionStartAge) && finite(c.retireAge)) c.pensionStartAge=c.retireAge;
+    c.retirementHorizon = finite(c.age)&&finite(c.retireAge) ? c.retireAge-c.age : null;
+    if(!finite(c.aowStartAge) && finite(c.retireAge)) c.aowStartAge=Math.max(67,c.retireAge);
+    if(!finite(c.pensionStartAge) && finite(c.retireAge)) c.pensionStartAge=c.retireAge;
     return c;
   }
 
@@ -217,7 +219,8 @@
     if(missing.length>=3) return {value:null,label:"onvoldoende informatie"};
     let x=50;
     if(d.cashflow.status==="strong")x+=15; else if(d.cashflow.status==="ok")x+=8; else if(d.cashflow.status==="thin")x+=2; else if(d.cashflow.status==="weak")x-=20;
-    if(d.liquidity.status==="strong")x+=15; else if(d.liquidity.status==="solid")x+=10; else if(d.liquidity.status==="thin")x+=2; else if(d.liquidity.status==="weak")x-=((d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=60)?5:15);\n    if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=240)x+=15; else if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=120)x+=10; else if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=60)x+=5;
+    if(d.liquidity.status==="strong")x+=15; else if(d.liquidity.status==="solid")x+=10; else if(d.liquidity.status==="thin")x+=2; else if(d.liquidity.status==="weak")x-=((d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=60)?5:15);
+    if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=240)x+=15; else if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=120)x+=10; else if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=60)x+=5;
     if(d.debt.highInterest)x-=12;
     finds.filter(f=>f.kind==="risk"&&f.priority>=85).forEach(()=>x-=6);
     x=clamp(Math.round(x),0,100);
