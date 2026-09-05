@@ -1,41 +1,114 @@
 <!doctype html>
 <html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1d6b55"><title>De Geldcheck</title>
 <style>
-:root{--bg:#f4f2ec;--card:#fffefa;--ink:#171a17;--muted:#73766f;--green:#1d6b55;--line:#dedbd3;--warn:#fff1d7}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;color:var(--ink);padding-bottom:32px}.top{padding:20px 18px 8px;font-weight:900;font-size:21px}.top i{color:var(--green);font-style:normal}.wrap{max-width:680px;margin:auto;padding:10px 14px}.hero{padding:22px 6px 18px}.eyebrow{font-size:12px;font-weight:900;letter-spacing:.13em;color:var(--green)}h1{font-size:42px;line-height:.98;letter-spacing:-.055em;margin:8px 0 13px}p{color:var(--muted);line-height:1.5}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:12px;box-shadow:0 10px 30px #2221}textarea,input{width:100%;border:1px solid var(--line);border-radius:16px;background:#fff;padding:15px;font:inherit;font-size:17px;outline:none}textarea{min-height:170px;resize:vertical}label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}.btn{width:100%;border:0;border-radius:16px;background:var(--green);color:white;padding:16px;font-weight:900;font-size:17px;margin-top:14px}.btn:active{transform:scale(.99)}.hidden{display:none}.resultHead{background:var(--green);color:white;border-radius:19px;padding:18px}.resultHead small{font-weight:900;letter-spacing:.12em;opacity:.7}.resultHead h2{font-size:25px;line-height:1.08;margin:7px 0}.resultHead p{color:#fff;opacity:.88;margin:0}.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.fact{border:1px solid var(--line);border-radius:16px;padding:13px}.fact b{font-size:21px;display:block}.fact span{font-size:11px;color:var(--muted)}.ask{background:var(--warn);border-radius:16px;padding:14px;margin-top:9px}.ask b{display:block;margin-bottom:3px}.section{margin-top:18px}h3{font-size:16px;margin:0 0 9px}.note{font-size:12px;color:var(--muted);margin-top:16px}
+:root{--bg:#f4f2ec;--card:#fffefa;--ink:#171a17;--muted:#73766f;--green:#1d6b55;--line:#dedbd3;--warn:#fff1d7;--good:#e8f1ed}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;color:var(--ink);padding-bottom:32px}.top{padding:20px 18px 8px;font-weight:900;font-size:21px}.top i{color:var(--green);font-style:normal}.wrap{max-width:680px;margin:auto;padding:10px 14px}.hero{padding:22px 6px 18px}.eyebrow{font-size:12px;font-weight:900;letter-spacing:.13em;color:var(--green)}h1{font-size:42px;line-height:.98;letter-spacing:-.055em;margin:8px 0 13px}p{color:var(--muted);line-height:1.5}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:12px;box-shadow:0 10px 30px #2221}textarea,input{width:100%;border:1px solid var(--line);border-radius:16px;background:#fff;padding:15px;font:inherit;font-size:17px;outline:none}textarea{min-height:170px;resize:vertical}label{display:block;font-size:13px;font-weight:800;margin:14px 0 7px}.btn{width:100%;border:0;border-radius:16px;background:var(--green);color:white;padding:16px;font-weight:900;font-size:17px;margin-top:14px}.btn:active{transform:scale(.99)}.hidden{display:none}.resultHead{background:var(--green);color:white;border-radius:19px;padding:18px}.resultHead small{font-weight:900;letter-spacing:.12em;opacity:.7}.resultHead h2{font-size:25px;line-height:1.08;margin:7px 0}.resultHead p{color:#fff;opacity:.88;margin:0}.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.fact{border:1px solid var(--line);border-radius:16px;padding:13px}.fact b{font-size:21px;display:block}.fact span{font-size:11px;color:var(--muted)}.ask{background:var(--warn);border-radius:16px;padding:14px;margin-top:9px}.ask b{display:block;margin-bottom:3px}.known{background:var(--good);border-radius:16px;padding:14px;margin-top:9px}.known b{display:block;margin-bottom:3px}.section{margin-top:18px}h3{font-size:16px;margin:0 0 9px}.note{font-size:12px;color:var(--muted);margin-top:16px}
 </style></head><body><div class="top">DE GELDCHECK<i>.</i></div><main class="wrap">
-<section class="hero"><div class="eyebrow">MOBIELE GELDCHECK</div><h1>Hoe sta je er financieel voor?</h1><p>Vertel het zoals je het zelf zou vertellen. De Geldcheck haalt eerst de feiten uit je verhaal en stelt alleen vragen die nodig zijn.</p></section>
-<section class="card"><label>Jouw situatie</label><textarea id="text" placeholder="Bijvoorbeeld: ik heb 100k en 2k kosten per maand"></textarea><label>Wat wil je weten?</label><input id="q" placeholder="Bijvoorbeeld: is dat genoeg?"><button class="btn" id="go">Analyseer mijn situatie</button></section>
-<section class="card hidden" id="out"><div class="resultHead"><small>KERNCONCLUSIE</small><h2 id="title"></h2><p id="summary"></p></div><div class="facts" id="facts"></div><div class="section"><h3>Dit wil ik eerst van je weten</h3><div id="questions"></div></div><div class="note">De Geldcheck geeft eerst overzicht. Bij onvoldoende informatie geeft hij bewust nog geen financieel oordeel.</div></section>
+<section class="hero"><div class="eyebrow">MOBIELE GELDCHECK</div><h1>Hoe sta je er financieel voor?</h1><p>Vertel het zoals je het zelf zou vertellen. De Geldcheck haalt feiten uit je verhaal en vraagt alleen wat nog echt ontbreekt.</p></section>
+<section class="card"><label>Jouw situatie</label><textarea id="text" placeholder="Bijvoorbeeld: 100k belegd, 2k kosten per maand, salaris 3k netto, hypotheek 240k tegen 3,5%"></textarea><label>Wat wil je weten?</label><input id="q" placeholder="Bijvoorbeeld: is dat genoeg?"><button class="btn" id="go">Analyseer mijn situatie</button></section>
+<section class="card hidden" id="out"><div class="resultHead"><small>KERNCONCLUSIE</small><h2 id="title"></h2><p id="summary"></p></div><div class="facts" id="facts"></div><div class="section"><h3>Dit heb ik begrepen</h3><div id="known"></div></div><div class="section" id="missingSection"><h3>Dit wil ik nog van je weten</h3><div id="questions"></div></div><div class="note">Bij iedere druk op Analyseer wordt je volledige tekst opnieuw gelezen. Bekende informatie hoort dus niet opnieuw gevraagd te worden.</div></section>
 </main><script>
 const euro=n=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n);
-function parseK(s){let m=s.match(/(?:€\s*)?(\d+(?:[.,]\d+)?)\s*k\b/i);return m?parseFloat(m[1].replace(',','.'))*1000:null}
+function amt(s){
+ if(!s)return null;
+ let x=String(s).toLowerCase().replace(/€/g,'').trim();
+ const km=x.match(/([\d.,]+)\s*k\b/);
+ if(km)return parseFloat(km[1].replace('.','').replace(',','.'))*1000;
+ x=x.replace(/\./g,'').replace(',','.');
+ const m=x.match(/[\d.]+/);
+ return m?parseFloat(m[0]):null;
+}
+function first(patterns,raw){
+ for(const r of patterns){const m=raw.match(r);if(m)return m}
+ return null;
+}
 function analyze(){
- const raw=document.getElementById('text').value.trim(), q=document.getElementById('q').value.trim();
+ const raw=document.getElementById('text').value.trim();
  if(!raw){alert('Vul eerst kort je situatie in.');return}
- let asset=null,cost=null,income=null;
- let ma=raw.match(/(?:ik heb|wij hebben|vermogen|spaargeld|beleggingen)[^\d€]{0,20}(€?\s*\d+(?:[.,]\d+)?\s*k|€?\s*[\d.]+)/i);
- if(ma) asset=parseK(ma[1]) ?? Number(ma[1].replace(/[^\d]/g,''));
- if(asset==null){let first=parseK(raw); if(first) asset=first}
- let mc=raw.match(/(€?\s*\d+(?:[.,]\d+)?\s*k|€?\s*[\d.]+)\s*(?:aan\s*)?(?:kosten|lasten|uitgaven)(?:\s*per\s*maand|\s*p\/m)?/i) || raw.match(/(?:kosten|lasten|uitgaven)[^\d€]{0,20}(€?\s*\d+(?:[.,]\d+)?\s*k|€?\s*[\d.]+)/i);
- if(mc) cost=parseK(mc[1]) ?? Number(mc[1].replace(/[^\d]/g,''));
- let mi=raw.match(/(?:inkomen|verdien|netto)[^\d€]{0,20}(€?\s*\d+(?:[.,]\d+)?\s*k|€?\s*[\d.]+)(?:\s*per\s*maand|\s*p\/m)?/i);
- if(mi) income=parseK(mi[1]) ?? Number(mi[1].replace(/[^\d]/g,''));
+ const q=document.getElementById('q').value.trim();
+ const low=raw.toLowerCase();
+
+ let cost=null,income=null,asset=null,assetType=null,mortgage=null,mortgageRate=null;
+
+ let m=first([
+   /(€?\s*[\d.,]+\s*k?)\s*(?:aan\s*)?(?:kosten|lasten|uitgaven)(?:\s*per\s*maand|\s*p\/m)?/i,
+   /(?:kosten|lasten|uitgaven)[^\d€]{0,20}(€?\s*[\d.,]+\s*k?)/i
+ ],raw); if(m)cost=amt(m[1]);
+
+ m=first([
+   /(?:salaris|loon|inkomen)[^\d€]{0,15}(€?\s*[\d.,]+\s*k?)(?:\s*netto)?/i,
+   /(€?\s*[\d.,]+\s*k?)\s*netto(?:\s*(?:salaris|inkomen|per maand|p\/m))?/i,
+   /(?:netto)[^\d€]{0,12}(€?\s*[\d.,]+\s*k?)/i
+ ],raw); if(m)income=amt(m[1]);
+
+ m=first([
+   /(?:hypotheek|hypotheekschuld)[^\n.]{0,50}?(€?\s*[\d.,]+\s*k)\b/i,
+   /(?:hypotheek|hypotheekschuld)[^\n.]{0,50}?€?\s*([\d.]{4,})\b/i
+ ],raw); if(m)mortgage=amt(m[1]);
+
+ m=first([
+   /(?:hypotheek|rente)[^\n.]{0,30}?(\d+(?:[.,]\d+)?)\s*%/i,
+   /(\d+(?:[.,]\d+)?)\s*%[^\n.]{0,20}hypotheek/i
+ ],raw); if(m)mortgageRate=parseFloat(m[1].replace(',','.'));
+
+ if(/beleg|aandel|etf|portfolio/i.test(low)) assetType='beleggingen';
+ else if(/spaargeld|spaarrekening|cash/i.test(low)) assetType='spaargeld';
+ else if(/overwaarde/i.test(low)) assetType='overwaarde';
+
+ m=first([
+   /(?:ik heb|wij hebben|vermogen|spaargeld|beleggingen|belegd)[^\d€]{0,20}(€?\s*[\d.,]+\s*k)\b/i,
+   /(€?\s*[\d.,]+\s*k)\s*(?:belegd|aan beleggingen|spaargeld|vermogen)\b/i
+ ],raw);
+ if(m)asset=amt(m[1]);
+ if(asset==null){
+   const all=[...raw.matchAll(/€?\s*[\d.,]+\s*k\b/gi)].map(x=>amt(x[0]));
+   const candidates=all.filter(x=>x!==cost&&x!==income&&x!==mortgage);
+   if(candidates.length)asset=candidates[0];
+ }
+
+ const known=[];
+ if(asset!=null)known.push(['Vermogen',euro(asset)+(assetType?' · '+assetType:'')]);
+ if(cost!=null)known.push(['Maandkosten',euro(cost)]);
+ if(income!=null)known.push(['Netto inkomen',euro(income)+' p/m']);
+ if(mortgage!=null)known.push(['Hypotheek',euro(mortgage)+(mortgageRate!=null?' · '+mortgageRate.toFixed(1).replace('.',',')+'%':'')]);
+
  const missing=[];
- if(income==null) missing.push(['Wat komt er netto per maand binnen?','Zonder inkomen kan ik niet bepalen of je maandlasten structureel draagbaar zijn.']);
- if(asset!=null) missing.push(['Waar bestaat de '+euro(asset)+' uit?','Spaargeld, beleggingen en overwaarde hebben een heel andere functie en beschikbaarheid.']);
- missing.push(['Heb je een hypotheek of andere schulden?','Schuld, rente en looptijd kunnen de conclusie sterk veranderen.']);
- document.getElementById('title').textContent=missing.length?'Nog te weinig informatie voor een financieel oordeel.':'Je financiële basis is voldoende in beeld.';
- let txt='Ik heb je invoer gelezen';
- if(asset!=null) txt+=' en '+euro(asset)+' vermogen herkend';
- if(cost!=null) txt+=' plus ongeveer '+euro(cost)+' kosten per maand';
- txt+='. ';
- if(asset!=null&&cost!=null) txt+='Als die '+euro(asset)+' volledig liquide zou zijn en er geen inkomen of rendement was, dekt dat rekenkundig ongeveer '+Math.floor(asset/cost)+' maanden aan deze uitgaven. Dat is nog geen advies.';
- document.getElementById('summary').textContent=txt;
- const facts=[]; if(asset!=null)facts.push([euro(asset),'genoemd vermogen']); if(cost!=null)facts.push([euro(cost),'kosten per maand']); if(income!=null)facts.push([euro(income),'netto inkomen']);
- document.getElementById('facts').innerHTML=facts.map(x=>'<div class="fact"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
- document.getElementById('questions').innerHTML=missing.slice(0,3).map(x=>'<div class="ask"><b>'+x[0]+'</b>'+x[1]+'</div>').join('');
- document.getElementById('out').classList.remove('hidden'); document.getElementById('out').scrollIntoView({behavior:'smooth'});
+ if(income==null)missing.push(['Wat komt er netto per maand binnen?','Dit bepaalt of je maandlasten structureel draagbaar zijn.']);
+ if(asset!=null&&!assetType)missing.push(['Waar bestaat de '+euro(asset)+' uit?','Spaargeld, beleggingen en overwaarde zijn financieel niet hetzelfde.']);
+ if(mortgage==null&&!/geen hypotheek/i.test(low))missing.push(['Heb je een hypotheek of andere grote schuld?','Schuld en rente kunnen de conclusie sterk veranderen.']);
+ if(mortgage!=null&&!/looptijd|eindigt|afgelost|annu|aflossingsvrij/i.test(low))missing.push(['Hoe lang loopt je hypotheek nog en is die annuïtair of aflossingsvrij?','Dat bepaalt je toekomstige woonlasten.']);
+
+ let free=null;
+ if(income!=null&&cost!=null)free=income-cost;
+
+ let title,summary;
+ if(missing.length>=2){
+   title='Ik begrijp al meer, maar nog niet genoeg voor een definitief oordeel.';
+ }else if(missing.length===1){
+   title='Bijna compleet — nog één belangrijke vraag.';
+ }else{
+   title='Je basisgegevens zijn voldoende voor een eerste analyse.';
+ }
+ summary='Ik herken nu ';
+ const bits=[];
+ if(asset!=null)bits.push(euro(asset)+' '+(assetType||'vermogen'));
+ if(cost!=null)bits.push(euro(cost)+' maandkosten');
+ if(income!=null)bits.push(euro(income)+' netto inkomen');
+ if(mortgage!=null)bits.push(euro(mortgage)+' hypotheek'+(mortgageRate!=null?' tegen '+mortgageRate.toFixed(1).replace('.',',')+'%':''));
+ summary+=bits.length?bits.join(', '):'nog te weinig harde cijfers';
+ summary+='. ';
+ if(free!=null)summary+='Op basis van alleen inkomen minus genoemde kosten is er ongeveer '+euro(free)+' per maand ruimte. ';
+ if(asset!=null&&cost!=null)summary+='Het genoemde vermogen staat gelijk aan ongeveer '+Math.floor(asset/cost)+' maanden van deze uitgaven, vóór rendement en zonder rekening te houden met belasting of andere verplichtingen. ';
+ if(q)summary+='Voor je vraag “'+q+'” wil ik alleen nog informatie vragen die de uitkomst echt kan veranderen.';
+
+ document.getElementById('title').textContent=title;
+ document.getElementById('summary').textContent=summary;
+ document.getElementById('facts').innerHTML=known.map(x=>'<div class="fact"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join('');
+ document.getElementById('known').innerHTML=known.map(x=>'<div class="known"><b>'+x[0]+'</b>'+x[1]+'</div>').join('');
+ document.getElementById('questions').innerHTML=missing.map(x=>'<div class="ask"><b>'+x[0]+'</b>'+x[1]+'</div>').join('');
+ document.getElementById('missingSection').classList.toggle('hidden',missing.length===0);
+ document.getElementById('out').classList.remove('hidden');
+ document.getElementById('out').scrollIntoView({behavior:'smooth',block:'start'});
 }
 document.getElementById('go').addEventListener('click',analyze);
 </script></body></html>
