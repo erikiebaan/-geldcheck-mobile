@@ -58,28 +58,31 @@ function parseCase(raw,q){
  const low=raw.toLowerCase();
  const c={raw,q,facts:[],unknowns:[],assumptions:[],age:null,retireAge:null,income:null,cost:null,assets:[],mortgage:null,mortgageRate:null,mortgagePayment:null,mortgageEndAge:null,aow:null,alimony:null,alimonyEndYears:null,otherPension:null,returnExp:null,cash:null};
 
- let v=grab(raw,[/\b(?:ik ben|leeftijd)\s*(\d{2})\b/i]); if(v)c.age=+v;
- v=grab(raw,[/(?:pensioen|stoppen met werken|vanaf)[^\d]{0,20}(\d{2})\b/i]); if(v)c.retireAge=+v;
+ let v=grab(raw,[/\b(?:ik ben|leeftijd(?: is)?|nu)\s*(\d{2})\s*(?:jaar)?\b/i]); if(v)c.age=+v;
+ v=grab(raw,[
+   /(?:ik wil|wil)?\s*(?:vanaf|op|met)\s*(?:mijn\s*)?(\d{2})(?:e|ste)?\s*(?:met pensioen|pensioen|stoppen met werken)/i,
+   /(?:pensioen(?:leeftijd)?|stoppen met werken)[^\d]{0,20}(?:vanaf|op|met)?\s*(?:mijn\s*)?(\d{2})(?:e|ste)?\b/i
+ ]); if(v)c.retireAge=+v;
 
  v=grab(raw,[/(?:salaris|loon|inkomen)[^\d€]{0,15}(€?\s*[\d.,]+\s*k?)(?:\s*netto)?/i,/(€?\s*[\d.,]+\s*k?)\s*netto(?:\s*(?:salaris|inkomen|p\/m|per maand))?/i]); if(v)c.income=amt(v);
  v=grab(raw,[/(€?\s*[\d.,]+\s*k?)\s*(?:aan\s*)?(?:kosten|lasten|uitgaven)(?:\s*per\s*maand|\s*p\/m)?/i,/(?:kosten|lasten|uitgaven)[^\d€]{0,20}(€?\s*[\d.,]+\s*k?)/i]); if(v)c.cost=amt(v);
 
- // Mortgage: always read the number immediately after "hypotheek", never a later amount.
- let mm=raw.match(/\b(?:hypotheek|hypotheekschuld)\b\s*(?:is|van|:)?\s*€?\s*([\d.]+(?:,\d+)?\s*k?)/i);
- if(mm)c.mortgage=amt(mm[1]);
- if(/\bhypotheek\b/i.test(raw) && (c.mortgage==null || c.mortgage<1000)){
-   const local=raw.match(/\bhypotheek\b([^\n;]{0,36})/i);
-   if(local){
-     const nm=local[1].match(/€?\s*([\d.]{4,}|[\d.,]+\s*k)\b/i);
-     if(nm)c.mortgage=amt(nm[1]);
-   }
+ // Mortgage: parse the local phrase only, accepting "hypotheek is 245000", "hypotheek 245k", "hypotheek €245.000 tegen 3,5%".
+ let mortgagePhrase=raw.match(/\b(?:hypotheek|hypotheekschuld)\b([^\n;]{0,80})/i);
+ if(mortgagePhrase){
+   const local=mortgagePhrase[1];
+   let mm=local.match(/(?:is|bedraagt|van|:)?\s*€?\s*([\d.]{4,}|[\d.,]+\s*k)\b/i);
+   if(mm)c.mortgage=amt(mm[1]);
+   let rm=local.match(/(?:tegen|rente)?\s*(\d+(?:[.,]\d+)?)\s*%/i);
+   if(rm)c.mortgageRate=parseFloat(rm[1].replace(',','.'))/100;
  }
- // Rate: prefer an explicit percentage in the short mortgage phrase.
- mm=raw.match(/\b(?:hypotheek|hypotheekschuld)\b[^\n;]{0,45}?(\d+(?:[.,]\d+)?)\s*%/i)
-   || raw.match(/\b(?:tegen|rente)\s*(\d+(?:[.,]\d+)?)\s*%/i);
- if(mm)c.mortgageRate=parseFloat(mm[1].replace(',','.'))/100;
+ // Never treat a failed parse as zero.
+ if(c.mortgage!=null && c.mortgage<1000)c.mortgage=null;
  v=grab(raw,[/(?:hypotheeklast|hypotheek|woonlast)[^\n.]{0,30}(€?\s*[\d.,]+\s*k?)\s*(?:p\/m|per maand)/i]); if(v)c.mortgagePayment=amt(v);
- v=grab(raw,[/(?:hypotheek[^\n.]{0,40}(?:loopt tot|afgelost.*(?:op|rond)|tot mijn)\s*)(\d{2})/i]); if(v)c.mortgageEndAge=+v;
+ v=grab(raw,[
+   /hypotheek[^\n.]{0,50}(?:loopt tot|afgelost.*(?:op|rond)|tot mijn)\s*(?:mijn\s*)?(\d{2})(?:e|ste)?/i,
+   /(?:tot mijn|tot)\s*(\d{2})(?:e|ste)?[^\n.]{0,20}hypotheek/i
+ ]); if(v)c.mortgageEndAge=+v;
 
  v=grab(raw,[/(?:aow)[^\d€]{0,20}(€?\s*[\d.,]+\s*k?)/i]); if(v)c.aow=amt(v);
  if(/geen.*(?:werkgevers)?pensioen|verder niks opgebouwd|geen pensioen opgebouwd/i.test(low))c.otherPension=0;
@@ -192,7 +195,7 @@ function render(){
    ['Evidence gate',c.unknowns.length===0?'voldoende voor eerste analyse':c.unknowns.length+' materiële onbekenden'],
    ['Cashflow',c.income!=null&&c.cost!=null?'berekend':'niet compleet'],
    ['Hypotheek',c.mortgage!=null&&c.mortgage>=1000?'herkend: '+euro(c.mortgage):'niet betrouwbaar herkend'],
-   ['Pensioenmodule',c.age!=null&&c.retireAge!=null?'actief':'niet actief'],
+   ['Pensioenmodule',c.age!=null&&c.retireAge!=null?'actief: '+c.age+' → '+c.retireAge:'niet actief'],
    ['Vermogensscenario’s',m.scenarios.length?m.scenarios.length+' scenario(s)':'geen']
  ];
  document.getElementById('audit').innerHTML=audit.map(x=>'<div class="line"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join('');
@@ -200,4 +203,12 @@ function render(){
  document.getElementById('out').scrollIntoView({behavior:'smooth',block:'start'});
 }
 document.getElementById('go').addEventListener('click',render);
+function resetFreshStart(){
+  const t=document.getElementById('text'), q=document.getElementById('q'), out=document.getElementById('out');
+  if(t)t.value='';
+  if(q)q.value='';
+  if(out)out.classList.add('hidden');
+}
+window.addEventListener('DOMContentLoaded', resetFreshStart);
+window.addEventListener('pageshow', e=>{ if(e.persisted) resetFreshStart(); });
 </script></body></html>
