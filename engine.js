@@ -1,4 +1,4 @@
-/* Geldcheck Generic Financial Reasoning Engine v1.1
+/* Geldcheck Generic Financial Reasoning Engine v1.2
    Goal: consistent reasoning across many household configurations.
    No customer-specific hardcoding. All thresholds are transparent heuristics.
 */
@@ -35,7 +35,7 @@
       mortgageEndAge:num(raw.mortgageEndAge), mortgagePayment:num(raw.mortgagePayment), rent:num(raw.rent),
       cash:num(raw.cash)||0, investments:num(raw.investments)||0, debt:num(raw.debt)||0,
       debtRate:num(raw.debtRate), debtPayment:num(raw.debtPayment),
-      retireAge:num(raw.retireAge), aow:num(raw.aow)||0, pension:num(raw.pension)||0,
+      retireAge:num(raw.retireAge), aow:num(raw.aow)||0, aowStartAge:num(raw.aowStartAge), pension:num(raw.pension)||0, pensionStartAge:num(raw.pensionStartAge),
       change:raw.change||"", purchaseAmount:num(raw.purchaseAmount), purchaseMonths:num(raw.purchaseMonths)
     };
     c.totalIncome = (c.income||0)+(c.otherIncome||0);
@@ -44,7 +44,7 @@
     c.savingsRate = finite(c.monthlySurplus)&&c.totalIncome>0 ? c.monthlySurplus/c.totalIncome : null;
     c.cashBufferMonths = months(c.cash,c.cost);
     c.financialRunwayMonths = months(Math.max(0,c.netFinancialAssets),c.cost);
-    c.retirementHorizon = finite(c.age)&&finite(c.retireAge) ? c.retireAge-c.age : null;
+    c.retirementHorizon = finite(c.age)&&finite(c.retireAge) ? c.retireAge-c.age : null;\n    if(!finite(c.aowStartAge) && finite(c.retireAge)) c.aowStartAge=Math.max(67,c.retireAge);\n    if(!finite(c.pensionStartAge) && finite(c.retireAge)) c.pensionStartAge=c.retireAge;
     return c;
   }
 
@@ -126,7 +126,7 @@
 
     if(c.investments>0){
       let horizon = null;
-      if(finite(c.retirementHorizon)&&c.retirementHorizon>=0) horizon=c.retirementHorizon;
+      if(finite(c.retirementHorizon)&&c.retirementHorizon>0) horizon=c.retirementHorizon;
       else if(finite(c.age)) horizon = Math.max(5,Math.min(30,65-c.age));
       if(finite(horizon)&&horizon>=0){
         s.investment = ASSUMPTIONS.returnScenarios.map(r=>{
@@ -217,7 +217,7 @@
     if(missing.length>=3) return {value:null,label:"onvoldoende informatie"};
     let x=50;
     if(d.cashflow.status==="strong")x+=15; else if(d.cashflow.status==="ok")x+=8; else if(d.cashflow.status==="thin")x+=2; else if(d.cashflow.status==="weak")x-=20;
-    if(d.liquidity.status==="strong")x+=15; else if(d.liquidity.status==="solid")x+=10; else if(d.liquidity.status==="thin")x+=2; else if(d.liquidity.status==="weak")x-=15;
+    if(d.liquidity.status==="strong")x+=15; else if(d.liquidity.status==="solid")x+=10; else if(d.liquidity.status==="thin")x+=2; else if(d.liquidity.status==="weak")x-=((d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=60)?5:15);\n    if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=240)x+=15; else if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=120)x+=10; else if(d.wealth.runwayMonths!==null&&d.wealth.runwayMonths>=60)x+=5;
     if(d.debt.highInterest)x-=12;
     finds.filter(f=>f.kind==="risk"&&f.priority>=85).forEach(()=>x-=6);
     x=clamp(Math.round(x),0,100);
@@ -234,8 +234,70 @@
     return qs.sort((a,b)=>b.priority-a.priority).slice(0,3);
   }
 
+  function simulateRetirement(c,retireAge,nominalReturn,crashAtRetirement){
+    if(!finite(c.age)||!finite(retireAge)||!finite(c.cost)) return null;
+    const endAge=95;
+    const realReturn=(1+nominalReturn)/(1+ASSUMPTIONS.inflation)-1;
+    let cash=Math.max(0,c.cash);
+    let invested=Math.max(0,c.investments);
+    let age=c.age;
+
+    // Accumulation until retirement in today's euros.
+    while(age<retireAge){
+      const annualSave=Math.max(0,c.monthlySurplus||0)*12;
+      invested=invested*(1+realReturn)+annualSave;
+      age+=1;
+    }
+
+    if(crashAtRetirement) invested*=0.70;
+
+    let minCapital=cash+invested;
+    let failedAge=null;
+    while(age<endAge){
+      const aowIncome=(finite(c.aowStartAge)&&age>=c.aowStartAge)?c.aow*12:0;
+      const pensionIncome=(finite(c.pensionStartAge)&&age>=c.pensionStartAge)?c.pension*12:0;
+      const annualGap=Math.max(0,c.cost*12-aowIncome-pensionIncome);
+
+      // spend cash first, then investments
+      const useCash=Math.min(cash,annualGap);
+      cash-=useCash;
+      let rem=annualGap-useCash;
+      invested=invested*(1+realReturn)-rem;
+      if(invested<0){failedAge=age;invested=0;}
+      minCapital=Math.min(minCapital,cash+invested);
+      if(failedAge!==null) break;
+      age+=1;
+    }
+    return {retireAge,nominalReturn,crashAtRetirement,endCapital:cash+invested,minCapital,failedAge,success:failedAge===null};
+  }
+
+  function retirementDecision(c){
+    if(!(c.goal==="early"||c.goal==="retirement")) return null;
+    if(!finite(c.age)||!finite(c.cost)||!finite(c.retireAge)) return null;
+    const target=Math.max(c.age,c.retireAge);
+    const conservative=simulateRetirement(c,target,0.03,true);
+    const base=simulateRetirement(c,target,0.05,false);
+    const favorable=simulateRetirement(c,target,0.07,false);
+
+    let verdict="ONVOLDOENDE INFORMATIE",tone="unknown";
+    if(base&&conservative){
+      if(conservative.success){verdict="JA, OP BASIS VAN DEZE AANNAMES";tone="yes";}
+      else if(base.success){verdict="MOGELIJK, MAAR GEVOELIG";tone="maybe";}
+      else {verdict="NOG NIET";tone="no";}
+    }
+
+    let earliest=null;
+    for(let a=Math.max(c.age,target);a<=Math.min(80,c.age+30);a++){
+      const test=simulateRetirement(c,a,0.03,true);
+      if(test&&test.success){earliest=a;break;}
+    }
+
+    const bridgeYears=finite(c.aowStartAge)?Math.max(0,c.aowStartAge-target):null;
+    return {verdict,tone,targetAge:target,earliestConservativeAge:earliest,bridgeYears,conservative,base,favorable};
+  }
+
   function intelligence(c,d,s,finds,missing){
-    const out={now:null,future:[],stress:[],levers:[],dominant:null};
+    const out={now:null,future:[],stress:[],levers:[],dominant:null,decision:null};
 
     if(missing.some(m=>m.key==="income"||m.key==="cost")){
       out.now={title:"Nog geen financieel oordeel.",text:"Inkomen en uitgaven zijn nodig om draagkracht en vrije ruimte betrouwbaar te beoordelen."};
