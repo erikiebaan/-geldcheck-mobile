@@ -6,7 +6,15 @@
 <div class="card">
 <section class="step active" data-step="0"><h2>Over jou</h2><div class="hint">Hiermee bepalen we welke levensfase en vragen relevant zijn.</div>
 <div class="row"><div class="field"><label>Leeftijd</label><input id="age" type="number" inputmode="numeric" placeholder="55"></div><div class="field"><label>Huishouden</label><select id="house"><option value="">Kies</option><option>Alleen</option><option>Samenwonend</option><option>Gezin</option></select></div></div>
-<div class="field"><label>Kinderen thuis <span class="optional">(optioneel)</span></label><input id="kids" type="number" inputmode="numeric" placeholder="0"></div></section>
+<div class="field"><label>Kinderen thuis <span class="optional">(optioneel)</span></label><input id="kids" type="number" inputmode="numeric" placeholder="0"></div>
+<div class="field"><label>Waar wil je vooral duidelijkheid over?</label>
+<select id="goalStart">
+<option value="health">Hoe sta ik er financieel voor?</option>
+<option value="cashflow">Waar blijft mijn geld?</option>
+<option value="retirement">Heb ik genoeg voor mijn pensioen?</option>
+<option value="early">Kan ik eerder stoppen met werken?</option>
+<option value="purchase">Kan ik een grote uitgave verantwoord doen?</option>
+</select></div></section>
 
 <section class="step" data-step="1"><h2>Wat komt er binnen?</h2><div class="hint">Gebruik netto bedragen per maand. Dan houden we het begrijpelijk.</div>
 <div class="field"><label>Netto inkomen per maand</label><input id="income" type="number" inputmode="decimal" placeholder="3000"></div>
@@ -14,149 +22,167 @@
 
 <section class="step" data-step="2"><h2>Wat gaat er uit?</h2><div class="hint">Een goede schatting is prima. Later kunnen documenten dit verfijnen.</div>
 <div class="field"><label>Totale uitgaven per maand</label><input id="cost" type="number" inputmode="decimal" placeholder="2100"></div>
-<div class="field"><label>Zijn grote jaaruitgaven hierin meegenomen?</label><div class="toggle"><button class="chip" type="button" data-set="annual" data-v="yes">Ja</button><button class="chip" type="button" data-set="annual" data-v="no">Nee / weet ik niet</button></div></div></section>
+<div class="field"><label>Zijn grote jaaruitgaven hierin meegenomen?</label><div class="toggle"><button class="chip" type="button" data-set="annual" data-v="yes">Ja</button><button class="chip" type="button" data-set="annual" data-v="no">Nee / weet ik niet</button></div></div>
+<div class="field" id="savingGrowthField"><label>Hoeveel groeit je spaargeld gemiddeld per maand? <span class="optional">(optioneel)</span></label><input id="savingGrowth" type="number" inputmode="decimal" placeholder="bijv. 300"></div></section>
 
-<section class="step" data-step="3"><h2>Woning & hypotheek</h2><div class="hint">Geen hypotheek? Laat de velden leeg.</div>
+<section class="step" data-step="3"><h2>Wonen</h2><div class="hint">Alleen relevante woonvragen verschijnen.</div>
+<div class="field"><label>Hoe woon je?</label><select id="housing"><option value="">Kies</option><option value="rent">Huur</option><option value="ownfree">Koopwoning zonder hypotheek</option><option value="mortgage">Koopwoning met hypotheek</option></select></div>
+<div id="mortgageFields" style="display:none">
 <div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" inputmode="decimal" placeholder="245000"></div>
 <div class="row"><div class="field"><label>Rente %</label><input id="rate" type="number" inputmode="decimal" step=".1" placeholder="3,5"></div><div class="field"><label>Loopt tot leeftijd</label><input id="mortEnd" type="number" inputmode="numeric" placeholder="80"></div></div>
-<div class="field"><label>Hypotheeklast per maand <span class="optional">(optioneel)</span></label><input id="mortPay" type="number" inputmode="decimal" placeholder="1100"></div></section>
+<div class="field"><label>Hypotheeklast per maand <span class="optional">(optioneel)</span></label><input id="mortPay" type="number" inputmode="decimal" placeholder="1100"></div>
+</div>
+<div id="rentFields" style="display:none"><div class="field"><label>Huur per maand</label><input id="rent" type="number" inputmode="decimal" placeholder="1200"></div></div></section>
 
 <section class="step" data-step="4"><h2>Wat heb je opgebouwd?</h2><div class="hint">We houden liquide buffer en beleggingen bewust uit elkaar.</div>
 <div class="row"><div class="field"><label>Spaargeld</label><input id="cash" type="number" inputmode="decimal" placeholder="40000"></div><div class="field"><label>Beleggingen</label><input id="invest" type="number" inputmode="decimal" placeholder="250000"></div></div>
-<div class="field"><label>Andere schulden <span class="optional">(excl. hypotheek)</span></label><input id="debt" type="number" inputmode="decimal" placeholder="0"></div></section>
+<div class="field"><label>Andere schulden <span class="optional">(excl. hypotheek)</span></label><input id="debt" type="number" inputmode="decimal" placeholder="0"></div>
+<div id="debtFields" style="display:none"><div class="row"><div class="field"><label>Rente schuld %</label><input id="debtRate" type="number" inputmode="decimal" placeholder="6"></div><div class="field"><label>Aflossing p/m</label><input id="debtPay" type="number" inputmode="decimal" placeholder="300"></div></div></div></section>
 
-<section class="step" data-step="5"><h2>Later</h2><div class="hint">Hier begint de echte toekomstcheck.</div>
+<section class="step" data-step="5"><h2 id="futureTitle">Later</h2><div class="hint" id="futureHint">Alleen vragen die bij jouw doel horen.</div>
+<div id="retirementFields">
 <div class="row"><div class="field"><label>Gewenste pensioenleeftijd</label><input id="retire" type="number" inputmode="numeric" placeholder="67"></div><div class="field"><label>AOW netto p/m <span class="optional">(schatting)</span></label><input id="aow" type="number" inputmode="decimal" placeholder="1400"></div></div>
-<div class="field"><label>Ander pensioen netto p/m <span class="optional">(optioneel)</span></label><input id="pension" type="number" inputmode="decimal" placeholder="0"></div>
+<div class="field"><label>Ander pensioen netto p/m <span class="optional">(optioneel)</span></label><input id="pension" type="number" inputmode="decimal" placeholder="0"></div></div>
+<div id="purchaseFields" style="display:none">
+<div class="field"><label>Bedrag van de grote uitgave</label><input id="purchaseAmount" type="number" inputmode="decimal" placeholder="25000"></div>
+<div class="field"><label>Over hoeveel maanden wil je dit kunnen betalen?</label><input id="purchaseMonths" type="number" inputmode="numeric" placeholder="36"></div></div>
 <div class="field"><label>Grote verandering komende jaren <span class="optional">(optioneel)</span></label><input id="change" placeholder="bijv. alimentatie stopt over 4 jaar"></div></section>
 
 <section class="step" data-step="6"><h2>Documenten <span class="optional">(optioneel)</span></h2><div class="hint">Straks kan Geldcheck hiermee gegevens vooraf invullen en controleren.</div><div class="upload"><b>PDF, Word of financieel overzicht</b><p class="small">Documentanalyse wordt in de volgende backend-laag gekoppeld. Je kunt deze stap nu overslaan.</p><input id="file" type="file" accept=".pdf,.doc,.docx,.txt" disabled></div></section>
 
 <section class="step" data-step="7"><h2>Dit heb ik begrepen</h2><div class="hint">Eerst controleren. Daarna pas rekenen.</div><div id="review"></div>
-<div class="field"><label>Wat wil je vooral weten?</label><select id="goal"><option>Hoe sta ik er financieel voor?</option><option>Kan ik eerder stoppen met werken?</option><option>Heb ik genoeg voor mijn pensioen?</option><option>Kan ik een grote uitgave verantwoord doen?</option><option>Waar blijft mijn geld?</option></select></div>
+<div class="field"><label>Jouw hoofdvraag</label><div class="review" id="goalReview"></div></div>
 <button class="btn next" style="width:100%" type="button" id="analyze">Maak mijn Geldcheck</button><div id="output"></div></section>
 <div class="nav" id="nav"><button class="btn back" type="button" id="back">Terug</button><button class="btn next" type="button" id="next">Verder</button></div>
 </div></main>
 <script>
 (function(){
-  var step=0;
-  var annual=null;
-  var steps=Array.prototype.slice.call(document.querySelectorAll('.step'));
-  var bar=document.getElementById('bar');
-  var nextBtn=document.getElementById('next');
-  var backBtn=document.getElementById('back');
-  var analyzeBtn=document.getElementById('analyze');
+  var currentPos=0, annual=null, route=[];
+  var allSteps=Array.prototype.slice.call(document.querySelectorAll('.step'));
+  var bar=document.getElementById('bar'), nextBtn=document.getElementById('next'), backBtn=document.getElementById('back'), analyzeBtn=document.getElementById('analyze');
 
-  function val(id){
-    var el=document.getElementById(id);
-    if(!el) return null;
-    var raw=String(el.value || '').trim().replace(',','.');
-    if(raw==='') return null;
-    var num=Number(raw);
-    return isNaN(num)?null:num;
+  function el(id){return document.getElementById(id)}
+  function num(id){var x=el(id); if(!x)return null; var r=String(x.value||'').trim().replace(',','.'); if(r==='')return null; var n=Number(r); return isNaN(n)?null:n}
+  function euro(x){return x===null||typeof x==='undefined'||!isFinite(x)?'—':new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(x)}
+  function goal(){return el('goalStart').value||'health'}
+  function goalLabel(g){return {health:'Hoe sta ik er financieel voor?',cashflow:'Waar blijft mijn geld?',retirement:'Heb ik genoeg voor mijn pensioen?',early:'Kan ik eerder stoppen met werken?',purchase:'Kan ik een grote uitgave verantwoord doen?'}[g]}
+
+  function buildRoute(){
+    var g=goal(), age=num('age');
+    route=[0,1,2];
+    // Housing matters for full health, retirement, early-stop and if housing was already specified.
+    if(g==='health'||g==='retirement'||g==='early'||el('housing').value) route.push(3);
+    // Assets/debts matter for every route except the narrowest cashflow check; even there add when savings gap exists.
+    if(g!=='cashflow' || annual==='no' || num('savingGrowth')!==null) route.push(4);
+    // Future step only for retirement/early/purchase, or older users asking general health.
+    if(g==='retirement'||g==='early'||g==='purchase'||(g==='health'&&age!==null&&age>=50)) route.push(5);
+    // Skip documents for now; go straight to control.
+    route.push(7);
+    route=route.filter(function(x,i,a){return a.indexOf(x)===i});
   }
-  function euro(x){
-    if(x===null || typeof x==='undefined' || !isFinite(x)) return '—';
-    return new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(x);
+
+  function updateAdaptiveFields(){
+    var housing=el('housing').value;
+    el('mortgageFields').style.display=housing==='mortgage'?'block':'none';
+    el('rentFields').style.display=housing==='rent'?'block':'none';
+    el('debtFields').style.display=(num('debt')||0)>0?'block':'none';
+    var g=goal();
+    el('retirementFields').style.display=(g==='retirement'||g==='early'||(g==='health'&&(num('age')||0)>=50))?'block':'none';
+    el('purchaseFields').style.display=g==='purchase'?'block':'none';
+    el('futureTitle').textContent=g==='purchase'?'Je plan':'Later';
+    el('futureHint').textContent=g==='purchase'?'We testen of je grote uitgave past zonder je buffer of toekomst onnodig te verzwakken.':'We vragen alleen wat nodig is voor je toekomstbeeld.';
+    el('savingGrowthField').style.display=(g==='cashflow'||annual==='no')?'block':'none';
   }
-  function showStep(){
-    for(var i=0;i<steps.length;i++){
-      if(i===step) steps[i].classList.add('active');
-      else steps[i].classList.remove('active');
-    }
-    bar.style.width=(((step+1)/steps.length)*100)+'%';
-    backBtn.style.visibility=step===0?'hidden':'visible';
-    nextBtn.style.display=step===steps.length-1?'none':'block';
-    if(step===steps.length-1) renderReview();
+
+  function show(){
+    buildRoute(); updateAdaptiveFields();
+    var stepIndex=route[currentPos];
+    allSteps.forEach(function(s,i){s.classList.toggle('active',i===stepIndex)});
+    bar.style.width=(((currentPos+1)/route.length)*100)+'%';
+    backBtn.style.visibility=currentPos===0?'hidden':'visible';
+    nextBtn.style.display=currentPos===route.length-1?'none':'block';
+    if(stepIndex===7) renderReview();
     window.scrollTo({top:0,behavior:'smooth'});
   }
+
   function renderReview(){
-    var rows=[
-      ['Leeftijd',val('age')],
-      ['Netto inkomen',euro(val('income'))+' p/m'],
-      ['Uitgaven',euro(val('cost'))+' p/m'],
-      ['Hypotheek',euro(val('mortgage'))],
-      ['Hypotheekrente',val('rate')!==null?String(val('rate')).replace('.',',')+'%':'—'],
-      ['Spaargeld',euro(val('cash'))],
-      ['Beleggingen',euro(val('invest'))],
-      ['Pensioenleeftijd',val('retire')],
-      ['AOW',euro(val('aow'))+' p/m']
-    ];
-    document.getElementById('review').innerHTML=rows.map(function(r){
-      return '<div class="review"><b>'+r[0]+'</b>'+r[1]+'</div>';
-    }).join('');
+    var rows=[['Leeftijd',num('age')],['Doel',goalLabel(goal())],['Netto inkomen',euro(num('income'))+' p/m'],['Uitgaven',euro(num('cost'))+' p/m']];
+    if(el('housing').value==='mortgage')rows.push(['Hypotheek',euro(num('mortgage'))],['Hypotheekrente',num('rate')!==null?String(num('rate')).replace('.',',')+'%':'—']);
+    if(el('housing').value==='rent')rows.push(['Huur',euro(num('rent'))+' p/m']);
+    rows.push(['Spaargeld',euro(num('cash'))],['Beleggingen',euro(num('invest'))]);
+    if(goal()==='retirement'||goal()==='early'||(goal()==='health'&&(num('age')||0)>=50))rows.push(['Pensioenleeftijd',num('retire')],['AOW',euro(num('aow'))+' p/m']);
+    if(goal()==='purchase')rows.push(['Grote uitgave',euro(num('purchaseAmount'))],['Termijn',num('purchaseMonths')!==null?num('purchaseMonths')+' maanden':'—']);
+    el('review').innerHTML=rows.map(function(r){return '<div class="review"><b>'+r[0]+'</b>'+r[1]+'</div>'}).join('');
+    el('goalReview').textContent=goalLabel(goal());
   }
 
   nextBtn.addEventListener('click',function(){
-    if(step<steps.length-1){ step+=1; showStep(); }
+    buildRoute();
+    if(currentPos<route.length-1){currentPos++;show()}
   });
-  backBtn.addEventListener('click',function(){
-    if(step>0){ step-=1; showStep(); }
-  });
+  backBtn.addEventListener('click',function(){if(currentPos>0){currentPos--;show()}});
+
+  el('goalStart').addEventListener('change',function(){currentPos=0;show()});
+  el('housing').addEventListener('change',updateAdaptiveFields);
+  el('debt').addEventListener('input',updateAdaptiveFields);
 
   Array.prototype.forEach.call(document.querySelectorAll('.chip'),function(btn){
     btn.addEventListener('click',function(){
       annual=btn.getAttribute('data-v');
-      Array.prototype.forEach.call(document.querySelectorAll('[data-set="annual"]'),function(x){
-        x.classList.remove('on');
-      });
-      btn.classList.add('on');
+      Array.prototype.forEach.call(document.querySelectorAll('[data-set="annual"]'),function(x){x.classList.remove('on')});
+      btn.classList.add('on'); updateAdaptiveFields();
     });
   });
 
   analyzeBtn.addEventListener('click',function(){
-    var age=val('age');
-    var ret=val('retire');
-    var income=(val('income')||0)+(val('otherIncome')||0);
-    var cost=val('cost');
-    var invest=val('invest');
-    var cash=val('cash');
-    var aow=val('aow')||0;
-    var pension=val('pension')||0;
-    var mortgage=val('mortgage');
-    var mortEnd=val('mortEnd');
-
+    var g=goal(), age=num('age'), income=(num('income')||0)+(num('otherIncome')||0), cost=num('cost'), cash=num('cash')||0, invest=num('invest')||0, debt=num('debt')||0;
     var missing=[];
-    if(age===null) missing.push('leeftijd');
-    if(!income) missing.push('inkomen');
-    if(cost===null) missing.push('uitgaven');
-    if(ret===null) missing.push('pensioenleeftijd');
+    if(age===null)missing.push('leeftijd');
+    if(!income)missing.push('inkomen');
+    if(cost===null)missing.push('uitgaven');
+    if((g==='retirement'||g==='early'||(g==='health'&&age>=50))&&num('retire')===null)missing.push('pensioenleeftijd');
+    if(g==='purchase'&&num('purchaseAmount')===null)missing.push('bedrag grote uitgave');
+    if(g==='purchase'&&num('purchaseMonths')===null)missing.push('termijn grote uitgave');
 
     var free=cost===null?null:income-cost;
-    var out='<div class="result"><b>'+(missing.length?'Nog niet compleet.':'Je eerste Geldcheck staat.')+'</b><p>'+
-      (missing.length?'Ik mis nog: '+missing.join(', ')+'.':'Je bekende maandruimte is '+euro(free)+'. Hieronder zie je wat dit praktisch betekent.')+
-      '</p></div>';
-
+    var html='<div class="result"><b>'+(missing.length?'Nog één stap: informatie ontbreekt.':'Je Geldcheck staat.')+'</b><p>'+(missing.length?'Ik mis: '+missing.join(', ')+'.':'Ik heb alleen gerekend met gegevens die jij hebt bevestigd.')+'</p></div>';
     if(!missing.length){
-      out+='<div class="tiles"><div class="tile"><b>'+euro(free)+'</b><span>theoretische ruimte p/m</span></div>'+
-           '<div class="tile"><b>'+euro((cash||0)+(invest||0))+'</b><span>spaargeld + beleggingen</span></div></div>';
+      html+='<div class="tiles"><div class="tile"><b>'+euro(free)+'</b><span>theoretische maandruimte</span></div><div class="tile"><b>'+euro(cash+invest-debt)+'</b><span>netto financieel vermogen excl. woning</span></div></div>';
 
-      if(annual==='no'){
-        out+='<div class="action"><b>1. Maak je echte maandruimte zichtbaar.</b><br>Jaaruitgaven zitten nog niet volledig in je maandbedrag. Daardoor is '+euro(free)+' waarschijnlijk te optimistisch.</div>';
+      if(g==='cashflow'){
+        var sg=num('savingGrowth');
+        if(sg!==null && free!==null){
+          var gap=free-sg;
+          html+='<div class="action"><b>Waar blijft je geld?</b><br>Op papier is je maandruimte '+euro(free)+', maar je spaargeld groeit circa '+euro(sg)+'. Het verschil is ongeveer '+euro(gap)+' per maand. Dáár moet de volgende controle op focussen: jaarlijkse en incidentele uitgaven.</div>';
+        }else{
+          html+='<div class="action"><b>Maak de papieren ruimte echt.</b><br>Vergelijk je berekende maandruimte met de werkelijke groei van je bank- en spaartegoeden over 6–12 maanden.</div>';
+        }
       }
-      if(mortgage && mortEnd && mortEnd>ret){
-        out+='<div class="action"><b>2. Je hypotheek loopt door na pensioen.</b><br>Die woonlast blijft dus onderdeel van je pensioenfase.</div>';
+
+      if(annual==='no')html+='<div class="action"><b>Je maandruimte is waarschijnlijk te optimistisch.</b><br>Vakantie, onderhoud, kleding, auto en andere jaarposten zijn nog niet volledig verwerkt.</div>';
+
+      if(el('housing').value==='mortgage' && num('mortgage') && num('mortEnd') && ((g==='retirement'||g==='early') && num('retire')) && num('mortEnd')>num('retire')){
+        html+='<div class="action"><b>Je hypotheek loopt door na je gewenste pensioen.</b><br>Daarom moet de woonlast expliciet in de pensioenfase blijven staan.</div>';
       }
-      if(invest && age!==null && ret!==null){
-        var years=ret-age;
-        var infl=0.02;
-        out+='<div class="action"><b>3. Wat kan '+euro(invest)+' worden op '+ret+'?</b><br>';
-        [0.03,0.05,0.07].forEach(function(r){
-          var fv=invest*Math.pow(1+r,years);
-          var real=fv/Math.pow(1+infl,years);
-          out+='Bij '+Math.round(r*100)+'%: '+euro(fv)+' nominaal, circa '+euro(real)+' in koopkracht van nu.<br>';
-        });
-        out+='</div>';
+
+      if((g==='retirement'||g==='early'||(g==='health'&&age>=50)) && invest>0 && num('retire')!==null){
+        var years=num('retire')-age, inf=.02;
+        html+='<div class="action"><b>Vermogen op '+num('retire')+' in koopkracht van vandaag</b><br>';
+        [0.03,0.05,0.07].forEach(function(r){var fv=invest*Math.pow(1+r,years),real=fv/Math.pow(1+inf,years);html+='Bij '+Math.round(r*100)+'%: '+euro(fv)+' nominaal · circa '+euro(real)+' reëel.<br>'});
+        html+='</div>';
+        var pensionIncome=(num('aow')||0)+(num('pension')||0);
+        if(cost!==null && pensionIncome<cost)html+='<div class="action"><b>Je huidige-euro inkomensgat vanaf pensioen</b><br>'+euro(cost)+' uitgaven minus '+euro(pensionIncome)+' AOW/pensioen = circa '+euro(cost-pensionIncome)+' per maand uit vermogen of ander inkomen.</div>';
       }
-      if(cost!==null && aow+pension<cost){
-        out+='<div class="action"><b>Vanaf pensioen is er op basis van huidige euro’s een inkomensgat.</b><br>'+
-             'Huidige uitgaven '+euro(cost)+' minus AOW/pensioen '+euro(aow+pension)+' = circa '+euro(cost-aow-pension)+' per maand uit ander vermogen/inkomen.</div>';
+
+      if(g==='purchase'){
+        var amount=num('purchaseAmount'), months=num('purchaseMonths'), reserve=months?amount/months:null;
+        html+='<div class="action"><b>Wat vraagt je plan?</b><br>Voor '+euro(amount)+' over '+months+' maanden is circa '+euro(reserve)+' per maand nodig. '+(free!==null?(free>=reserve?'Dat past binnen je huidige theoretische maandruimte, vóór buffer- en toekomstcheck.':'Dat is méér dan je huidige theoretische maandruimte; het plan vraagt dus aanpassing of inzet van vermogen.'):'')+'</div>';
       }
     }
-    document.getElementById('output').innerHTML=out;
-    document.getElementById('output').scrollIntoView({behavior:'smooth'});
+    el('output').innerHTML=html;
+    el('output').scrollIntoView({behavior:'smooth'});
   });
 
-  showStep();
+  updateAdaptiveFields(); show();
 })();
 </script></body></html>
