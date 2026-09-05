@@ -38,25 +38,125 @@
 <div class="nav" id="nav"><button class="btn back" type="button" id="back">Terug</button><button class="btn next" type="button" id="next">Verder</button></div>
 </div></main>
 <script>
-let step=0,annual=null;const steps=[...document.querySelectorAll('.step')],bar=document.getElementById('bar');
-const ids=['age','house','kids','income','otherIncome','cost','mortgage','rate','mortEnd','mortPay','cash','invest','debt','retire','aow','pension','change'];
-function n(id){const v=document.getElementById(id).value.replace?.(',','.')??document.getElementById(id).value;return v===''?null:Number(v)}
-function euro(x){return x==null?'—':new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(x)}
-function show(){steps.forEach((x,i)=>x.classList.toggle('active',i===step));bar.style.width=((step+1)/steps.length*100)+'%';document.getElementById('back').style.visibility=step?'visible':'hidden';document.getElementById('next').style.display=step===7?'none':'block';if(step===7)review()}
-document.getElementById('next').onclick=()=>{if(step<7){step++;show()}};document.getElementById('back').onclick=()=>{if(step){step--;show()}};
-document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{annual=b.dataset.v;document.querySelectorAll('[data-set="annual"]').forEach(x=>x.classList.toggle('on',x===b))});
-function review(){const rows=[['Leeftijd',n('age')],['Netto inkomen',euro(n('income'))+' p/m'],['Uitgaven',euro(n('cost'))+' p/m'],['Hypotheek',euro(n('mortgage'))],['Hypotheekrente',n('rate')!=null?n('rate')+'%':'—'],['Spaargeld',euro(n('cash'))],['Beleggingen',euro(n('invest'))],['Pensioenleeftijd',n('retire')],['AOW',euro(n('aow'))+' p/m']];document.getElementById('review').innerHTML=rows.map(r=>'<div class="review"><b>'+r[0]+'</b>'+r[1]+'</div>').join('')}
-document.getElementById('analyze').onclick=()=>{
- const age=n('age'),ret=n('retire'),inc=(n('income')||0)+(n('otherIncome')||0),cost=n('cost'),inv=n('invest'),cash=n('cash'),aow=n('aow')||0,pens=n('pension')||0,mort=n('mortgage'),mortEnd=n('mortEnd');
- const missing=[];if(age==null)missing.push('leeftijd');if(!inc)missing.push('inkomen');if(cost==null)missing.push('uitgaven');if(ret==null)missing.push('pensioenleeftijd');
- const free=cost!=null?inc-cost:null;let html='<div class="result"><b>'+(missing.length?'Nog niet compleet.':'Je eerste Geldcheck staat.')+'</b><p>'+(missing.length?'Ik mis nog: '+missing.join(', ')+'.':'Je bekende maandruimte is '+euro(free)+'. Hieronder zie je wat dit praktisch betekent.')+'</p></div>';
- if(!missing.length){html+='<div class="tiles"><div class="tile"><b>'+euro(free)+'</b><span>theoretische ruimte p/m</span></div><div class="tile"><b>'+euro((cash||0)+(inv||0))+'</b><span>spaargeld + beleggingen</span></div></div>';
- if(annual==='no')html+='<div class="action"><b>1. Maak je echte maandruimte zichtbaar.</b><br>Jaaruitgaven zitten nog niet volledig in je maandbedrag. Daardoor is '+euro(free)+' waarschijnlijk te optimistisch.</div>';
- if(mort&&mortEnd&&mortEnd>ret)html+='<div class="action"><b>2. Je hypotheek loopt door na pensioen.</b><br>Dat is een belangrijke levensfasepost en moet in je pensioenuitgaven blijven.</div>';
- if(inv&&age!=null&&ret!=null){const y=ret-age,inf=.02;html+='<div class="action"><b>3. Wat kan '+euro(inv)+' worden op '+ret+'?</b><br>';[.03,.05,.07].forEach(r=>{const fv=inv*Math.pow(1+r,y),real=fv/Math.pow(1+inf,y);html+='Bij '+Math.round(r*100)+'%: '+euro(fv)+' nominaal, circa '+euro(real)+' in koopkracht van nu.<br>'});html+='</div>'}
- if(cost!=null&&aow+pens<cost)html+='<div class="action"><b>Vanaf pensioen is er op basis van huidige euro’s een inkomensgat.</b><br>Huidige uitgaven '+euro(cost)+' minus AOW/pensioen '+euro(aow+pens)+' = circa '+euro(cost-aow-pens)+' per maand uit ander vermogen/inkomen. Dit wordt in de volledige engine inflatie- en levensfasegecorrigeerd.</div>'}
- document.getElementById('output').innerHTML=html}
-};
-function reset(){ids.forEach(id=>document.getElementById(id).value='');annual=null;document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));document.getElementById('output').innerHTML='';step=0;show()}
-window.addEventListener('pageshow',e=>{if(e.persisted)reset()});show();
+(function(){
+  var step=0;
+  var annual=null;
+  var steps=Array.prototype.slice.call(document.querySelectorAll('.step'));
+  var bar=document.getElementById('bar');
+  var nextBtn=document.getElementById('next');
+  var backBtn=document.getElementById('back');
+  var analyzeBtn=document.getElementById('analyze');
+
+  function val(id){
+    var el=document.getElementById(id);
+    if(!el) return null;
+    var raw=String(el.value || '').trim().replace(',','.');
+    if(raw==='') return null;
+    var num=Number(raw);
+    return isNaN(num)?null:num;
+  }
+  function euro(x){
+    if(x===null || typeof x==='undefined' || !isFinite(x)) return '—';
+    return new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(x);
+  }
+  function showStep(){
+    for(var i=0;i<steps.length;i++){
+      if(i===step) steps[i].classList.add('active');
+      else steps[i].classList.remove('active');
+    }
+    bar.style.width=(((step+1)/steps.length)*100)+'%';
+    backBtn.style.visibility=step===0?'hidden':'visible';
+    nextBtn.style.display=step===steps.length-1?'none':'block';
+    if(step===steps.length-1) renderReview();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function renderReview(){
+    var rows=[
+      ['Leeftijd',val('age')],
+      ['Netto inkomen',euro(val('income'))+' p/m'],
+      ['Uitgaven',euro(val('cost'))+' p/m'],
+      ['Hypotheek',euro(val('mortgage'))],
+      ['Hypotheekrente',val('rate')!==null?String(val('rate')).replace('.',',')+'%':'—'],
+      ['Spaargeld',euro(val('cash'))],
+      ['Beleggingen',euro(val('invest'))],
+      ['Pensioenleeftijd',val('retire')],
+      ['AOW',euro(val('aow'))+' p/m']
+    ];
+    document.getElementById('review').innerHTML=rows.map(function(r){
+      return '<div class="review"><b>'+r[0]+'</b>'+r[1]+'</div>';
+    }).join('');
+  }
+
+  nextBtn.addEventListener('click',function(){
+    if(step<steps.length-1){ step+=1; showStep(); }
+  });
+  backBtn.addEventListener('click',function(){
+    if(step>0){ step-=1; showStep(); }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'),function(btn){
+    btn.addEventListener('click',function(){
+      annual=btn.getAttribute('data-v');
+      Array.prototype.forEach.call(document.querySelectorAll('[data-set="annual"]'),function(x){
+        x.classList.remove('on');
+      });
+      btn.classList.add('on');
+    });
+  });
+
+  analyzeBtn.addEventListener('click',function(){
+    var age=val('age');
+    var ret=val('retire');
+    var income=(val('income')||0)+(val('otherIncome')||0);
+    var cost=val('cost');
+    var invest=val('invest');
+    var cash=val('cash');
+    var aow=val('aow')||0;
+    var pension=val('pension')||0;
+    var mortgage=val('mortgage');
+    var mortEnd=val('mortEnd');
+
+    var missing=[];
+    if(age===null) missing.push('leeftijd');
+    if(!income) missing.push('inkomen');
+    if(cost===null) missing.push('uitgaven');
+    if(ret===null) missing.push('pensioenleeftijd');
+
+    var free=cost===null?null:income-cost;
+    var out='<div class="result"><b>'+(missing.length?'Nog niet compleet.':'Je eerste Geldcheck staat.')+'</b><p>'+
+      (missing.length?'Ik mis nog: '+missing.join(', ')+'.':'Je bekende maandruimte is '+euro(free)+'. Hieronder zie je wat dit praktisch betekent.')+
+      '</p></div>';
+
+    if(!missing.length){
+      out+='<div class="tiles"><div class="tile"><b>'+euro(free)+'</b><span>theoretische ruimte p/m</span></div>'+
+           '<div class="tile"><b>'+euro((cash||0)+(invest||0))+'</b><span>spaargeld + beleggingen</span></div></div>';
+
+      if(annual==='no'){
+        out+='<div class="action"><b>1. Maak je echte maandruimte zichtbaar.</b><br>Jaaruitgaven zitten nog niet volledig in je maandbedrag. Daardoor is '+euro(free)+' waarschijnlijk te optimistisch.</div>';
+      }
+      if(mortgage && mortEnd && mortEnd>ret){
+        out+='<div class="action"><b>2. Je hypotheek loopt door na pensioen.</b><br>Die woonlast blijft dus onderdeel van je pensioenfase.</div>';
+      }
+      if(invest && age!==null && ret!==null){
+        var years=ret-age;
+        var infl=0.02;
+        out+='<div class="action"><b>3. Wat kan '+euro(invest)+' worden op '+ret+'?</b><br>';
+        [0.03,0.05,0.07].forEach(function(r){
+          var fv=invest*Math.pow(1+r,years);
+          var real=fv/Math.pow(1+infl,years);
+          out+='Bij '+Math.round(r*100)+'%: '+euro(fv)+' nominaal, circa '+euro(real)+' in koopkracht van nu.<br>';
+        });
+        out+='</div>';
+      }
+      if(cost!==null && aow+pension<cost){
+        out+='<div class="action"><b>Vanaf pensioen is er op basis van huidige euro’s een inkomensgat.</b><br>'+
+             'Huidige uitgaven '+euro(cost)+' minus AOW/pensioen '+euro(aow+pension)+' = circa '+euro(cost-aow-pension)+' per maand uit ander vermogen/inkomen.</div>';
+      }
+    }
+    document.getElementById('output').innerHTML=out;
+    document.getElementById('output').scrollIntoView({behavior:'smooth'});
+  });
+
+  showStep();
+})();
 </script></body></html>
