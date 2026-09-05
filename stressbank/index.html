@@ -7,7 +7,7 @@ button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;co
 .score{font-size:52px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#a33}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stat{background:#f7f5ef;border-radius:18px;padding:16px}.stat b{font-size:24px;display:block}.small{font-size:12px;color:#777}.fail{color:#a33}
 </style></head><body><main>
-<div class="card"><h1>Geldcheck Stressbank 1500</h1><p>15 financiële families × 100 varianten. Hier testen we niet alleen rekenen, maar of de richting van de conclusie robuust blijft onder veel verschillende huishoudens.</p><p class="small"><b>Build M1 · metamorfische intelligentietest</b></p><button id="run">Run 1500 inhoudelijke scenario's</button><button id="meta" style="margin-top:10px;background:#111">Run intelligentietest</button><div id="summary"></div><div id="metaSummary"></div></div>
+<div class="card"><h1>Geldcheck Stressbank 1500</h1><p>15 financiële families × 100 varianten. Hier testen we niet alleen rekenen, maar of de richting van de conclusie robuust blijft onder veel verschillende huishoudens.</p><p class="small"><b>Build M1 · metamorfische intelligentietest</b></p><button id="run">Run 1500 inhoudelijke scenario's</button><button id="meta" style="margin-top:10px;background:#111">Run intelligentietest</button><button id="conflict" style="margin-top:10px;background:#8b2f2f">Run contradictie-/extrementest</button><div id="summary"></div><div id="metaSummary"></div><div id="conflictSummary"></div></div>
 <div id="groups"></div></main>
 <script>/* Geldcheck Generic Financial Reasoning Engine v1.0
    Goal: consistent reasoning across many household configurations.
@@ -284,6 +284,23 @@ fam.push(family('Groot belegd vermogen',function(k){var cost=3000+(k%10)*20;retu
 fam.push(family('Onvoldoende bewijs',function(k){return {age:25+k%40,goal:'health',income:null,cost:null,cash:5000+k*10,investments:0,debt:0}},function(a,e){if(a.score.value!==null)addFail(e,'score hoort null te zijn');if(a.score.label!=='onvoldoende informatie')addFail(e,'label fout')}));
 fam.push(family('Gezond gemengd huishouden',function(k){var income=4200+k*8,cost=3000+k*3;return {age:30+k%30,goal:'health',income:income,cost:cost,cash:22000+k*40,investments:60000+k*150,debt:0,annualIncluded:true}},function(a,e){if(a.dimensions.cashflow.status==='weak')addFail(e,'cashflow onterecht weak');if(a.score.value===null)addFail(e,'score ontbreekt')}));
 
+document.getElementById('conflict').onclick=function(){
+ var tests=[],pass=0;
+ function C(name,x,check){var a=GeldcheckEngine.analyze(x),ok=false,msg='';try{ok=check(a);if(!ok)msg='engine mist de financiële spanning'}catch(e){msg=String(e)}tests.push({name:name,ok:ok,msg:msg});if(ok)pass++}
+ C('Miljonair maar negatieve cashflow',{age:45,goal:'health',income:5000,cost:15000,cash:50000,investments:2000000,debt:0,annualIncluded:true},function(a){return a.case.monthlySurplus<0 && a.score.value<80});
+ C('Veel beleggingen maar nul noodbuffer',{age:40,goal:'health',income:6000,cost:5000,cash:0,investments:500000,debt:0,annualIncluded:true},function(a){return a.dimensions.liquidity.bufferMonths===0 && a.score.value<90});
+ C('Hoog inkomen met dure schuld',{age:38,goal:'health',income:12000,cost:7000,cash:20000,investments:50000,debt:250000,debtRate:.11,annualIncluded:true},function(a){return a.dimensions.debt.highInterest===true && a.score.value<90});
+ C('Bijna pensioen met groot vermogen maar inkomensgat',{age:66,goal:'retirement',income:5000,cost:6000,cash:50000,investments:900000,debt:0,retireAge:67,aow:1500,pension:500,annualIncluded:true},function(a){return a.scenarios.retirement.currentEuroGap>0});
+ C('Rijk op papier maar illiquide',{age:50,goal:'health',income:4000,cost:5000,cash:1000,investments:1500000,debt:0,annualIncluded:true},function(a){return a.dimensions.liquidity.bufferMonths<1 && a.case.monthlySurplus<0});
+ C('Grote aankoop vreet volledige cashbuffer op',{age:42,goal:'purchase',income:7000,cost:4500,cash:60000,investments:200000,debt:0,purchaseAmount:60000,purchaseMonths:6,annualIncluded:true},function(a){return a.scenarios.purchase.bufferMonthsAfter<=0});
+ C('Negatieve maandbasis ondanks vermogen',{age:30,goal:'cashflow',income:3000,cost:5500,cash:100000,investments:400000,debt:0,annualIncluded:true},function(a){return a.case.monthlySurplus===-2500 && a.score.value<80});
+ C('Geen inkomen: evidence gate wint van vermogen',{age:50,goal:'health',income:null,cost:4000,cash:500000,investments:2000000,debt:0,annualIncluded:true},function(a){return a.score.value===null});
+ C('Nul uitgaven is geen normale huishoudsituatie',{age:35,goal:'health',income:5000,cost:0,cash:30000,investments:50000,debt:0,annualIncluded:true},function(a){return a.score.value===null || a.case.monthlySurplus===5000});
+ C('Pensioen al bereikt: horizon mag niet positief fantaseren',{age:70,goal:'retirement',income:2500,cost:3500,cash:30000,investments:400000,debt:0,retireAge:67,aow:1500,pension:1000,annualIncluded:true},function(a){return a.case.retirementHorizon<=0});
+ var html='<div class="card"><h1>Contradictie-/extrementest</h1><div class="score '+(pass===tests.length?'ok':'bad')+'">'+pass+' / '+tests.length+'</div><b>'+(pass===tests.length?'Alle financiële spanningen herkend':'Hier zitten echte blinde vlekken')+'</b></div>';
+ tests.forEach(function(t){html+='<div class="card"><b class="'+(t.ok?'ok':'bad')+'">'+(t.ok?'PASS':'FAIL')+'</b> · '+t.name+(t.msg?'<div class="small">'+t.msg+'</div>':'')+'</div>'});
+ document.getElementById('conflictSummary').innerHTML=html;document.getElementById('conflictSummary').scrollIntoView({behavior:'smooth'});
+};
 document.getElementById('meta').onclick=function(){
  var tests=[], pass=0;
  function T(name,base,mutate,check){
