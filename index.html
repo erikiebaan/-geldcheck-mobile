@@ -42,7 +42,8 @@
 <section class="step" data-step="5"><h2 id="futureTitle">Later</h2><div class="hint" id="futureHint">Alleen vragen die bij jouw doel horen.</div>
 <div id="retirementFields">
 <div class="row"><div class="field"><label>Gewenste pensioenleeftijd</label><input id="retire" type="number" inputmode="numeric" placeholder="67"></div><div class="field"><label>AOW netto p/m <span class="optional">(schatting)</span></label><input id="aow" type="number" inputmode="decimal" placeholder="1400"></div></div>
-<div class="field"><label>Ander pensioen netto p/m <span class="optional">(optioneel)</span></label><input id="pension" type="number" inputmode="decimal" placeholder="0"></div></div>
+<div class="row"><div class="field"><label>AOW vanaf leeftijd</label><input id="aowStart" type="number" inputmode="numeric" placeholder="67"></div><div class="field"><label>Ander pensioen netto p/m <span class="optional">(optioneel)</span></label><input id="pension" type="number" inputmode="decimal" placeholder="0"></div></div>
+<div class="field"><label>Ander pensioen vanaf leeftijd <span class="optional">(optioneel)</span></label><input id="pensionStart" type="number" inputmode="numeric" placeholder="67"></div></div>
 <div id="purchaseFields" style="display:none">
 <div class="field"><label>Bedrag van de grote uitgave</label><input id="purchaseAmount" type="number" inputmode="decimal" placeholder="25000"></div>
 <div class="field"><label>Over hoeveel maanden wil je dit kunnen betalen?</label><input id="purchaseMonths" type="number" inputmode="numeric" placeholder="36"></div></div>
@@ -55,7 +56,7 @@
 <button class="btn next" style="width:100%" type="button" id="analyze">Maak mijn Geldcheck</button><div id="output"></div></section>
 <div class="nav" id="nav"><button class="btn back" type="button" id="back">Terug</button><button class="btn next" type="button" id="next">Verder</button></div>
 </div></main>
-<script src="engine.js?v=1.1"></script>
+<script src="engine.js?v=1.2"></script>
 <script>
 (function(){
   var currentPos=0, annual=null, route=[];
@@ -111,7 +112,7 @@
     if(el('housing').value==='mortgage')rows.push(['Hypotheek',euro(num('mortgage'))],['Hypotheekrente',num('rate')!==null?String(num('rate')).replace('.',',')+'%':'—']);
     if(el('housing').value==='rent')rows.push(['Huur',euro(num('rent'))+' p/m']);
     rows.push(['Spaargeld',euro(num('cash'))],['Beleggingen',euro(num('invest'))]);
-    if(goal()==='retirement'||goal()==='early'||(goal()==='health'&&(num('age')||0)>=50))rows.push(['Pensioenleeftijd',num('retire')],['AOW',euro(num('aow'))+' p/m']);
+    if(goal()==='retirement'||goal()==='early'||(goal()==='health'&&(num('age')||0)>=50))rows.push(['Pensioenleeftijd',num('retire')],['AOW',euro(num('aow'))+' p/m'],['AOW vanaf',num('aowStart')],['Ander pensioen vanaf',num('pensionStart')]);
     if(goal()==='purchase')rows.push(['Grote uitgave',euro(num('purchaseAmount'))],['Termijn',num('purchaseMonths')!==null?num('purchaseMonths')+' maanden':'—']);
     el('review').innerHTML=rows.map(function(r){return '<div class="review"><b>'+r[0]+'</b>'+r[1]+'</div>'}).join('');
     el('goalReview').textContent=goalLabel(goal());
@@ -143,15 +144,26 @@
       housing:el('housing').value, mortgage:num('mortgage'), mortgageRate:num('rate')!==null?num('rate')/100:null,
       mortgageEndAge:num('mortEnd'), mortgagePayment:num('mortPay'), rent:num('rent'),
       cash:num('cash'), investments:num('invest'), debt:num('debt'), debtRate:num('debtRate')!==null?num('debtRate')/100:null,
-      debtPayment:num('debtPay'), retireAge:num('retire'), aow:num('aow'), pension:num('pension'),
+      debtPayment:num('debtPay'), retireAge:num('retire'), aow:num('aow'), aowStartAge:num('aowStart'), pension:num('pension'), pensionStartAge:num('pensionStart'),
       change:el('change').value, purchaseAmount:num('purchaseAmount'), purchaseMonths:num('purchaseMonths')
     };
     var a=GeldcheckEngine.analyze(input), c=a.case;
-    var title=a.missing.length>=3?'Nog te weinig informatie.':'Je financiële basis is '+a.score.label+'.';
+    var title=a.missing.length>=3?'Nog te weinig informatie.':(a.decision?'Je Geldcheck is berekend.':'Je financiële basis is '+a.score.label+'.');
     var html='<div class="result"><b>'+title+'</b><p>';
     if(a.score.value!==null) html+='Geldcheck-score '+a.score.value+'/100. ';
     html+=a.missing.length?'Eerst ontbreken nog '+a.missing.map(function(x){return x.label}).join(', ')+'.':'De uitkomst combineert cashflow, buffer, vermogen, schuld, levensfase en jouw doel.';
     html+='</p></div>';
+    if(a.decision){
+      var d=a.decision;
+      var tone=d.tone==='yes'?'#dfeee8':d.tone==='maybe'?'#fff1d7':'#f6dfdc';
+      html+='<div class="action" style="background:'+tone+'"><b>Antwoord op je hoofdvraag</b><br><span style="font-size:24px;font-weight:900">'+d.verdict+'</span><br>';
+      html+='Getest vanaf leeftijd '+d.targetAge+'. ';
+      if(d.bridgeYears!==null&&d.bridgeYears>0) html+='Je moet ongeveer '+d.bridgeYears+' jaar overbruggen tot AOW. ';
+      if(d.earliestConservativeAge!==null) html+='In het voorzichtige scenario ligt de eerste robuuste leeftijd rond '+d.earliestConservativeAge+'. ';
+      if(d.conservative) html+='Voorzichtig + beursdaling bij start: '+(d.conservative.success?'houdt stand tot 95':'loopt vast rond leeftijd '+d.conservative.failedAge)+'. ';
+      if(d.base) html+='Basisscenario: '+(d.base.success?'houdt stand tot 95':'loopt vast rond leeftijd '+d.base.failedAge)+'.';
+      html+='</div>';
+    }
 
     html+='<div class="tiles">';
     html+='<div class="tile"><b>'+euro(c.monthlySurplus)+'</b><span>theoretische maandruimte</span></div>';
@@ -231,7 +243,7 @@
       html+='</div>';
     }
 
-    html+='<div class="small" style="margin-top:14px">Engine v1.1 · interpretatie op basis van cashflow, liquiditeit, vermogen, schuld, wonen, levensfase, doel en gevoeligheidsanalyse. Inflatie en rendement zijn scenario-aannames, geen voorspellingen.</div>';
+    html+='<div class="small" style="margin-top:14px">Engine v1.2 · interpretatie plus beslismotor voor eerder stoppen/pensioen, met AOW-brug, inflatie, onttrekkingen en crashstress. Inflatie en rendement zijn scenario-aannames, geen voorspellingen.</div>';
     el('output').innerHTML=html;
     el('output').scrollIntoView({behavior:'smooth'});
   });
