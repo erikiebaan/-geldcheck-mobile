@@ -55,6 +55,7 @@
 <button class="btn next" style="width:100%" type="button" id="analyze">Maak mijn Geldcheck</button><div id="output"></div></section>
 <div class="nav" id="nav"><button class="btn back" type="button" id="back">Terug</button><button class="btn next" type="button" id="next">Verder</button></div>
 </div></main>
+<script src="engine.js"></script>
 <script>
 (function(){
   var currentPos=0, annual=null, route=[];
@@ -135,50 +136,70 @@
   });
 
   analyzeBtn.addEventListener('click',function(){
-    var g=goal(), age=num('age'), income=(num('income')||0)+(num('otherIncome')||0), cost=num('cost'), cash=num('cash')||0, invest=num('invest')||0, debt=num('debt')||0;
-    var missing=[];
-    if(age===null)missing.push('leeftijd');
-    if(!income)missing.push('inkomen');
-    if(cost===null)missing.push('uitgaven');
-    if((g==='retirement'||g==='early'||(g==='health'&&age>=50))&&num('retire')===null)missing.push('pensioenleeftijd');
-    if(g==='purchase'&&num('purchaseAmount')===null)missing.push('bedrag grote uitgave');
-    if(g==='purchase'&&num('purchaseMonths')===null)missing.push('termijn grote uitgave');
+    var input={
+      age:num('age'), household:el('house').value, kids:num('kids'), goal:goal(),
+      income:num('income'), otherIncome:num('otherIncome'), cost:num('cost'),
+      annualIncluded:annual==='yes', savingGrowth:num('savingGrowth'),
+      housing:el('housing').value, mortgage:num('mortgage'), mortgageRate:num('rate')!==null?num('rate')/100:null,
+      mortgageEndAge:num('mortEnd'), mortgagePayment:num('mortPay'), rent:num('rent'),
+      cash:num('cash'), investments:num('invest'), debt:num('debt'), debtRate:num('debtRate')!==null?num('debtRate')/100:null,
+      debtPayment:num('debtPay'), retireAge:num('retire'), aow:num('aow'), pension:num('pension'),
+      change:el('change').value, purchaseAmount:num('purchaseAmount'), purchaseMonths:num('purchaseMonths')
+    };
+    var a=GeldcheckEngine.analyze(input), c=a.case;
+    var title=a.missing.length>=3?'Nog te weinig informatie.':'Je financiële basis is '+a.score.label+'.';
+    var html='<div class="result"><b>'+title+'</b><p>';
+    if(a.score.value!==null) html+='Geldcheck-score '+a.score.value+'/100. ';
+    html+=a.missing.length?'Eerst ontbreken nog '+a.missing.map(function(x){return x.label}).join(', ')+'.':'De uitkomst combineert cashflow, buffer, vermogen, schuld, levensfase en jouw doel.';
+    html+='</p></div>';
 
-    var free=cost===null?null:income-cost;
-    var html='<div class="result"><b>'+(missing.length?'Nog één stap: informatie ontbreekt.':'Je Geldcheck staat.')+'</b><p>'+(missing.length?'Ik mis: '+missing.join(', ')+'.':'Ik heb alleen gerekend met gegevens die jij hebt bevestigd.')+'</p></div>';
-    if(!missing.length){
-      html+='<div class="tiles"><div class="tile"><b>'+euro(free)+'</b><span>theoretische maandruimte</span></div><div class="tile"><b>'+euro(cash+invest-debt)+'</b><span>netto financieel vermogen excl. woning</span></div></div>';
+    html+='<div class="tiles">';
+    html+='<div class="tile"><b>'+euro(c.monthlySurplus)+'</b><span>theoretische maandruimte</span></div>';
+    html+='<div class="tile"><b>'+euro(c.netFinancialAssets)+'</b><span>netto financieel vermogen excl. woning</span></div>';
+    if(c.cashBufferMonths!==null) html+='<div class="tile"><b>'+c.cashBufferMonths.toFixed(1).replace('.',',')+' mnd</b><span>cashbuffer in huidige uitgaven</span></div>';
+    if(c.savingsRate!==null) html+='<div class="tile"><b>'+Math.round(c.savingsRate*100)+'%</b><span>theoretische spaarquote</span></div>';
+    html+='</div>';
 
-      if(g==='cashflow'){
-        var sg=num('savingGrowth');
-        if(sg!==null && free!==null){
-          var gap=free-sg;
-          html+='<div class="action"><b>Waar blijft je geld?</b><br>Op papier is je maandruimte '+euro(free)+', maar je spaargeld groeit circa '+euro(sg)+'. Het verschil is ongeveer '+euro(gap)+' per maand. Dáár moet de volgende controle op focussen: jaarlijkse en incidentele uitgaven.</div>';
-        }else{
-          html+='<div class="action"><b>Maak de papieren ruimte echt.</b><br>Vergelijk je berekende maandruimte met de werkelijke groei van je bank- en spaartegoeden over 6–12 maanden.</div>';
-        }
-      }
+    a.topFindings.forEach(function(f){
+      html+='<div class="action"><b>'+f.title+'</b><br>'+f.text+'</div>';
+    });
 
-      if(annual==='no')html+='<div class="action"><b>Je maandruimte is waarschijnlijk te optimistisch.</b><br>Vakantie, onderhoud, kleding, auto en andere jaarposten zijn nog niet volledig verwerkt.</div>';
-
-      if(el('housing').value==='mortgage' && num('mortgage') && num('mortEnd') && ((g==='retirement'||g==='early') && num('retire')) && num('mortEnd')>num('retire')){
-        html+='<div class="action"><b>Je hypotheek loopt door na je gewenste pensioen.</b><br>Daarom moet de woonlast expliciet in de pensioenfase blijven staan.</div>';
-      }
-
-      if((g==='retirement'||g==='early'||(g==='health'&&age>=50)) && invest>0 && num('retire')!==null){
-        var years=num('retire')-age, inf=.02;
-        html+='<div class="action"><b>Vermogen op '+num('retire')+' in koopkracht van vandaag</b><br>';
-        [0.03,0.05,0.07].forEach(function(r){var fv=invest*Math.pow(1+r,years),real=fv/Math.pow(1+inf,years);html+='Bij '+Math.round(r*100)+'%: '+euro(fv)+' nominaal · circa '+euro(real)+' reëel.<br>'});
-        html+='</div>';
-        var pensionIncome=(num('aow')||0)+(num('pension')||0);
-        if(cost!==null && pensionIncome<cost)html+='<div class="action"><b>Je huidige-euro inkomensgat vanaf pensioen</b><br>'+euro(cost)+' uitgaven minus '+euro(pensionIncome)+' AOW/pensioen = circa '+euro(cost-pensionIncome)+' per maand uit vermogen of ander inkomen.</div>';
-      }
-
-      if(g==='purchase'){
-        var amount=num('purchaseAmount'), months=num('purchaseMonths'), reserve=months?amount/months:null;
-        html+='<div class="action"><b>Wat vraagt je plan?</b><br>Voor '+euro(amount)+' over '+months+' maanden is circa '+euro(reserve)+' per maand nodig. '+(free!==null?(free>=reserve?'Dat past binnen je huidige theoretische maandruimte, vóór buffer- en toekomstcheck.':'Dat is méér dan je huidige theoretische maandruimte; het plan vraagt dus aanpassing of inzet van vermogen.'):'')+'</div>';
-      }
+    if(a.scenarios.reconciliation){
+      var r=a.scenarios.reconciliation;
+      html+='<div class="action"><b>Papier versus werkelijkheid</b><br>Papieren ruimte '+euro(r.paperSurplus)+' · werkelijke spaargroei '+euro(r.actualSaving)+' · verschil '+euro(r.gap)+' per maand.</div>';
     }
+
+    if(a.scenarios.investment.length){
+      html+='<div class="action"><b>Vermogensscenario’s in koopkracht van vandaag</b><br>';
+      a.scenarios.investment.forEach(function(s){
+        html+='Bij '+Math.round(s.return*100)+'% gemiddeld rendement over '+s.horizon+' jaar: '+euro(s.nominal)+' nominaal · '+euro(s.real)+' reëel.<br>';
+      });
+      html+='</div>';
+    }
+
+    if(a.scenarios.retirement){
+      var rr=a.scenarios.retirement;
+      html+='<div class="action"><b>Pensioenbrug</b><br>Bekend AOW/pensioen '+euro(rr.monthlyPensionIncome)+' p/m';
+      if(rr.currentEuroGap!==null) html+=' · huidig-euro tekort '+euro(rr.currentEuroGap)+' p/m';
+      if(rr.gapWithdrawalPct!==null) html+=' · onttrekking t.o.v. 5%-scenario circa '+(rr.gapWithdrawalPct*100).toFixed(1).replace('.',',')+'% per jaar';
+      html+='.</div>';
+    }
+
+    if(a.scenarios.purchase){
+      var p=a.scenarios.purchase;
+      html+='<div class="action"><b>Grote uitgave</b><br>Benodigde reservering '+euro(p.monthlyReserve)+' p/m. ';
+      html+=p.fitsMonthly===true?'Dit past binnen de huidige theoretische maandruimte.':p.fitsMonthly===false?'Dit past niet binnen de huidige theoretische maandruimte.':'Maandruimte is nog onbekend.';
+      if(p.bufferMonthsAfter!==null) html+=' Buffer na directe betaling: '+p.bufferMonthsAfter.toFixed(1).replace('.',',')+' maanden.';
+      html+='</div>';
+    }
+
+    if(a.nextQuestions.length){
+      html+='<div class="action"><b>Wat verandert de uitkomst nu het meest?</b><br>';
+      a.nextQuestions.forEach(function(q,i){html+=(i+1)+'. '+q.title+' — '+q.why+'<br>'});
+      html+='</div>';
+    }
+
+    html+='<div class="small" style="margin-top:14px">Engine v1.0 · generieke dimensies: cashflow, liquiditeit, vermogen, schuld, wonen, levensfase en doel. Inflatie en rendement zijn scenario-aannames, geen voorspellingen.</div>';
     el('output').innerHTML=html;
     el('output').scrollIntoView({behavior:'smooth'});
   });
