@@ -1,0 +1,54 @@
+name: Build Flutter preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "flutter_app/**"
+      - ".github/workflows/flutter-preview.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Get dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Build web
+        working-directory: flutter_app
+        run: flutter build web --release --base-href "/-geldcheck-mobile/flutter-preview/"
+
+      - name: Publish preview into repository
+        run: |
+          rm -rf flutter-preview
+          mkdir -p flutter-preview
+          cp -R flutter_app/build/web/. flutter-preview/
+          touch flutter-preview/.nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flutter-preview
+          if git diff --cached --quiet; then
+            echo "No preview changes"
+          else
+            git commit -m "Publish Flutter preview"
+            git push
+          fi
