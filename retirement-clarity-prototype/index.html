@@ -1,0 +1,109 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Retirement Clarity Prototype</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:20px}main{max-width:900px;margin:auto}
+.card{background:white;border:1px solid #ddd7ca;border-radius:26px;padding:22px;margin-bottom:14px}h1{font-size:42px;line-height:1.02;margin:0 0 12px}h2{font-size:26px;margin:0 0 12px}
+p{color:#6f6f6f;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin-bottom:12px}.field label{display:block;font-size:13px;color:#777;margin-bottom:5px}
+input,select{width:100%;box-sizing:border-box;border:1px solid #d8d2c7;border-radius:14px;padding:13px;font-size:17px;background:#fff}.big{font-size:46px;font-weight:900;line-height:1}
+.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:15px}.kpi span{font-size:13px;color:#777}.kpi b{display:block;font-size:25px;margin-top:5px}.ok{color:#19765f}.warn{color:#b06b00}.bad{color:#b43131}
+button{width:100%;border:0;border-radius:18px;padding:17px;background:#19765f;color:#fff;font-size:19px;font-weight:850}.story{background:#faf8f3;border-radius:16px;padding:16px;line-height:1.55;white-space:pre-line}
+.note{font-size:13px;color:#777}.bar{height:12px;background:#ebe6dc;border-radius:999px;overflow:hidden}.fill{height:100%;background:#19765f}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.big{font-size:38px}}
+</style></head><body><main>
+<div class="card"><h1>Wanneer kan ik stoppen?</h1>
+<p>Prototype voor een duidelijker Geldcheck-antwoord. Niet “je verliest €X als je eerder stopt”, maar: <b>wanneer kan je stoppen, welk rendement is nodig, hoeveel inkomen moet je nog houden en wat zijn de risico’s?</b></p></div>
+
+<div class="card"><h2>Jouw voorbeeld</h2>
+<div class="grid">
+<div class="field"><label>Leeftijd nu</label><input id="age" type="number" value="55"></div>
+<div class="field"><label>AOW-leeftijd</label><input id="aowAge" type="number" value="67"></div>
+<div class="field"><label>Netto inkomen p/m</label><input id="income" type="number" value="3000"></div>
+<div class="field"><label>Uitgaven p/m (incl. hypotheeklasten)</label><input id="cost" type="number" value="2100"></div>
+<div class="field"><label>Belegd vermogen</label><input id="capital" type="number" value="250000"></div>
+<div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" value="245000"></div>
+<div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>
+<div class="field"><label>Bruto salaris p/j (context)</label><input id="salary" type="number" value="50000"></div>
+<div class="field"><label>Maximaal afbouwen werkinkomen %</label><input id="taper" type="number" value="40"></div>
+<div class="field"><label>AOW netto p/m</label><input id="aow" type="number" value="1500"></div>
+<div class="field"><label>Pensioen netto p/m bovenop AOW</label><input id="pension" type="number" value="0"></div>
+<div class="field"><label>Gewenste leeftijd volledig stoppen</label><input id="stopAge" type="number" value="60"></div>
+</div>
+<button onclick="calc()">Bereken mijn stoproute</button>
+<p class="note">AOW en pensioen staan bewust als invulvelden. Vul straks je echte bedragen in; anders is dit alleen een scenario.</p>
+</div>
+
+<div id="out"></div>
+
+<script>
+function eur(x){return new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(x)}
+function pct(x){return (x*100).toFixed(1).replace('.',',')+'%'}
+function solveRequiredReturn(PV,W,n){
+ if(n<=0||W<=0)return 0;
+ if(PV<=0)return Infinity;
+ let lo=-0.95,hi=1.0;
+ for(let i=0;i<140;i++){
+  let r=(lo+hi)/2;
+  let pv=Math.abs(r)<1e-10?W*n:W*(1-Math.pow(1+r,-n))/r;
+  if(pv>PV) lo=r; else hi=r;
+ }
+ return (lo+hi)/2;
+}
+function futureCapital(PV,r,annualGap,n){
+ let c=PV;
+ for(let y=0;y<n;y++) c=c*(1+r)-annualGap;
+ return c;
+}
+function calc(){
+ const age=+document.getElementById('age').value,aowAge=+document.getElementById('aowAge').value;
+ const income=+document.getElementById('income').value,cost=+document.getElementById('cost').value,capital=+document.getElementById('capital').value;
+ const mortgage=+document.getElementById('mortgage').value,mortRate=+document.getElementById('mortRate').value/100;
+ const taper=+document.getElementById('taper').value/100,aow=+document.getElementById('aow').value,pension=+document.getElementById('pension').value;
+ const stopAge=+document.getElementById('stopAge').value;
+ const yearsToAow=Math.max(0,aowAge-age),yearsToStop=Math.max(0,stopAge-age);
+ const reducedIncome=income*(1-taper);
+ const gapReduced=Math.max(0,cost-reducedIncome);
+ const fullGap=cost;
+ const reqNow=solveRequiredReturn(capital,fullGap*12,yearsToAow);
+ const reqReduced=solveRequiredReturn(capital,gapReduced*12,yearsToAow);
+ const postAowGap=Math.max(0,cost-aow-pension);
+ const postAowRate=capital>0?postAowGap*12/capital:Infinity;
+ const mortInterest= mortgage*mortRate/12;
+ const capAtAow0=futureCapital(capital,0,gapReduced*12,yearsToAow);
+ const capAtAow3=futureCapital(capital,0.03,gapReduced*12,yearsToAow);
+ const stopGapYears=Math.max(0,aowAge-stopAge);
+ const capAtStop0=futureCapital(capital,0,gapReduced*12,yearsToStop);
+ const reqAfterStop=solveRequiredReturn(capAtStop0,fullGap*12,stopGapYears);
+
+ let verdict='Sterke route om eerst af te bouwen'; let cls='ok';
+ if(!isFinite(reqReduced)||reqReduced>0.06){verdict='Afbouwen vraagt nog te veel van je vermogen';cls='bad'}
+ else if(reqReduced>0.03){verdict='Afbouwen kan, maar rendement wordt belangrijk';cls='warn'}
+
+ document.getElementById('out').innerHTML=
+ '<div class="card"><div class="big '+cls+'">'+verdict+'</div><p>De hoofdvraag is niet hoeveel vermogen je “verliest” door eerder te stoppen. De vraag is hoeveel van je jaarlijkse levensonderhoud je beleggingen moeten overnemen.</p></div>'+
+ '<div class="card"><h2>1. Als je 40% afbouwt</h2><div class="grid">'+
+ '<div class="kpi"><span>Netto inkomen na afbouw</span><b>'+eur(reducedIncome)+'/mnd</b></div>'+
+ '<div class="kpi"><span>Tekort dat vermogen moet dragen</span><b>'+eur(gapReduced)+'/mnd</b></div>'+
+ '<div class="kpi"><span>Onttrekking op '+eur(capital)+'</span><b>'+pct(gapReduced*12/capital)+' p/j</b></div>'+
+ '<div class="kpi"><span>Rendement nodig tot AOW*</span><b>'+(isFinite(reqReduced)?pct(reqReduced):'onhaalbaar')+'</b></div>'+
+ '</div><p class="note">*Benadering: constant jaarlijks rendement, vaste uitgaven, geen belasting/inflatie/marktvolgorde.</p></div>'+
+ '<div class="card"><h2>2. Als je nu volledig stopt</h2><div class="grid">'+
+ '<div class="kpi"><span>Vermogen moet betalen</span><b>'+eur(fullGap)+'/mnd</b></div>'+
+ '<div class="kpi"><span>Start-onttrekking</span><b>'+pct(fullGap*12/capital)+' p/j</b></div>'+
+ '<div class="kpi"><span>Rendement nodig om AOW te halen*</span><b>'+(isFinite(reqNow)?pct(reqNow):'onhaalbaar')+'</b></div>'+
+ '<div class="kpi"><span>Jaren te overbruggen</span><b>'+yearsToAow+'</b></div>'+
+ '</div></div>'+
+ '<div class="card"><h2>3. Vanaf AOW: wat moet je vermogen nog doen?</h2><div class="grid">'+
+ '<div class="kpi"><span>AOW + pensioen</span><b>'+eur(aow+pension)+'/mnd</b></div>'+
+ '<div class="kpi"><span>Nog nodig boven AOW/pensioen</span><b>'+eur(postAowGap)+'/mnd</b></div>'+
+ '<div class="kpi"><span>Als vermogen nog '+eur(capital)+' is</span><b>'+pct(postAowRate)+' opname p/j</b></div>'+
+ '<div class="kpi"><span>Hypotheekrente indicatief</span><b>'+eur(mortInterest)+'/mnd rente</b></div>'+
+ '</div></div>'+
+ '<div class="card"><h2>4. Geplande volledige stop op '+stopAge+'</h2><div class="grid">'+
+ '<div class="kpi"><span>Vermogen op stopdatum bij 0% rendement</span><b>'+eur(capAtStop0)+'</b></div>'+
+ '<div class="kpi"><span>Rendement daarna nodig tot AOW*</span><b>'+(isFinite(reqAfterStop)?pct(reqAfterStop):'onhaalbaar')+'</b></div>'+
+ '<div class="kpi"><span>Vermogen op AOW bij 0% tijdens afbouw</span><b>'+eur(capAtAow0)+'</b></div>'+
+ '<div class="kpi"><span>Vermogen op AOW bij 3% tijdens afbouw</span><b>'+eur(capAtAow3)+'</b></div>'+
+ '</div></div>'+
+ '<div class="card"><h2>5. Belangrijkste risico’s</h2><div class="story">• <b>Sequence risk:</b> slechte beursjaren vlak na stoppen zijn veel gevaarlijker dan hetzelfde gemiddelde rendement later.\n\n• <b>Inflatie:</b> '+eur(cost)+'/mnd blijft waarschijnlijk niet gelijk tot AOW.\n\n• <b>Hypotheek:</b> '+eur(mortgage)+' tegen '+(mortRate*100).toFixed(1).replace('.',',')+'% is een grote vaste balanspost. De exacte maandlast en einddatum bepalen hoeveel vrijheid je werkelijk hebt.\n\n• <b>AOW/pensioen:</b> je echte bedragen zijn cruciaal. Het relevante getal na AOW is niet je eindvermogen, maar je jaarlijkse tekort <i>boven</i> AOW + pensioen.\n\n• <b>Werk afbouwen:</b> een 40%-afbouw verlaagt de druk op je portefeuille enorm vergeleken met direct volledig stoppen.</div></div>';
+}
+calc();
+</script></body></html>
