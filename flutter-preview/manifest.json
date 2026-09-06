@@ -1,0 +1,11 @@
+{
+  "name": "Heb ik straks genoeg?",
+  "short_name": "Geldcheck",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#F6F4FB",
+  "theme_color": "#6550A8",
+  "description": "Geldcheck Flutter prototype",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
+}
