@@ -1,0 +1,115 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Boundary & Collision Test</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}main{max-width:820px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}h1{font-size:42px;line-height:1.02;margin:0 0 12px}p{color:#777;line-height:1.45}button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}.small{font-size:13px;color:#777}.case{background:#fff;border:1px solid #ddd7ca;border-radius:18px;padding:15px;margin:10px 0}.why{font-size:13px;color:#777;margin-top:5px}
+</style></head><body><main>
+<div class="card"><h1>Boundary & Collision 78</h1><p>Gerichte aanval op exacte omslagpunten: €0/€1, dezelfde leeftijd, start/eind op hetzelfde moment, cash precies op, meerdere gebeurtenissen tegelijk en extreme liquiditeitsbotsingen.</p><p class="small"><b>Build BC2 · 78 grens- en botsingstests · bridge v0.3</b></p><button id="run">Run 78 Boundary & Collision tests</button><div id="sum"></div></div><div id="out"></div>
+</main>
+<script src="../engine.js?v=1.2"></script>
+<script src="../future_layer.js?v=0.1"></script>
+<script src="../future_bridge.js?v=0.3"></script>
+<script>
+(function(){
+"use strict";
+var T=[];
+function add(n,c,f,fn,why){T.push({n,c,f,fn,why})}
+function sim(c,f,o){return GeldcheckFutureBridge.simulate(c,f||{},o||{mode:"conservative",nominalReturn:.03,crashAtRetirement:true})}
+function base(o){return Object.assign({age:60,goal:"early",income:4000,cost:3000,cash:100000,investments:500000,retireAge:60,aow:1500,aowStartAge:67,pension:800,pensionStartAge:67},o||{})}
+function at(r,age){return r.ledger.find(x=>x.age===age)}
+function noFuture(c){return sim(c,{})}
+function approx(a,b,t){return Math.abs(a-b)<=(t||1)}
+
+add("Ontvangst exact op pensioenleeftijd",base({retireAge:60}),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:60,certainty:"certain",liquidity:"immediate"}]},r=>at(r,60).injected===100000,"exact vanaf leeftijd 60");
+add("Ontvangst 1 jaar later niet eerder",base({retireAge:60}),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:61,certainty:"certain",liquidity:"immediate"}]},r=>at(r,60).injected===0&&at(r,61).injected===100000,"geen vroeg gebruik");
+add("€0 ontvangst doet niets",base(),{events:[{id:"g",type:"future_lump_sum",amount:0,availableFromAge:60,certainty:"certain",liquidity:"immediate"}]},r=>approx(r.endCapital,noFuture(base()).endCapital),"nul mag geen effect hebben");
+add("€1 ontvangst verslechtert niet",base(),{events:[{id:"g",type:"future_lump_sum",amount:1,availableFromAge:60,certainty:"certain",liquidity:"immediate"}]},r=>r.endCapital>=noFuture(base()).endCapital-1,"€1 monotoniciteit");
+add("Twee ontvangsten zelfde leeftijd",base(),{events:[{id:"a",type:"future_lump_sum",amount:10000,availableFromAge:65,certainty:"certain",liquidity:"immediate"},{id:"b",type:"future_lump_sum",amount:20000,availableFromAge:65,certainty:"certain",liquidity:"immediate"}]},r=>at(r,65).injected===30000,"beide exact één keer");
+add("Ontvangst en zorgkosten zelfde leeftijd",base(),{events:[{id:"a",type:"future_lump_sum",amount:12000,availableFromAge:70,certainty:"certain",liquidity:"immediate"},{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:70,endAge:70,certainty:"certain"}]},r=>at(r,70).injected===12000&&at(r,70).extraExpense===12000,"zelfde jaar beide verwerken");
+add("Lijfrente start exact 65",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:65,endAge:70,certainty:"contractual"}]},r=>at(r,64).extraIncome===0&&at(r,65).extraIncome>0,"startgrens exact");
+add("Lijfrente eindigt exact na 70",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:65,endAge:70,certainty:"contractual"}]},r=>at(r,70).extraIncome>0&&at(r,71).extraIncome===0,"eindleeftijd inclusief 70");
+add("Start en eind zelfde leeftijd",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:68,endAge:68,certainty:"contractual"}]},r=>at(r,67).extraIncome===0&&at(r,68).extraIncome>0&&at(r,69).extraIncome===0,"éénjaars stroom");
+add("AOW en lijfrente starten gelijk",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:67,endAge:75,certainty:"contractual"}]},r=>at(r,67).extraIncome>0&&at(r,67).need<base().cost*12,"beide inkomsten samen");
+add("Pensioen en lijfrente starten gelijk",base({pensionStartAge:65}),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:65,endAge:75,certainty:"contractual"}]},r=>at(r,65).extraIncome>0,"geen timingconflict");
+add("Cash exact nul",base({cash:0}),{},r=>r.cash>=0&&r.fundingGap>=0,"geen negatieve cash");
+add("Investments exact nul",base({investments:0}),{},r=>r.invested>=0&&r.fundingGap>=0,"geen negatieve beleggingen");
+add("Cash 1 euro",base({cash:1}),{},r=>r.cash>=0,"microbuffer");
+add("Investments 1 euro",base({investments:1}),{},r=>r.invested>=0,"microvermogen");
+add("Cash exact één jaar kosten",base({cash:36000,investments:0,cost:3000,aow:0,pension:0}),{},r=>at(r,60).cash===0,"precies opgebruikt");
+add("Cash €1 te weinig",base({cash:35999,investments:0,cost:3000,aow:0,pension:0}),{},r=>r.failedAge===60,"€1 tekort moet zichtbaar zijn");
+add("Cash €1 meer",base({cash:36001,investments:0,cost:3000,aow:0,pension:0}),{},r=>at(r,60).cash===1,"€1 restant blijft staan");
+add("Funding gap exact nul bij voldoende middelen",base({cash:500000,investments:500000}),{},r=>r.fundingGap>=0,"geen negatieve gap");
+add("Future gift sluit tekort exact",base({cash:0,investments:0,cost:1000,aow:0,pension:0}),{events:[{id:"g",type:"future_lump_sum",amount:12000,availableFromAge:60,certainty:"certain",liquidity:"immediate"}]},r=>at(r,60).netPosition===0,"exacte dekking");
+add("Gift 1 euro te laag",base({cash:0,investments:0,cost:1000,aow:0,pension:0}),{events:[{id:"g",type:"future_lump_sum",amount:11999,availableFromAge:60,certainty:"certain",liquidity:"immediate"}]},r=>at(r,60).fundingGap===1,"€1 tekort bewaren");
+add("Gift 1 euro hoger",base({cash:0,investments:0,cost:1000,aow:0,pension:0}),{events:[{id:"g",type:"future_lump_sum",amount:12001,availableFromAge:60,certainty:"certain",liquidity:"immediate"}]},r=>at(r,60).cash===1,"€1 overschot bewaren");
+add("Onzekere erfenis exact nu telt niet conservatief",base(),{events:[{id:"e",type:"uncertain_asset",amount:1000000,availableFromAge:60,certainty:"uncertain",liquidity:"immediate"}]},r=>r.consumed.indexOf("e")<0,"onzeker blijft buiten conservatief");
+add("Waarschijnlijke erfenis exact nu telt niet base",base(),{events:[{id:"e",type:"uncertain_asset",amount:1000000,availableFromAge:60,certainty:"probable",liquidity:"immediate"}]},r=>GeldcheckFutureBridge.simulate(base(),{events:[{id:"e",type:"uncertain_asset",amount:1000000,availableFromAge:60,certainty:"probable",liquidity:"immediate"}]},{mode:"base",nominalReturn:.05,crashAtRetirement:false}).consumed.indexOf("e")<0,"probable niet als zeker");
+add("Contractuele stroom exact nu telt wel",base(),{events:[{id:"l",type:"lifetime_income",monthlyAmount:500,availableFromAge:60,certainty:"contractual"}]},r=>at(r,60).extraIncome>0,"contractueel telt");
+add("Restricted asset exact nu niet geconsumeerd",base(),{assets:[{id:"b",type:"blocked_asset",currentValue:500000,availableFromAge:60,certainty:"contractual",liquidity:"restricted",restricted:true}]},r=>r.consumed.indexOf("b")<0,"geb lokkeerd blijft buiten");
+add("Illiquide woning exact nu niet geconsumeerd",base(),{assets:[{id:"h",type:"illiquid_property",currentValue:1000000,certainty:"certain",liquidity:"illiquid"}]},r=>r.consumed.indexOf("h")<0,"woning is geen cash");
+add("Niet bruikbaar vrij item blijft buiten",base(),{assets:[{id:"x",type:"future_lump_sum",currentValue:200000,availableFromAge:60,certainty:"certain",liquidity:"immediate",usableForGoals:false}]},r=>r.consumed.indexOf("x")<0,"doelbeperking respecteren");
+add("Zelfde item niet dubbel injecteren",base(),{events:[{id:"g",type:"future_lump_sum",amount:10000,availableFromAge:60,certainty:"certain",liquidity:"immediate"}]},r=>r.ledger.reduce((s,x)=>s+x.injected,0)===10000,"eenmalig is echt eenmalig");
+add("Drie gifts zelfde jaar optellen",base(),{events:[1,2,3].map((x,i)=>({id:"g"+i,type:"future_lump_sum",amount:10000,availableFromAge:62,certainty:"certain",liquidity:"immediate"}))},r=>at(r,62).injected===30000,"collision optelling");
+add("Twee lijfrentes overlappen",base(),{events:[{id:"a",type:"temporary_income",monthlyAmount:500,availableFromAge:65,endAge:70,certainty:"contractual"},{id:"b",type:"temporary_income",monthlyAmount:700,availableFromAge:65,endAge:70,certainty:"contractual"}]},r=>at(r,65).extraIncome>13000,"overlap telt samen");
+add("Lijfrente A stopt terwijl B doorloopt",base(),{events:[{id:"a",type:"temporary_income",monthlyAmount:500,availableFromAge:65,endAge:67,certainty:"contractual"},{id:"b",type:"temporary_income",monthlyAmount:700,availableFromAge:65,endAge:70,certainty:"contractual"}]},r=>at(r,68).extraIncome>0&&at(r,68).extraIncome<10000,"alleen B over");
+add("Zorgkosten starten exact bij AOW",base(),{events:[{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:67,endAge:80,certainty:"certain"}]},r=>at(r,67).extraExpense===12000,"zelfde leeftijd collision");
+add("Zorgkosten stoppen exact op 80",base(),{events:[{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:67,endAge:80,certainty:"certain"}]},r=>at(r,80).extraExpense===12000&&at(r,81).extraExpense===0,"einde exact");
+add("Kosten €0 doen niets",base(),{events:[{id:"z",type:"future_expense",monthlyAmount:0,availableFromAge:70,endAge:80,certainty:"certain"}]},r=>approx(r.endCapital,noFuture(base()).endCapital),"nul-effect");
+add("Kosten €1 p/m verslechteren niet verbeteren",base(),{events:[{id:"z",type:"future_expense",monthlyAmount:1,availableFromAge:70,endAge:80,certainty:"certain"}]},r=>r.endCapital<=noFuture(base()).endCapital+1,"monotoniciteit");
+add("Tax 0% gift",base(),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:60,certainty:"certain",liquidity:"immediate",taxable:true,taxRate:0}]},r=>at(r,60).injected===100000,"0% tax");
+add("Tax 100% gift",base(),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:60,certainty:"certain",liquidity:"immediate",taxable:true,taxRate:1}]},r=>at(r,60).injected===0,"100% tax netto nul");
+add("Tax 25% gift",base(),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:60,certainty:"certain",liquidity:"immediate",taxable:true,taxRate:.25}]},r=>at(r,60).injected===75000,"netto exact");
+add("Retire age = current age",base({age:60,retireAge:60}),{},r=>r.retireAge===60,"geen voorfase");
+add("Retire age current+1",base({age:60,retireAge:61}),{},r=>r.retireAge===61&&r.ledger[0].age===61,"één jaar sparen");
+add("Retire age current-1 wordt current",base({age:60,retireAge:59}),{},r=>r.retireAge===60,"geen terug in tijd");
+add("AOW start vóór retirement",base({retireAge:70,aowStartAge:67}),{},r=>at(r,70).need<base({retireAge:70,aowStartAge:67}).cost*12,"AOW al actief");
+add("Pensioen start vóór retirement",base({retireAge:70,pensionStartAge:65}),{},r=>at(r,70).need<base({retireAge:70,pensionStartAge:65}).cost*12,"pensioen al actief");
+add("AOW en pensioen nul",base({aow:0,pension:0}),{},r=>at(r,67).need===base({aow:0,pension:0}).cost*12,"nul blijft nul");
+add("AOW exact gelijk aan kosten, pensioen 0",base({cost:1500,aow:1500,aowStartAge:67,pension:0}),{},r=>at(r,67).need===0,"volledig gedekt");
+add("Inkomen boven kosten voor retirement sparen",base({age:60,retireAge:62,income:5000,cost:3000}),{},r=>r.ledger[0].age===62,"pre-retirement accumulatie");
+add("Negatieve maandruimte spaart niet negatief",base({age:60,retireAge:62,income:2000,cost:3000}),{},r=>r.ledger[0].age===62,"geen negatieve saving-injectie");
+add("Crash bij retirement activeert",base(),{},r=>r.invested<=base().investments,"conservatieve crash");
+add("Base zonder crash eindigt niet lager dan conservative",base(),{},r=>GeldcheckFutureBridge.compare(base(),{}).base.endCapital>=GeldcheckFutureBridge.compare(base(),{}).conservative.endCapital,"scenario-ordening");
+add("Gift exact na failure blijft zichtbaar",base({cash:0,investments:0,cost:3000,aow:0,pension:0}),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:65,certainty:"certain",liquidity:"immediate"}]},r=>r.failedAge===60&&at(r,65).injected===100000,"pad blijft doorrekenen");
+add("Lijfrente na failure blijft zichtbaar",base({cash:0,investments:0,cost:3000,aow:0,pension:0}),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:65,endAge:70,certainty:"contractual"}]},r=>r.failedAge===60&&at(r,65).extraIncome>0,"late stroom niet verloren");
+add("Kosten na failure blijven zichtbaar",base({cash:0,investments:0,cost:3000,aow:0,pension:0}),{events:[{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:65,endAge:70,certainty:"certain"}]},r=>r.failedAge===60&&at(r,65).extraExpense===12000,"late kosten niet verloren");
+add("Gift verlaagt funding gap na failure",base({cash:0,investments:0,cost:3000,aow:0,pension:0}),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:65,certainty:"certain",liquidity:"immediate"}]},r=>at(r,65).netPosition>at(r,64).netPosition,"gift helpt echt");
+add("Kosten verhogen funding gap na failure",base({cash:0,investments:0,cost:3000,aow:0,pension:0}),{events:[{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:65,endAge:70,certainty:"certain"}]},r=>at(r,65).fundingGap>at(r,64).fundingGap,"kosten verslechteren echt");
+add("Lijfrente verlaagt jaarlijkse behoefte",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:500,availableFromAge:65,endAge:70,certainty:"contractual"}]},r=>at(r,65).need<at(noFuture(base()),65).need,"inkomen verlaagt need");
+add("Gift en lijfrente zelfde leeftijd beide actief",base(),{events:[{id:"g",type:"future_lump_sum",amount:10000,availableFromAge:65,certainty:"certain",liquidity:"immediate"},{id:"l",type:"temporary_income",monthlyAmount:500,availableFromAge:65,endAge:70,certainty:"contractual"}]},r=>at(r,65).injected===10000&&at(r,65).extraIncome>0,"collision correct");
+add("Gift en kosten zelfde leeftijd netto apart",base(),{events:[{id:"g",type:"future_lump_sum",amount:12000,availableFromAge:65,certainty:"certain",liquidity:"immediate"},{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:65,endAge:65,certainty:"certain"}]},r=>at(r,65).injected===12000&&at(r,65).extraExpense===12000,"geen wegstrepen vóór ledger");
+add("Lijfrente en kosten zelfde bedrag",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:65,endAge:65,certainty:"contractual"},{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:65,endAge:65,certainty:"certain"}]},r=>at(r,65).extraIncome>11000&&at(r,65).extraExpense===12000,"beide zichtbaar");
+add("Zero-length blocked asset",base(),{assets:[{id:"b",type:"blocked_asset",currentValue:100000,availableFromAge:65,endAge:65,certainty:"contractual",liquidity:"restricted",restricted:true}]},r=>r.consumed.indexOf("b")<0,"geen misbruik");
+add("Future item met end vóór start nooit actief",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:70,endAge:69,certainty:"contractual"}]},r=>r.ledger.every(x=>x.extraIncome===0),"ongeldige window niet activeren");
+add("Extreem grote gift blijft finite",base(),{events:[{id:"g",type:"future_lump_sum",amount:1e9,availableFromAge:60,certainty:"certain",liquidity:"immediate"}]},r=>Number.isFinite(r.endCapital),"geen overflow");
+add("Extreem grote kosten blijven finite",base(),{events:[{id:"z",type:"future_expense",monthlyAmount:1e7,availableFromAge:60,endAge:95,certainty:"certain"}]},r=>Number.isFinite(r.endCapital)&&Number.isFinite(r.fundingGap),"geen overflow");
+add("Extreem illiquide rijk, cash 0",base({cash:0,investments:0}),{assets:[{id:"h",type:"illiquid_property",currentValue:10000000,certainty:"certain",liquidity:"illiquid"}]},r=>r.failedAge===60&&r.consumed.length===0,"rijk is niet liquide");
+add("Banksparen enorm maar locked",base({cash:0,investments:0}),{assets:[{id:"b",type:"blocked_asset",currentValue:5000000,availableFromAge:65,certainty:"contractual",liquidity:"restricted",restricted:true}]},r=>r.failedAge===60&&r.consumed.length===0,"locked is niet spendable");
+add("Gift op 95 wordt niet verwerkt voor endAge 95",base(),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:95,certainty:"certain",liquidity:"immediate"}]},r=>r.consumed.indexOf("g")<0,"simulatie eindigt vóór 95");
+add("Gift op 94 wel verwerkt",base(),{events:[{id:"g",type:"future_lump_sum",amount:100000,availableFromAge:94,certainty:"certain",liquidity:"immediate"}]},r=>r.consumed.indexOf("g")>=0,"laatste jaar telt");
+add("Income op 94 wel verwerkt",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:94,endAge:94,certainty:"contractual"}]},r=>at(r,94).extraIncome>0,"laatste jaar inkomsten");
+add("Kosten op 94 wel verwerkt",base(),{events:[{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:94,endAge:94,certainty:"certain"}]},r=>at(r,94).extraExpense===12000,"laatste jaar kosten");
+add("Levenslang inkomen zonder endAge blijft lopen",base(),{events:[{id:"l",type:"lifetime_income",monthlyAmount:1000,availableFromAge:65,certainty:"contractual"}]},r=>at(r,94).extraIncome>0,"geen fout eindpunt");
+add("Twee identieke gifts andere ids beide tellen",base(),{events:[{id:"g1",type:"future_lump_sum",amount:10000,availableFromAge:65,certainty:"certain",liquidity:"immediate"},{id:"g2",type:"future_lump_sum",amount:10000,availableFromAge:65,certainty:"certain",liquidity:"immediate"}]},r=>at(r,65).injected===20000,"id bepaalt uniqueness");
+add("Zelfde id dubbel item telt één keer",base(),{events:[{id:"g",type:"future_lump_sum",amount:10000,availableFromAge:65,certainty:"certain",liquidity:"immediate"},{id:"g",type:"future_lump_sum",amount:10000,availableFromAge:65,certainty:"certain",liquidity:"immediate"}]},r=>r.ledger.reduce((s,x)=>s+x.injected,0)===10000,"dubbel id deduplicatie");
+add("Taxed lijfrente netto exact",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:65,endAge:65,certainty:"contractual",taxable:true,taxRate:.25}]},r=>at(r,65).extraIncome===9000,"25% netto");
+add("Zero tax lijfrente exact",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:65,endAge:65,certainty:"contractual",taxable:true,taxRate:0}]},r=>at(r,65).extraIncome===12000,"0% netto");
+add("100% tax lijfrente netto nul",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:65,endAge:65,certainty:"contractual",taxable:true,taxRate:1}]},r=>at(r,65).extraIncome===0,"100% belasting");
+add("Exact gelijke base/conservative bij nul returns testbaar",base({cash:1000000,investments:0}),{},r=>Number.isFinite(r.endCapital),"finite baseline");
+add("NetPosition = cash + invested - gap",base({cash:0,investments:0,aow:0,pension:0}),{},r=>r.ledger.every(x=>approx(x.netPosition,x.cash+x.invested-x.fundingGap)),"ledger-identiteit");
+add("Funding gap monotone zonder nieuwe middelen",base({cash:0,investments:0,aow:0,pension:0}),{},r=>r.ledger.every((x,i,a)=>i===0||x.fundingGap>=a[i-1].fundingGap),"tekort loopt niet spontaan terug");
+
+if(T.length!==78){document.body.innerHTML='<pre>TEST COUNT ERROR '+T.length+'</pre>';return;}
+
+document.getElementById("run").onclick=function(){
+ var pass=0,html="";
+ T.forEach(function(t,i){
+   var errs=[];
+   try{var r=sim(t.c,t.f);if(!t.fn(r))errs.push("verwachting niet gehaald");}
+   catch(e){errs.push(String(e))}
+   if(!errs.length)pass++;
+   html+='<div class="case"><b class="'+(!errs.length?'ok':'bad')+'">'+(!errs.length?'PASS':'FAIL')+'</b> · '+(i+1)+'. '+t.n+'<div class="why">'+t.why+(errs.length?' · '+errs.join(" · "):'')+'</div></div>';
+ });
+ document.getElementById("sum").innerHTML='<div class="score '+(pass===T.length?'ok':'bad')+'">'+pass+' / '+T.length+'</div><b>'+(pass===T.length?'Alle grens- en collisiontests groen':'Er zijn grensfouten gevonden')+'</b>';
+ document.getElementById("out").innerHTML=html;
+};
+})();
+</script></body></html>
