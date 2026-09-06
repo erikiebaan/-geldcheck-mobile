@@ -47,8 +47,16 @@ function simulate(raw,futureRaw,opts){
   let fundingGap=0;
   const consumed=new Set(),ledger=[];
 
+  /* Accumulation is also part of real life: temporary income/expense
+     before retirement changes what can actually be saved. */
   while(age<retireAge){
-    const annualSave=Math.max(0,base.monthlySurplus||0)*12;
+    const all=fm.assets.concat(fm.events);
+    let preIncome=0,preExpense=0;
+    all.forEach(x=>{
+      preIncome+=annualIncome(x,age,mode);
+      preExpense+=annualExpense(x,age,mode);
+    });
+    const annualSave=Math.max(0,(base.monthlySurplus||0)*12+preIncome-preExpense);
     invested=invested*(1+realReturn)+annualSave;
     age++;
   }
@@ -61,7 +69,11 @@ function simulate(raw,futureRaw,opts){
     all.forEach(x=>{
       if(!consumed.has(x.id)&&canUseCapital(x,age,mode)){
         const amt=finite(x.netAmount)?x.netAmount:x.netCurrentValue;
-        if(amt>0){cash+=amt;injected+=amt;consumed.add(x.id);}
+        if(amt>0){
+          /* Once freely available, capital joins the investable pool.
+             Otherwise an identical receipt at 60 and 70 has no timing value. */
+          invested+=amt;injected+=amt;consumed.add(x.id);
+        }
       }
       extraIncome+=annualIncome(x,age,mode);
       extraExpense+=annualExpense(x,age,mode);
