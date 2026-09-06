@@ -1,0 +1,76 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Human Trust Review 20</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}h2{font-size:28px;margin:0 0 10px}p{color:#777;line-height:1.45}
+.small{font-size:13px}.persona{font-size:22px;font-weight:900;margin-bottom:8px}.facts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}.fact{border:1px solid #e1ddd3;border-radius:16px;padding:12px}.fact span{color:#777;font-size:13px}.fact b{display:block;font-size:19px;margin-top:3px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:16px;line-height:1.55;margin:14px 0}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{border:0;border-radius:18px;padding:16px;font-size:18px;font-weight:850}.yes{background:#19765f;color:white}.no{background:#b43131;color:white}
+.nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.nav button{border:1px solid #d8d3c8;background:white;border-radius:14px;padding:14px;font-weight:800}
+.score{font-size:48px;font-weight:900;color:#19765f}.warn{color:#b43131}.progress{height:10px;background:#e9e4da;border-radius:999px;overflow:hidden;margin:12px 0}.bar{height:100%;background:#19765f}
+textarea{width:100%;box-sizing:border-box;border:1px solid #ddd7ca;border-radius:14px;padding:12px;font:inherit;min-height:90px}
+.badge{display:inline-block;border-radius:999px;padding:6px 10px;background:#f2eee5;font-size:13px;margin-right:6px}
+</style></head><body><main>
+<div class="card">
+<h1>Human Trust Review 20</h1>
+<p>Dit is geen technische test. Je krijgt twintig realistische mensen te zien met precies het advies dat de live Geldcheck zou geven. Per persoon beantwoord je één vraag: <b>zou ik dit advies daadwerkelijk aan deze persoon durven geven?</b></p>
+<p class="small"><b>Build HTR1 · engine v1.2.3 · 20 menselijke eindbeoordelingen · lokaal opgeslagen</b></p>
+<div id="summary"></div>
+</div>
+<div id="review"></div>
+</main>
+<script src="../engine_v123.js"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67},o||{});
+const people=[
+["Marieke · 60 · wil op 63 stoppen",B({age:60,retireAge:63,cash:180000,investments:1200000,cost:2800,aow:1650,pension:1100}),{}],
+["Peter · 60 · weinig vermogen · wil nu stoppen",B({age:60,retireAge:60,cash:8000,investments:45000,cost:3600,aow:1400,pension:150}),{}],
+["Karin · 60 · rijk maar hoge levensstijl",B({age:60,retireAge:60,cash:150000,investments:1100000,cost:5000,aow:1600,pension:1200}),{}],
+["Johan · 59 · verwacht onzekere erfenis",B({age:59,retireAge:62,cash:30000,investments:180000,cost:3300,aow:1450,pension:450}),{events:[{id:"erfenis",type:"uncertain_asset",amount:700000,availableFromAge:66,certainty:"uncertain",liquidity:"immediate"}]}],
+["Saskia · 61 · contractuele lijfrente vanaf 65",B({age:61,retireAge:63,cash:50000,investments:260000,cost:3200,aow:1500,pension:400}),{events:[{id:"lijfrente",type:"temporary_income",monthlyAmount:1400,availableFromAge:65,endAge:84,certainty:"contractual",liquidity:"immediate"}]}],
+["Henk · 60 · veel banksparen maar restricted",B({age:60,retireAge:60,cash:15000,investments:50000,cost:3200,aow:1400,pension:300}),{assets:[{id:"banksparen",type:"blocked_asset",currentValue:600000,availableFromAge:67,certainty:"contractual",liquidity:"restricted",restricted:true}]}],
+["Anna · 58 · woning €700k · weinig liquide",B({age:58,retireAge:60,cash:10000,investments:50000,cost:3000,aow:1500,pension:500}),{assets:[{id:"woning",type:"illiquid_property",currentValue:700000,certainty:"certain",liquidity:"illiquid"}]}],
+["Bas · 45 · sterke cashflow · lage buffer",B({age:45,goal:"health",income:6200,cost:4200,cash:5000,investments:450000}),{}],
+["Linda · 42 · sterke cashflow · ruime buffer",B({age:42,goal:"health",income:6500,cost:3500,cash:90000,investments:250000}),{}],
+["Mark · 40 · negatieve maandruimte",B({age:40,goal:"health",income:3800,cost:4600,cash:25000,investments:60000}),{}],
+["Eva · 46 · wil €24k sparen in 24 maanden",B({age:46,goal:"purchase",income:5500,cost:3500,cash:30000,investments:100000,purchaseAmount:24000,purchaseMonths:24}),{}],
+["Tom · 46 · wil €50k sparen in 12 maanden",B({age:46,goal:"purchase",income:5000,cost:4000,cash:10000,investments:30000,purchaseAmount:50000,purchaseMonths:12}),{}],
+["Ria · 55 · forse tijdelijke inkomensschok",B({age:55,retireAge:62,income:5200,cost:3500,cash:50000,investments:220000,aow:1450,pension:700}),{events:[{id:"baanverlies",type:"temporary_income",monthlyAmount:-2200,availableFromAge:55,endAge:59,certainty:"certain",liquidity:"immediate"}]}],
+["Willem · 62 · hoge zorgkosten vanaf 78",B({age:62,retireAge:65,cash:100000,investments:700000,cost:2800,aow:1600,pension:900}),{events:[{id:"zorg",type:"future_expense",monthlyAmount:1800,availableFromAge:78,endAge:94,certainty:"certain"}]}],
+["Noor · 60 · pensioenleeftijd niet ingevuld",B({age:60,retireAge:null}),{}],
+["Daan · 60 · geen AOW of pensioen opgegeven",B({age:60,retireAge:62,aow:0,pension:0,cash:300000,investments:600000,cost:3000}),{}],
+["Fatima · 52 · samenwonend · 2 kinderen",B({age:52,household:"Samenwonend",kids:2,goal:"health",income:7600,cost:5200,cash:70000,investments:280000}),{}],
+["Rob · 60 · wil pas op 67 stoppen",B({age:60,retireAge:67,cash:80000,investments:300000,cost:3000,aow:1500,aowStartAge:67,pension:800}),{}],
+["Ingrid · 54 · extreem vermogen · extreem hoge kosten",B({age:54,retireAge:55,cash:1000000,investments:8000000,cost:25000,aow:1600,pension:1000}),{}],
+["Sam · 60 · zekere gift vanaf 66",B({age:60,retireAge:62,cash:30000,investments:180000,cost:3300,aow:1450,pension:500}),{events:[{id:"gift",type:"future_lump_sum",amount:300000,availableFromAge:66,certainty:"certain",liquidity:"immediate"}]}]
+];
+const key="geldcheck_htr1_votes";
+let votes=JSON.parse(localStorage.getItem(key)||"{}"), idx=0;
+function euro(n){return Number.isFinite(n)?new Intl.NumberFormat("nl-NL",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(n):"—"}
+function render(){
+ const done=Object.keys(votes).length, yes=Object.values(votes).filter(v=>v.vote==="yes").length;
+ document.getElementById("summary").innerHTML='<div class="score">'+done+' / 20 beoordeeld</div><div class="progress"><div class="bar" style="width:'+(done/20*100)+'%"></div></div>'+
+ (done===20?'<p><b class="'+(yes===20?'':'warn')+'">'+yes+'/20 adviezen zou je daadwerkelijk durven geven.</b></p>':'<p>Nog '+(20-done)+' te beoordelen.</p>');
+ const [name,c,f]=people[idx], n=GeldcheckNarrative.story(c,f), a=GeldcheckEngine.analyze(c);
+ const v=votes[idx]||{};
+ document.getElementById("review").innerHTML='<div class="card"><div class="persona">'+(idx+1)+'. '+name+'</div>'+
+ '<span class="badge">Verdict: '+(n.facts.verdict||"—")+'</span><span class="badge">Doel: '+c.goal+'</span>'+
+ '<div class="facts">'+
+ '<div class="fact"><span>Inkomen</span><b>'+euro((c.income||0)+(c.otherIncome||0))+'</b></div>'+
+ '<div class="fact"><span>Uitgaven</span><b>'+euro(c.cost)+'</b></div>'+
+ '<div class="fact"><span>Cash</span><b>'+euro(c.cash)+'</b></div>'+
+ '<div class="fact"><span>Beleggingen</span><b>'+euro(c.investments)+'</b></div>'+
+ '</div>'+
+ '<h2>'+n.headline+'</h2><div class="story">'+n.story+'</div>'+
+ '<p><b>Zou jij dit advies daadwerkelijk aan deze persoon durven geven?</b></p>'+
+ '<div class="actions"><button class="btn yes" onclick="vote(\'yes\')">JA, dit klopt</button><button class="btn no" onclick="vote(\'no\')">NEE, hier wringt iets</button></div>'+
+ '<textarea id="note" placeholder="Optionele notitie: wat wringt er?">'+(v.note||"")+'</textarea>'+
+ '<div class="nav"><button onclick="prev()">← Vorige</button><button onclick="next()">Volgende →</button></div>'+
+ '</div>';
+}
+window.vote=function(v){const note=document.getElementById("note").value;votes[idx]={vote:v,note};localStorage.setItem(key,JSON.stringify(votes));render();if(idx<19){idx++;setTimeout(render,120)}}
+window.prev=function(){if(idx>0)idx--;render()}
+window.next=function(){if(idx<19)idx++;render()}
+render();
+})();</script></body></html>
