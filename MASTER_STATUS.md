@@ -202,7 +202,74 @@ The purpose is **not** to force every case green. Red cases are valuable if they
 
 ---
 
-## 6. Regression discipline
+## 6. Intelligent personal narrative layer — explicit product requirement
+
+After the realistic-household advice review, build an **intelligent narrative/output layer** on top of the validated calculation engine.
+
+Product goal:
+
+> **Very little input → validated calculations → a surprisingly complete, understandable personal financial story.**
+
+The complexity belongs in the backend, not in the intake. Supporting many financial situations must **not** automatically create a long questionnaire. Use progressive/adaptive follow-up questions only when a user's situation requires them.
+
+### Hard architecture boundary
+
+The calculation engine owns the facts. The narrative layer may:
+- explain;
+- prioritize;
+- connect facts;
+- translate financial mechanics into normal language;
+- identify the main reason an answer is JA / MOGELIJK / NEE;
+- explain bridge periods and timing;
+- explain which risks matter most;
+- explain which uncertain assets were deliberately not required for the conclusion;
+- point out which assumption would most change the result.
+
+The narrative layer may **not**:
+- invent or recalculate financial amounts;
+- silently change the engine verdict;
+- present uncertain money as certain;
+- treat restricted/illiquid money as spendable when the engine does not;
+- omit a material warning needed to understand the verdict;
+- state unsupported certainty.
+
+The engine should provide a structured fact package to this layer, e.g. verdict, target age, bridge years, conservative/base outcomes, end capital, funding gap, main risks, used/excluded future assets and material sensitivities. The narrative is generated only from those validated facts.
+
+### Narrative validation
+
+Create a focused test layer for this feature. At minimum verify:
+1. every stated amount is grounded in engine output;
+2. JA / MOGELIJK / NEE is preserved;
+3. timing is preserved;
+4. uncertain/restricted money is described correctly;
+5. the most material risk/warning is not omitted;
+6. the explanation does not contradict the numerical scenario;
+7. missing information is acknowledged instead of guessed;
+8. the result is useful and understandable rather than a dump of tables.
+
+Do not use the narrative model as a replacement for deterministic financial calculation.
+
+---
+
+## 7. Testing roadmap from current state
+
+The calculation core is considered **substantially validated**, not universally proven. Avoid endless synthetic-suite expansion.
+
+From here:
+
+1. **Realistic Household Advice Review** — next major validation phase.
+2. **Intelligent Narrative Layer** — build after the advice model survives realistic households.
+3. **Narrative-specific validation** — grounding, verdict preservation, uncertainty, risks, contradictions.
+4. **Maintenance mode** — existing suites remain frozen regression gates. Add new tests only when:
+   - a new supported financial domain/rule is added;
+   - a real user exposes an unexpected case;
+   - a confirmed bug needs a permanent regression test.
+
+Testing is therefore expected to evolve with the product, but should be **targeted rather than endless**.
+
+---
+
+## 8. Regression discipline
 
 After any material change to calculation, Future Layer, Future Bridge, Answer Engine, normalization, or decision logic:
 
@@ -224,7 +291,7 @@ Minimum regression gate currently expected:
 
 ---
 
-## 7. New-chat handover instruction
+## 9. New-chat handover instruction
 
 In a fresh ChatGPT conversation, use:
 
@@ -232,7 +299,7 @@ In a fresh ChatGPT conversation, use:
 
 ---
 
-## 8. Maintenance
+## 10. Maintenance
 
 Update this document whenever:
 - a production calculation rule changes;
