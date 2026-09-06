@@ -1,0 +1,66 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Product Flow Diagnostic 20</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p{color:#777;line-height:1.45}.small{font-size:13px}.ok{color:#19765f}.bad{color:#b43131}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.verdict{font-size:30px;font-weight:900}.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+pre{white-space:pre-wrap;word-break:break-word;background:#faf8f3;padding:14px;border-radius:14px;font-size:12px}
+</style></head><body><main>
+<div class="card"><h1>Product Flow Diagnostic 20</h1>
+<p>Gerichte diagnose van alleen PFE1 case 20. We vergelijken live UI-payload, genormaliseerde engine-case, maandruimte en Narrative facts. Geen wijziging aan productielogica of testverwachting.</p>
+<p class="small"><b>Build PFD20 · PFE1 case 20 · payload → engine case → narrative facts</b></p>
+<button id="run">Run Diagnostic</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const payload={
+ age:55,household:"",kids:null,goal:"health",
+ income:5200,otherIncome:300,cost:3400,
+ annualIncluded:false,savingGrowth:null,housing:"",
+ mortgage:null,mortgageRate:null,mortgageEndAge:null,mortgagePayment:null,rent:null,
+ cash:45000,investments:175000,debt:10000,debtRate:null,debtPayment:null,
+ retireAge:67,aow:1500,aowStartAge:67,pension:600,pensionStartAge:67,
+ change:"",purchaseAmount:null,purchaseMonths:null
+};
+document.getElementById("run").onclick=()=>{
+ const a=GeldcheckEngine.analyze(payload);
+ const n=GeldcheckNarrative.story(payload,{});
+ const c=a.case||{};
+ const expectedCombined=5200+300;
+ const calcSurplus=expectedCombined-3400;
+ const candidates=[
+  ["payload.income",payload.income],
+  ["payload.otherIncome",payload.otherIncome],
+  ["expected combined income",expectedCombined],
+  ["engine.case.monthlyIncome",c.monthlyIncome],
+  ["engine.case.otherIncome",c.otherIncome],
+  ["engine.case.totalIncome",c.totalIncome],
+  ["engine.case.monthlyCosts",c.monthlyCosts],
+  ["engine.case.monthlySurplus",c.monthlySurplus],
+  ["expected surplus",calcSurplus],
+  ["narrative monthlySurplus",n.facts.monthlySurplus]
+ ];
+ const engineHasSplit=(c.monthlyIncome===5200);
+ const engineHasCombined=(c.monthlyIncome===5500||c.totalIncome===5500);
+ const surplusRight=(c.monthlySurplus===2100&&n.facts.monthlySurplus===2100);
+ let verdict,detail;
+ if(engineHasSplit&&surplusRight){
+   verdict="TEST-ORACLE / VELDSEMANTIEK BEVESTIGD";
+   detail="engine.case.monthlyIncome bewaart alleen het hoofdinkomen (€5.200); overig inkomen wordt apart meegenomen in de berekening. De totale maandruimte van €2.100 is economisch correct.";
+ } else if(engineHasCombined&&surplusRight){
+   verdict="COMBINED INCOME CONTRACT BEVESTIGD";
+   detail="De engine bewaart gecombineerd inkomen en rekent de juiste maandruimte.";
+ } else {
+   verdict="MOGELIJKE CONTRACTBREUK";
+   detail="De inkomensvelden en/of maandruimte sluiten niet logisch op elkaar aan. Nog niets aanpassen voordat dit verder is onderzocht.";
+ }
+ document.getElementById("sum").innerHTML='<div class="verdict '+(surplusRight?'ok':'bad')+'">'+verdict+'</div><p>'+detail+'</p>';
+ let rows='<div class="kpis">';
+ candidates.forEach(([k,v])=>rows+='<div class="kpi"><span>'+k+'</span><br><b>'+String(v)+'</b></div>');
+ rows+='</div>';
+ document.getElementById("out").innerHTML='<div class="card"><h2>Waarden naast elkaar</h2>'+rows+'</div>'+
+ '<div class="card"><h2>Volledige engine.case</h2><pre>'+JSON.stringify(c,null,2)+'</pre></div>'+
+ '<div class="card"><h2>Narrative facts</h2><pre>'+JSON.stringify(n.facts,null,2)+'</pre></div>';
+};
+})();</script></body></html>
