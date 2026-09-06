@@ -1,0 +1,51 @@
+name: Build iOS TestFlight candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: flutter_app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create iOS platform files
+        run: flutter create . --platforms=ios --org nl.erikbaan --project-name genoeg_flutter
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build unsigned iOS app
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned runner
+        run: |
+          cd build/ios/iphoneos
+          ditto -c -k --sequesterRsrc --keepParent Runner.app Runner-unsigned.zip
+
+      - name: Upload unsigned iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: genoeg-ios-unsigned
+          path: flutter_app/build/ios/iphoneos/Runner-unsigned.zip
+          retention-days: 14
+
+      - name: TestFlight signing status
+        run: |
+          echo "Unsigned iOS build completed."
+          echo "For TestFlight, add Apple signing + App Store Connect credentials as GitHub Actions secrets."
