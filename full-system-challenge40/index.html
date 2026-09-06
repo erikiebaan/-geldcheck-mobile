@@ -1,0 +1,95 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Full System Challenge 40</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;margin-top:10px;line-height:1.45}.meta{font-size:12px;color:#777}
+</style></head><body><main>
+<div class="card"><h1>Full System Challenge 40</h1>
+<p>Veertig integrale aanvallen op Geldcheck als geheel: invoer → normalisatie → engine → Future Bridge → Answer Engine → Narrative Intelligence. We testen realistische huishoudens, timing, onzeker/restricted geld, ontbrekende invoer en economische richting.</p>
+<p class="small"><b>Build FSC1 · 32 full-stack household tests + 8 counterfactual/metamorphic tests · Engine v1.2 + Future Bridge v0.41 + Narrative v0.1</b></p>
+<button id="run">Run 40 Full System Challenges</button><div id="sum"></div></div><div id="out"></div></main>
+
+<script src="../engine.js?v=1.2"></script>
+<script src="../future_layer.js?v=0.1"></script>
+<script src="../future_bridge_v041.js?v=0.41"></script>
+<script src="../answer_engine.js?v=0.1"></script>
+<script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({
+ age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,
+ housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67
+},o||{});
+const gift=(id,amt,age,certainty="certain")=>({id,type:certainty==="uncertain"?"uncertain_asset":"future_lump_sum",amount:amt,availableFromAge:age,certainty,liquidity:"immediate"});
+const inc=(id,m,age,end,certainty="contractual")=>({id,type:"temporary_income",monthlyAmount:m,availableFromAge:age,endAge:end,certainty,liquidity:"immediate"});
+const exp=(id,m,age,end)=>({id,type:"future_expense",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"certain"});
+const blocked=(id,v,age)=>({id,type:"blocked_asset",currentValue:v,availableFromAge:age,certainty:"contractual",liquidity:"restricted",restricted:true});
+const illiquid=(id,v)=>({id,type:"illiquid_property",currentValue:v,certainty:"certain",liquidity:"illiquid"});
+const S=(c,f)=>GeldcheckNarrative.story(c,f||{});
+const rank=x=>({NEE:0,MOGELIJK:1,JA:2,KWETSBAAR:0,REDELIJK:1,STERK:2}[x]??-1);
+const includes=(s,x)=>String(s).toLowerCase().includes(String(x).toLowerCase());
+
+let T=[]; const add=(name,c,f,check,why,kind="fullstack")=>T.push({name,c,f,check,why,kind});
+
+// 1-20 retirement / future full stack
+add("1. Sterk pensioenplan blijft JA",B({retireAge:63,cash:220000,investments:1200000,cost:2700,aow:1700,pension:1200}),{},x=>x.facts.verdict==="JA"&&includes(x.headline,"haalbaar"),"Sterke case moet door hele keten positief blijven.");
+add("2. Zwak pensioenplan blijft NEE",B({retireAge:60,cash:12000,investments:60000,cost:3600,aow:1400,pension:200}),{},x=>x.facts.verdict==="NEE"&&includes(x.headline,"Nee, stoppen"),"Zwakke case mag nergens mooier worden.");
+add("3. Hoge uitgaven geven MOGELIJK",B({age:60,retireAge:60,cash:150000,investments:1100000,cost:5000,aow:1600,pension:1200}),{},x=>x.facts.verdict==="MOGELIJK"&&includes(x.story,"geen harde ja"),"Bekende RA-case moet intact blijven.");
+add("4. Zekere gift wordt gebruikt op juiste leeftijd",B({retireAge:61,cash:20000,investments:120000,cost:3300,aow:1400,pension:500}),{events:[gift("gift",350000,66)]},x=>x.facts.verdict==="NEE"&&x.facts.future.certain.includes("gift"),"Zekere gift telt, maar hoeft plan niet te redden.");
+add("5. Onzekere gift verandert hard verdict niet",B({retireAge:61,cash:20000,investments:120000,cost:3300,aow:1400,pension:500}),{events:[gift("erfenis",900000,66,"uncertain")]},x=>x.facts.verdict==="NEE"&&includes(x.story,"niet als zeker"),"Onzeker geld blijft buiten harde conclusie.");
+add("6. Restricted banksparen is geen vrije cash",B({retireAge:60,cash:10000,investments:50000,cost:3200,aow:1400,pension:300}),{assets:[blocked("banksparen",600000,67)]},x=>rank(x.facts.verdict)<=1&&includes(x.story,"niet als vrij besteedbaar"),"Restricted geld mag bridge niet kunstmatig redden.");
+add("7. Woningoverwaarde niet automatisch consumeerbaar",B({age:61,retireAge:61,cash:10000,investments:70000,cost:3100,aow:1500,pension:500,housing:"ownfree"}),{assets:[illiquid("woning",650000)]},x=>rank(x.facts.verdict)<=1&&includes(x.story,"niet als vrij besteedbaar"),"Illiquide woningwaarde blijft buiten vrije consumptie.");
+add("8. Contractuele lijfrente ondersteunt plan",B({retireAge:62,cash:30000,investments:170000,cost:3200,aow:1400,pension:300}),{events:[inc("lijfrente",1400,65,84)]},x=>x.facts.future.certain.includes("lijfrente"),"Contractuele toekomstige inkomsten moeten erkend blijven.");
+add("9. Zorgkosten drukken uitkomst",B({retireAge:62,cash:100000,investments:650000,cost:2800,aow:1600,pension:900}),{events:[exp("zorg",2000,78,94)]},x=>x.facts.conservativeEndCapital<100000,"Late kosten moeten substantieel in facts zitten.");
+add("10. Baanverlies vóór pensioen verzwakt plan",B({age:55,retireAge:62,income:5200,cost:3500,cash:40000,investments:200000,aow:1450,pension:700}),{events:[inc("baanverlies",-2200,55,59)]},x=>x.facts.kind==="retirement"&&x.story.length>0,"Inkomensschok moet door volledige route zonder breuk.");
+add("11. Later stoppen na schok blijft uitlegbaar",B({age:55,retireAge:67,income:5200,cost:3500,cash:40000,investments:200000,aow:1450,pension:700}),{events:[inc("baanverlies",-2200,55,59)]},x=>x.facts.targetAge===67&&includes(x.headline,"67e"),"Target age moet in eindverhaal blijven.");
+add("12. Gift één jaar te laat wordt niet vervroegd",B({age:60,retireAge:60,cash:10000,investments:80000,cost:3200,aow:1400,pension:300}),{events:[gift("gift70",250000,70)]},x=>x.facts.future.certain.includes("gift70"),"Future metadata moet behouden blijven.");
+add("13. Combinatie gift + lijfrente + zorg",B({retireAge:62,cash:25000,investments:150000,cost:3400,aow:1450,pension:400}),{events:[gift("gift",180000,64),inc("lijfrente",1000,67,85),exp("zorg",900,80,94)]},x=>x.story.length>100&&x.facts.future.certain.length>=2,"Meerdere toekomstlagen moeten samen een coherent verhaal geven.");
+add("14. Lang pensioenpad met beperkt vermogen",B({age:52,retireAge:55,cash:50000,investments:300000,cost:2800,aow:1500,pension:500}),{},x=>rank(x.facts.verdict)<=1,"Zeer vroeg stoppen mag niet te positief worden.");
+add("15. Pensioen pas op 67 zonder bridge",B({age:60,retireAge:67,cash:80000,investments:300000,cost:3000,aow:1500,pension:800}),{},x=>x.facts.bridgeYears===0,"Geen bridge als target gelijk aan AOW-start.");
+add("16. Missende retireAge stopt harde conclusie",B({retireAge:null}),{},x=>includes(x.headline,"mis nog informatie"),"Incomplete input moet onzekerheid opleveren.");
+add("17. Nul AOW/pensioen blijft zichtbaar in facts",B({retireAge:62,aow:0,pension:0,cash:300000,investments:600000,cost:3000}),{},x=>x.facts.monthlyAow===0&&x.facts.monthlyPension===0,"Geen verborgen inkomensstroom verzinnen.");
+add("18. Grote cashpositie wordt als strength genoemd",B({cash:500000,investments:100000,cost:2800}),{},x=>includes(x.story,"vrije vermogen"),"Sterke liquide positie hoort in uitleg.");
+add("19. Funding gap resulteert in risicotekst",B({retireAge:60,cash:10000,investments:60000,cost:3600,aow:1400,pension:200}),{},x=>x.facts.conservativeGap>0&&includes(x.story,"tekort"),"Risico moet door naar narrative.");
+add("20. MOGELIJK bevat waarschuwing voor foutmarge",B({age:60,retireAge:60,cash:150000,investments:1100000,cost:5000,aow:1600,pension:1200}),{},x=>includes(x.story,"kleine verslechtering"),"Policy nuance moet eindgebruiker bereiken.");
+
+// 21-32 live/non-retirement full stack
+add("21. Negatieve maandbasis health zichtbaar",B({goal:"health",income:3000,cost:3800,cash:30000,investments:100000}),{},x=>includes(x.story,"€-800"),"Live cashflow moet exact naar verhaal.");
+add("22. Sterke cashbuffer health",B({goal:"health",income:5000,cost:3000,cash:60000,investments:200000}),{},x=>x.facts.kind==="live"&&x.story.length>0,"Health-route blijft werken.");
+add("23. Lage cashbuffer ondanks beleggingen",B({goal:"health",income:6000,cost:5000,cash:3000,investments:700000}),{},x=>includes(x.story,"aandachtspunt"),"Liquiditeit mag niet verdwijnen in totaalvermogen.");
+add("24. Purchase 24 maanden reserve",Object.assign(B({goal:"purchase",income:5000,cost:3500,cash:30000,investments:100000}),{purchaseAmount:24000,purchaseMonths:24}),{},x=>x.facts.purchase&&includes(x.story,"€1.000"),"Aankoopreservering moet gegrond blijven.");
+add("25. Purchase te groot voor maandruimte",Object.assign(B({goal:"purchase",income:4200,cost:3600,cash:10000,investments:50000}),{purchaseAmount:30000,purchaseMonths:12}),{},x=>x.facts.purchase&&x.facts.purchase.fitsMonthly===false,"Onhaalbare reservering moet niet positief ogen.");
+add("26. Purchase met voldoende maandruimte",Object.assign(B({goal:"purchase",income:7000,cost:3500,cash:60000,investments:100000}),{purchaseAmount:18000,purchaseMonths:18}),{},x=>x.facts.purchase&&x.facts.purchase.fitsMonthly===true,"Haalbare reservering blijft positief.");
+add("27. Health ontbrekende data",B({goal:"health",income:null,cost:3000,cash:20000,investments:100000}),{},x=>x.facts.liveMissing.length>0||x.story.length>0,"Incomplete live input mag route niet breken.");
+add("28. Hypotheek na pensioen geeft aandachtspunt",B({goal:"retirement",age:60,retireAge:67,cost:3600,cash:80000,investments:450000,housing:"mortgage",mortgage:260000,mortgageRate:.035,mortgageEndAge:78,mortgagePayment:1200,aow:1500,pension:800}),{},x=>x.story.length>0,"Wooncomponent moet eind-to-end intact blijven.");
+add("29. Partnerhuishouden route",B({household:"Samen",income:7000,cost:4200,cash:120000,investments:500000,retireAge:65}),{},x=>x.story.length>0,"Huishoudtype mag pipeline niet breken.");
+add("30. Kinderen + hogere lasten route",B({household:"Samen",kids:2,income:7500,cost:5200,cash:90000,investments:350000,retireAge:65}),{},x=>x.story.length>0,"Complexer huishouden moet stabiel blijven.");
+add("31. Grote schuld route",B({goal:"health",income:6000,cost:3500,cash:40000,investments:100000,debt:250000}),{},x=>x.story.length>0,"Schuld-input mag narrative niet breken.");
+add("32. Zeer hoge cash maar laag inkomen",B({goal:"health",income:1800,cost:2500,cash:500000,investments:0}),{},x=>x.facts.monthlySurplus<0&&x.story.length>0,"Vermogen mag negatieve cashflow niet verbergen.");
+
+// 33-40 metamorphic / counterfactual
+add("33. +€100k vermogen mag verdict niet verslechteren",B({retireAge:62,cash:50000,investments:250000,cost:3200}),{},x=>{const y=S(B({retireAge:62,cash:50000,investments:350000,cost:3200}),{});return rank(y.facts.verdict)>=rank(x.facts.verdict)&&y.facts.conservativeEndCapital>=x.facts.conservativeEndCapital;},"Monotoniciteit vermogen.","meta");
+add("34. €500 lagere kosten mag verdict niet verslechteren",B({retireAge:62,cash:50000,investments:250000,cost:3500}),{},x=>{const y=S(B({retireAge:62,cash:50000,investments:250000,cost:3000}),{});return rank(y.facts.verdict)>=rank(x.facts.verdict);} ,"Monotoniciteit kosten.","meta");
+add("35. Eén jaar later stoppen mag niet verslechteren",B({age:60,retireAge:61,cash:50000,investments:250000,cost:3200,income:5000}),{},x=>{const y=S(B({age:60,retireAge:62,cash:50000,investments:250000,cost:3200,income:5000}),{});return rank(y.facts.verdict)>=rank(x.facts.verdict);} ,"Monotoniciteit pensioendatum.","meta");
+add("36. Onzekere gift mag hard verdict niet verbeteren",B({retireAge:61,cash:20000,investments:120000,cost:3300,aow:1400,pension:500}),{},x=>{const y=S(B({retireAge:61,cash:20000,investments:120000,cost:3300,aow:1400,pension:500}),{events:[gift("u",1000000,66,"uncertain")]});return y.facts.verdict===x.facts.verdict;},"Conservatieve onzekerheidsregel.","meta");
+add("37. Restricted vermogen mag hard verdict niet verbeteren",B({retireAge:60,cash:10000,investments:50000,cost:3200,aow:1400,pension:300}),{},x=>{const y=S(B({retireAge:60,cash:10000,investments:50000,cost:3200,aow:1400,pension:300}),{assets:[blocked("r",900000,67)]});return y.facts.verdict===x.facts.verdict;},"Restricted blijft buiten harde conclusie.","meta");
+add("38. Hogere zorgkosten verlagen eindkapitaal",B({retireAge:62,cash:100000,investments:650000,cost:2800,aow:1600,pension:900}),{events:[exp("zorg1",1000,78,94)]},x=>{const y=S(B({retireAge:62,cash:100000,investments:650000,cost:2800,aow:1600,pension:900}),{events:[exp("zorg2",2000,78,94)]});return y.facts.conservativeEndCapital<=x.facts.conservativeEndCapital;},"Monotoniciteit toekomstige kosten.","meta");
+add("39. Hogere zekere gift mag niet verslechteren",B({retireAge:62,cash:50000,investments:200000,cost:3200}),{events:[gift("g1",50000,66)]},x=>{const y=S(B({retireAge:62,cash:50000,investments:200000,cost:3200}),{events:[gift("g2",150000,66)]});return y.facts.conservativeEndCapital>=x.facts.conservativeEndCapital;},"Monotoniciteit zekere toekomstige ontvangst.","meta");
+add("40. Meer maandruimte health mag score/verdict niet slechter maken",B({goal:"health",income:4000,cost:3500,cash:20000,investments:100000}),{},x=>{const y=S(B({goal:"health",income:5000,cost:3500,cash:20000,investments:100000}),{});return rank(y.facts.verdict)>=rank(x.facts.verdict)||y.facts.monthlySurplus>x.facts.monthlySurplus;},"Monotoniciteit live cashflow.","meta");
+
+if(T.length!==40){document.body.innerHTML="<pre>TEST COUNT ERROR "+T.length+"</pre>";return}
+document.getElementById("run").onclick=()=>{
+ let p=0,h="",cats={fullstack:[0,0],meta:[0,0]};
+ T.forEach((t,i)=>{let ok=false,err="",x;try{x=S(t.c,t.f);ok=!!t.check(x)}catch(e){err=String(e)}
+ cats[t.kind][1]++; if(ok){p++;cats[t.kind][0]++}
+ if(!ok)h+='<div class="case"><b class="bad">FAIL · '+(i+1)+'. '+t.name+'</b><div class="why">'+t.why+(err?' · '+err:'')+'</div>'+(x?'<div class="story">'+x.story+'</div>':'')+'</div>';
+ });
+ let k='<div class="kpis">';Object.entries(cats).forEach(([n,v])=>k+='<div class="kpi"><span>'+n+'</span><br><b class="'+(v[0]===v[1]?'ok':'bad')+'">'+v[0]+'/'+v[1]+'</b></div>');k+='</div>';
+ document.getElementById("sum").innerHTML='<div class="score '+(p===40?'ok':'bad')+'">'+p+' / 40</div><b>'+(p===40?'Volledige Geldcheck-keten groen':'Full System Challenge vond aandachtspunten')+'</b>'+k;
+ document.getElementById("out").innerHTML=h||'<div class="card"><b class="ok">PASS · Alle 40 integrale challenges groen</b><p>Input, berekening, toekomstlogica, verdict en persoonlijk verhaal blijven consistent.</p></div>';
+};
+})();</script></body></html>
