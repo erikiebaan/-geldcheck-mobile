@@ -1,0 +1,63 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Geldcheck Eindtest</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:820px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p{color:#777;line-height:1.45}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#a33}.wait{color:#8a6d00}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#f7f5ef;border-radius:18px;padding:16px}
+.stat b{font-size:26px;display:block}.small{font-size:12px;color:#777}.line{padding:13px 0;border-top:1px solid #eee}
+iframe{position:absolute;left:-99999px;width:900px;height:1600px;border:0}
+</style></head><body><main>
+<div class="card"><h1>Geldcheck Eindtest</h1><p>Eén druk test alle drie de kwaliteitslagen: 1500 huishoudscenario’s, 12 richtingstests en 25 beslissingstests.</p><p class="small"><b>Build F1 · totale regressietest</b></p><button id="run">Run volledige Geldcheck-test</button><div id="summary"></div></div>
+<div id="details"></div>
+<iframe id="stress" src="../stressbank/?v=FINAL-F1"></iframe>
+<iframe id="decision" src="../decisiontest7/?v=FINAL-F1"></iframe>
+</main>
+<script>
+(function(){
+function waitFrame(id){return new Promise(function(resolve,reject){var f=document.getElementById(id);if(f.contentDocument&&f.contentDocument.readyState==='complete')return resolve(f);var t=setTimeout(function(){reject(new Error(id+' timeout'))},12000);f.onload=function(){clearTimeout(t);resolve(f)}})}
+function textOf(doc,sel){var e=doc.querySelector(sel);return e?e.textContent.trim():''}
+function clickById(doc,id){var b=doc.getElementById(id);if(!b)throw new Error('knop '+id+' ontbreekt');b.click()}
+function resultCard(name,ok,score,extra){return '<div class="card line"><b class="'+(ok?'ok':'bad')+'">'+(ok?'PASS':'FAIL')+'</b> · '+name+'<div class="small">'+score+(extra?' · '+extra:'')+'</div></div>'}
+document.getElementById('run').onclick=async function(){
+  document.getElementById('summary').innerHTML='<div class="score wait">TEST...</div><b>Alle drie de testlagen draaien.</b>';
+  document.getElementById('details').innerHTML='';
+  try{
+    var frames=await Promise.all([waitFrame('stress'),waitFrame('decision')]);
+    var sdoc=frames[0].contentDocument, ddoc=frames[1].contentDocument;
+
+    clickById(sdoc,'run');
+    var stressText=textOf(sdoc,'#summary');
+    var stressOk=/1500\s*\/\s*1500/.test(stressText);
+
+    clickById(sdoc,'meta');
+    var metaText=textOf(sdoc,'#metaSummary');
+    var metaOk=/12\s*\/\s*12/.test(metaText);
+
+    clickById(ddoc,'run');
+    var decisionText=textOf(ddoc,'#summary');
+    var decisionOk=/25\s*\/\s*25/.test(decisionText);
+
+    var pass=(stressOk?1500:0)+(metaOk?12:0)+(decisionOk?25:0);
+    var total=1537, all=stressOk&&metaOk&&decisionOk;
+
+    document.getElementById('summary').innerHTML=
+      '<div class="score '+(all?'ok':'bad')+'">'+pass+' / '+total+'</div>'+
+      '<b>'+(all?'ALLE KWALITEITSPOORTEN GROEN':'Minstens één kwaliteitslaag faalt')+'</b>'+
+      '<div class="grid" style="margin-top:16px">'+
+      '<div class="stat"><b>'+(stressOk?'1500/1500':'FAIL')+'</b><span>stressbank</span></div>'+
+      '<div class="stat"><b>'+(metaOk?'12/12':'FAIL')+'</b><span>intelligentie</span></div>'+
+      '<div class="stat"><b>'+(decisionOk?'25/25':'FAIL')+'</b><span>beslissingen</span></div>'+
+      '<div class="stat"><b>'+(all?'GO':'STOP')+'</b><span>release gate</span></div></div>';
+
+    document.getElementById('details').innerHTML=
+      resultCard('Stressbank 1500',stressOk,stressOk?'1500/1500':'geen 1500/1500 gevonden')+
+      resultCard('Intelligentietest',metaOk,metaOk?'12/12':'geen 12/12 gevonden')+
+      resultCard('Beslissingstest',decisionOk,decisionOk?'25/25':'geen 25/25 gevonden');
+  }catch(err){
+    document.getElementById('summary').innerHTML='<div class="score bad">FOUT</div><b>'+String(err)+'</b>';
+  }
+};
+})();
+</script></body></html>
