@@ -1,0 +1,92 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lifecycle Audit</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}main{max-width:820px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}h1{font-size:42px;line-height:1.02;margin:0 0 12px}p{color:#777;line-height:1.45}button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}.small{font-size:13px;color:#777}.case{background:#fff;border:1px solid #ddd7ca;border-radius:18px;padding:15px;margin:10px 0}.why{font-size:13px;color:#777;margin-top:5px}
+</style></head><body><main>
+<div class="card"><h1>Lifecycle Audit 60</h1><p>Controleert jaar voor jaar of geld niet verdwijnt, dubbel ontstaat, te vroeg wordt gebruikt of na het einde blijft doorlopen.</p><p class="small"><b>Build LC1 · 60 tijdspad-invarianten · bridge v0.3</b></p><button id="run">Run 60 Lifecycle Audit tests</button><div id="sum"></div></div><div id="out"></div>
+</main>
+<script src="../engine.js?v=1.2"></script>
+<script src="../future_layer.js?v=0.1"></script>
+<script src="../future_bridge.js?v=0.3"></script>
+<script>
+(function(){
+"use strict";
+var T=[];
+function base(o){return Object.assign({age:55,goal:"early",income:5000,cost:3500,cash:100000,investments:500000,retireAge:55,aow:1600,aowStartAge:67,pension:800,pensionStartAge:67},o||{})}
+function sim(c,f,o){return GeldcheckFutureBridge.simulate(c,f||{},Object.assign({mode:"conservative",nominalReturn:.02,crashAtRetirement:false},o||{}))}
+function add(n,c,f,fn,why){T.push({n,c,f,fn,why})}
+function at(r,a){return r.ledger.find(x=>x.age===a)}
+function approx(a,b,t){return Math.abs(a-b)<=(t||1)}
+function sum(arr,fn){return arr.reduce((s,x)=>s+fn(x),0)}
+
+add("Ledger leeftijden lopen exact +1",base(),{},r=>r.ledger.every((x,i,a)=>i===0||x.age===a[i-1].age+1),"geen jaren overslaan of dubbel");
+add("Ledger start op retirement age",base({retireAge:60}),{},r=>r.ledger[0].age===60,"eerste pensioenjaar exact");
+add("Ledger eindigt op 94",base(),{},r=>r.ledger[r.ledger.length-1].age===94,"endAge 95 exclusief");
+add("NetPosition identiteit elk jaar",base({cash:0,investments:0,aow:0,pension:0}),{},r=>r.ledger.every(x=>approx(x.netPosition,x.cash+x.invested-x.fundingGap)),"geen verborgen geld");
+add("Funding gap nooit negatief",base({cash:0,investments:0,aow:0,pension:0}),{},r=>r.ledger.every(x=>x.fundingGap>=0),"tekort kan niet negatief");
+add("Cash nooit negatief",base({cash:0,investments:0}),{},r=>r.ledger.every(x=>x.cash>=0),"cash floor 0");
+add("Investments nooit negatief",base({investments:0}),{},r=>r.ledger.every(x=>x.invested>=0),"investment floor 0");
+
+for(let a=60;a<70;a++){
+ add("Gift exact één keer op "+a,base(),{events:[{id:"g"+a,type:"future_lump_sum",amount:12345,availableFromAge:a,certainty:"certain",liquidity:"immediate"}]},r=>r.ledger.filter(x=>x.injected>0).length===1&&at(r,a).injected===12345,"eenmalige ontvangst wordt één keer geboekt");
+}
+for(let a=60;a<68;a++){
+ add("Gift nooit vóór "+a,base(),{events:[{id:"g"+a,type:"future_lump_sum",amount:20000,availableFromAge:a,certainty:"certain",liquidity:"immediate"}]},r=>r.ledger.filter(x=>x.age<a).every(x=>x.injected===0),"timing hard");
+}
+for(let a=60;a<68;a++){
+ add("Income start "+a,base(),{events:[{id:"l"+a,type:"temporary_income",monthlyAmount:1000,availableFromAge:a,endAge:a+3,certainty:"contractual"}]},r=>r.ledger.filter(x=>x.age<a).every(x=>x.extraIncome===0)&&at(r,a).extraIncome===12000,"geen inkomen voor start");
+}
+for(let a=60;a<68;a++){
+ add("Income stopt na "+(a+3),base(),{events:[{id:"l"+a,type:"temporary_income",monthlyAmount:1000,availableFromAge:a,endAge:a+3,certainty:"contractual"}]},r=>r.ledger.filter(x=>x.age>a+3).every(x=>x.extraIncome===0),"geen inkomen na einde");
+}
+
+add("Twee gifts totaal exact",base(),{events:[{id:"a",type:"future_lump_sum",amount:10000,availableFromAge:60,certainty:"certain",liquidity:"immediate"},{id:"b",type:"future_lump_sum",amount:20000,availableFromAge:61,certainty:"certain",liquidity:"immediate"}]},r=>sum(r.ledger,x=>x.injected)===30000,"geen dubbeltelling");
+add("Drie gifts zelfde jaar totaal exact",base(),{events:[1,2,3].map(i=>({id:"g"+i,type:"future_lump_sum",amount:10000*i,availableFromAge:65,certainty:"certain",liquidity:"immediate"}))},r=>at(r,65).injected===60000&&sum(r.ledger,x=>x.injected)===60000,"collision zonder verlies");
+add("Blocked asset nooit injected",base(),{assets:[{id:"b",type:"blocked_asset",currentValue:500000,availableFromAge:65,certainty:"contractual",liquidity:"restricted",restricted:true}]},r=>sum(r.ledger,x=>x.injected)===0,"geblokkeerd geld blijft buiten cashflow");
+add("Illiquide woning nooit injected",base(),{assets:[{id:"h",type:"illiquid_property",currentValue:1000000,certainty:"certain",liquidity:"illiquid"}]},r=>sum(r.ledger,x=>x.injected)===0,"woningwaarde is geen cashflow");
+add("Onzekere erfenis nooit injected conservatief",base(),{events:[{id:"e",type:"uncertain_asset",amount:1000000,availableFromAge:70,certainty:"uncertain",liquidity:"immediate"}]},r=>sum(r.ledger,x=>x.injected)===0,"onzeker vermogen blijft buiten");
+add("Probable erfenis nooit injected base",base(),{events:[{id:"e",type:"uncertain_asset",amount:1000000,availableFromAge:70,certainty:"probable",liquidity:"immediate"}]},r=>sum(GeldcheckFutureBridge.simulate(base(),{events:[{id:"e",type:"uncertain_asset",amount:1000000,availableFromAge:70,certainty:"probable",liquidity:"immediate"}]},{mode:"base",nominalReturn:.02,crashAtRetirement:false}).ledger,x=>x.injected)===0,"probable niet als zeker");
+
+add("Annual need identiteit zonder future flows",base({aow:0,pension:0,cost:3000}),{},r=>r.ledger.every(x=>x.need===36000),"need stabiel");
+add("AOW verlaagt need exact",base({aow:1000,aowStartAge:67,pension:0,cost:3000}),{},r=>at(r,66).need===36000&&at(r,67).need===24000,"AOW exact vanaf start");
+add("Pensioen verlaagt need exact",base({aow:0,pension:500,pensionStartAge:65,cost:3000}),{},r=>at(r,64).need===36000&&at(r,65).need===30000,"pensioen exact vanaf start");
+add("Lijfrente verlaagt need exact",base({aow:0,pension:0,cost:3000}),{events:[{id:"l",type:"temporary_income",monthlyAmount:500,availableFromAge:65,endAge:65,certainty:"contractual"}]},r=>at(r,65).need===30000,"future income exact");
+add("Zorgkosten verhogen need exact",base({aow:0,pension:0,cost:3000}),{events:[{id:"z",type:"future_expense",monthlyAmount:500,availableFromAge:65,endAge:65,certainty:"certain"}]},r=>at(r,65).need===42000,"future expense exact");
+add("Income en expense zelfde bedrag netto nul",base({aow:0,pension:0,cost:3000}),{events:[{id:"l",type:"temporary_income",monthlyAmount:500,availableFromAge:65,endAge:65,certainty:"contractual"},{id:"z",type:"future_expense",monthlyAmount:500,availableFromAge:65,endAge:65,certainty:"certain"}]},r=>at(r,65).need===36000,"geen timingverlies");
+
+add("Geen return: cash+invested+consumption+gap boekhoudt",base({cash:100000,investments:100000,aow:0,pension:0,cost:1000}),{},r=>{
+ let start=200000, consumed=sum(r.ledger,x=>x.need), end=r.cash+r.invested, gap=r.fundingGap;
+ return approx(start,end+consumed-gap,2);
+},"reële return 0 bij nominal 2% en inflatie 2%");
+add("Gift verhoogt beschikbare middelen exact",base({cash:0,investments:0,aow:0,pension:0,cost:0}),{events:[{id:"g",type:"future_lump_sum",amount:50000,availableFromAge:65,certainty:"certain",liquidity:"immediate"}]},r=>r.endCapital===50000,"geen geldverlies");
+add("Twee gifts plus tax exact",base({cash:0,investments:0,aow:0,pension:0,cost:0}),{events:[{id:"a",type:"future_lump_sum",amount:100000,availableFromAge:60,certainty:"certain",liquidity:"immediate",taxRate:.25},{id:"b",type:"future_lump_sum",amount:50000,availableFromAge:61,certainty:"certain",liquidity:"immediate",taxRate:.20}]},r=>r.endCapital===115000,"netto 75k + 40k");
+
+add("Funding gap groeit exact zonder middelen",base({cash:0,investments:0,aow:0,pension:0,cost:1000}),{},r=>r.ledger.every((x,i,a)=>i===0?x.fundingGap===12000:x.fundingGap===a[i-1].fundingGap+12000),"tekort accumuleert per jaar");
+add("Gift verlaagt netPosition tekort exact",base({cash:0,investments:0,aow:0,pension:0,cost:1000}),{events:[{id:"g",type:"future_lump_sum",amount:24000,availableFromAge:62,certainty:"certain",liquidity:"immediate"}]},r=>at(r,62).netPosition-at(r,61).netPosition===12000,"24k gift min 12k jaarbehoefte");
+add("Lijfrente reduceert gapgroei exact",base({cash:0,investments:0,aow:0,pension:0,cost:1000}),{events:[{id:"l",type:"temporary_income",monthlyAmount:500,availableFromAge:62,endAge:62,certainty:"contractual"}]},r=>at(r,62).fundingGap-at(r,61).fundingGap===6000,"12k kosten min 6k inkomen");
+add("Zorgkosten verhogen gapgroei exact",base({cash:0,investments:0,aow:0,pension:0,cost:1000}),{events:[{id:"z",type:"future_expense",monthlyAmount:500,availableFromAge:62,endAge:62,certainty:"certain"}]},r=>at(r,62).fundingGap-at(r,61).fundingGap===18000,"12k basis +6k zorg");
+
+add("EndCapital gelijk laatste netPosition",base({cash:0,investments:0,aow:0,pension:0}),{},r=>approx(r.endCapital,r.ledger[r.ledger.length-1].netPosition),"samenvatting = ledger");
+add("Consumed ids uniek",base(),{events:[{id:"a",type:"future_lump_sum",amount:10000,availableFromAge:60,certainty:"certain",liquidity:"immediate"},{id:"b",type:"future_lump_sum",amount:10000,availableFromAge:61,certainty:"certain",liquidity:"immediate"}]},r=>new Set(r.consumed).size===r.consumed.length,"geen dubbele consumptie-id");
+add("Same id dubbel event slechts één consumptie",base(),{events:[{id:"x",type:"future_lump_sum",amount:10000,availableFromAge:60,certainty:"certain",liquidity:"immediate"},{id:"x",type:"future_lump_sum",amount:10000,availableFromAge:61,certainty:"certain",liquidity:"immediate"}]},r=>r.consumed.filter(x=>x==="x").length===1&&sum(r.ledger,x=>x.injected)===10000,"idempotentie");
+
+add("Temporary income één jaar exact",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:70,endAge:70,certainty:"contractual"}]},r=>sum(r.ledger,x=>x.extraIncome)===12000,"exact één boekjaar");
+add("Temporary income drie jaar exact",base(),{events:[{id:"l",type:"temporary_income",monthlyAmount:1000,availableFromAge:70,endAge:72,certainty:"contractual"}]},r=>sum(r.ledger,x=>x.extraIncome)===36000,"3 x 12k");
+add("Temporary expense drie jaar exact",base(),{events:[{id:"z",type:"future_expense",monthlyAmount:1000,availableFromAge:70,endAge:72,certainty:"certain"}]},r=>sum(r.ledger,x=>x.extraExpense)===36000,"3 x 12k");
+add("Lifetime income loopt t/m 94",base(),{events:[{id:"l",type:"lifetime_income",monthlyAmount:1000,availableFromAge:90,certainty:"contractual"}]},r=>sum(r.ledger,x=>x.extraIncome)===60000,"90-94 vijf jaren");
+add("Event op 95 niet in ledger",base(),{events:[{id:"g",type:"future_lump_sum",amount:10000,availableFromAge:95,certainty:"certain",liquidity:"immediate"}]},r=>sum(r.ledger,x=>x.injected)===0,"horizonbegrenzing");
+add("Event op 94 wel in ledger",base(),{events:[{id:"g",type:"future_lump_sum",amount:10000,availableFromAge:94,certainty:"certain",liquidity:"immediate"}]},r=>sum(r.ledger,x=>x.injected)===10000,"laatste jaar inbegrepen");
+
+if(T.length!==60){document.body.innerHTML='<pre>TEST COUNT ERROR '+T.length+'</pre>';return;}
+document.getElementById("run").onclick=function(){
+ let pass=0,html="";
+ T.forEach((t,i)=>{
+   let errs=[];
+   try{let r=sim(t.c,t.f);if(!t.fn(r))errs.push("verwachting niet gehaald");}catch(e){errs.push(String(e))}
+   if(!errs.length)pass++;
+   html+='<div class="case"><b class="'+(!errs.length?'ok':'bad')+'">'+(!errs.length?'PASS':'FAIL')+'</b> · '+(i+1)+'. '+t.n+'<div class="why">'+t.why+(errs.length?' · '+errs.join(" · "):'')+'</div></div>';
+ });
+ document.getElementById("sum").innerHTML='<div class="score '+(pass===T.length?'ok':'bad')+'">'+pass+' / '+T.length+'</div><b>'+(pass===T.length?'Lifecycle Audit volledig groen':'Lifecycle Audit vond tijdspadfouten')+'</b>';
+ document.getElementById("out").innerHTML=html;
+};
+})();
+</script></body></html>
