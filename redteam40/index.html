@@ -1,0 +1,57 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Geldcheck Menselijke Red-Team</title><style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}main{max-width:820px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}h1{font-size:42px;line-height:1.02;margin:0 0 12px}p{color:#777;line-height:1.45}button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}.small{font-size:13px;color:#777}.case{background:#fff;border:1px solid #ddd7ca;border-radius:20px;padding:16px;margin:10px 0}.case b{font-size:17px}.tag{font-weight:900;margin-right:8px}.why{margin-top:6px;color:#777;font-size:14px}
+</style></head><body><main><div class="card"><h1>Menselijke Red-Team 40</h1><p>Geen rekentest. Veertig financieel vreemde maar geldige huishoudens proberen de Geldcheck tot een onmenselijke conclusie te verleiden.</p><p class="small"><b>Build R1 · echte engine · adversarial huishoudens</b></p><button id="run">Run 40 menselijke red-team tests</button><div id="summary"></div></div><div id="cases"></div></main>
+<script src="../engine.js?v=1.2"></script><script>
+(function(){
+function base(o){return Object.assign({age:45,household:"Alleen",kids:0,goal:"health",income:4000,otherIncome:0,cost:3000,annualIncluded:true,cash:20000,investments:100000,debt:0,housing:"rent",rent:1000},o||{})}
+function has(a,re){return re.test(JSON.stringify(a))}
+var T=[
+["Miljonair zonder cash",base({cash:0,investments:3000000}),a=>a.dimensions.liquidity.status==="weak"&&a.dimensions.wealth.net>2000000,"liquiditeit mag niet verdwijnen achter vermogen"],
+["Hoog inkomen, hogere lasten",base({income:15000,cost:16000,cash:10000,investments:0}),a=>a.dimensions.cashflow.status==="weak","hoog inkomen mag negatieve cashflow niet maskeren"],
+["Laag inkomen, enorm vermogen",base({income:1000,cost:2500,cash:500000,investments:2500000}),a=>a.dimensions.cashflow.status==="weak"&&a.dimensions.wealth.net>2000000,"cashflow en solvabiliteit moeten apart blijven"],
+["Geen buffer, veel beleggingen",base({cash:100,investments:1200000,cost:4000}),a=>a.dimensions.liquidity.status==="weak","belegd vermogen is geen cashbuffer"],
+["Dure schuld naast beleggingen",base({cash:20000,investments:300000,debt:100000,debtRate:.12}),a=>a.dimensions.debt.highInterest&&has(a,/dure schuld/i),"12% schuld moet zichtbaar risico zijn"],
+["Negatief netto vermogen",base({cash:5000,investments:10000,debt:100000,debtRate:.08}),a=>a.case.netFinancialAssets<0,"schuld moet netto vermogen negatief maken"],
+["Riante cashbuffer",base({cash:100000,cost:2500,investments:0}),a=>a.dimensions.liquidity.status==="strong","grote cashbuffer moet als sterk worden gezien"],
+["Positieve cashflow",base({income:6000,cost:3000}),a=>a.case.monthlySurplus===3000&&a.dimensions.cashflow.status==="strong","grote maandruimte moet herkend worden"],
+["Negatieve cashflow",base({income:3000,cost:5000}),a=>a.case.monthlySurplus===-2000&&has(a,/maandbasis is negatief/i),"tekort moet expliciet worden benoemd"],
+["Jaaruitgaven onbekend",base({annualIncluded:false}),a=>has(a,/vrije ruimte kan lager/i),"onvolledige uitgaven mogen geen schijnzekerheid geven"],
+["Pensioen nu, ruim vermogen",base({age:67,goal:"retirement",retireAge:67,aowStartAge:67,aow:1800,pensionStartAge:67,pension:1800,income:0,cost:3000,cash:100000,investments:1500000}),a=>a.decision&&a.decision.tone==="yes","ruime pensioenpositie moet haalbaar kunnen zijn"],
+["Pensioen nu, geen vermogen",base({age:67,goal:"retirement",retireAge:67,aowStartAge:67,aow:1200,pension:0,income:0,cost:3500,cash:1000,investments:0}),a=>a.missing.length>0||!a.decision||a.decision.tone!=="yes","tekort zonder vermogen mag geen JA geven"],
+["Vroeg stoppen 55, geen kapitaal",base({age:55,goal:"early",retireAge:55,aowStartAge:67,aow:1500,income:5000,cost:4000,cash:1000,investments:10000}),a=>a.decision&&a.decision.tone==="no","12 jaar brug zonder vermogen moet falen"],
+["Vroeg stoppen 55, groot kapitaal",base({age:55,goal:"early",retireAge:55,aowStartAge:67,aow:1500,pension:1000,pensionStartAge:67,income:5000,cost:3500,cash:100000,investments:2500000}),a=>a.decision&&a.decision.tone==="yes","groot kapitaal moet robuust kunnen zijn"],
+["AOW één jaar later",base({age:66,goal:"early",retireAge:66,aowStartAge:67,aow:1800,pension:1000,pensionStartAge:67,income:4000,cost:2800,cash:100000,investments:600000}),a=>a.decision&&a.decision.bridgeYears===1,"brug moet exact één jaar zijn"],
+["AOW tien jaar later",base({age:57,goal:"early",retireAge:57,aowStartAge:67,aow:1800,income:5000,cost:3500,cash:100000,investments:800000}),a=>a.decision&&a.decision.bridgeYears===10,"lange AOW-brug moet zichtbaar zijn"],
+["Pensioeninkomen dekt lasten",base({age:65,goal:"retirement",retireAge:67,aowStartAge:67,aow:1800,pensionStartAge:67,pension:2200,cost:3500,cash:50000,investments:500000}),a=>a.scenarios.retirement&&a.scenarios.retirement.currentEuroGap===0,"gedekt pensioen mag geen pensioengat tonen"],
+["Pensioeninkomen tekort",base({age:65,goal:"retirement",retireAge:67,aowStartAge:67,aow:1200,pension:300,cost:3500,cash:50000,investments:500000}),a=>a.scenarios.retirement.currentEuroGap===2000,"pensioengat moet correct zijn"],
+["90%+ belegd",base({cash:10000,investments:1000000}),a=>has(a,/groot deel.*belegd/i),"concentratie in marktvermogen moet worden benoemd"],
+["Crash bij pensioen",base({age:64,goal:"early",retireAge:65,aowStartAge:67,aow:1600,pension:800,pensionStartAge:67,cost:4000,cash:30000,investments:700000}),a=>a.decision&&a.decision.conservative&&a.decision.conservative.crashAtRetirement===true,"conservatieve pensioenroute moet openingscrash bevatten"],
+["Hypotheek na pensioen",base({age:60,goal:"retirement",retireAge:65,housing:"mortgage",mortgage:300000,mortgageRate:.04,mortgageEndAge:80,mortgagePayment:1600,aowStartAge:67,aow:1700,pension:1200,pensionStartAge:67,cash:50000,investments:600000}),a=>has(a,/hypotheek loopt door/i),"woonlast na pensioen moet expliciet zijn"],
+["Hypotheek vóór pensioen klaar",base({age:55,goal:"retirement",retireAge:67,housing:"mortgage",mortgage:100000,mortgageRate:.03,mortgageEndAge:65,mortgagePayment:900,aowStartAge:67,aow:1700,pension:1200,pensionStartAge:67,cash:50000,investments:600000}),a=>a.dimensions.housing.mortgageEndsAfterRetirement===false,"aflopende hypotheek mag niet als pensioenrisico gelden"],
+["Grote aankoop sloopt buffer",base({goal:"purchase",cash:20000,cost:3000,income:6000,purchaseAmount:18000,purchaseMonths:24}),a=>a.scenarios.purchase.bufferMonthsAfter<3&&has(a,/buffer te ver verlagen/i),"haalbare maandtermijn mag buffergevaar niet maskeren"],
+["Aankoop past ruim",base({goal:"purchase",cash:100000,cost:3000,income:8000,purchaseAmount:12000,purchaseMonths:24}),a=>a.scenarios.purchase.fitsMonthly&&a.scenarios.purchase.bufferMonthsAfter>=6,"ruime aankoop moet haalbaar zijn"],
+["Aankoop te duur per maand",base({goal:"purchase",cash:100000,cost:3900,income:4000,purchaseAmount:30000,purchaseMonths:12}),a=>a.scenarios.purchase.fitsMonthly===false,"reserveringsdruk boven surplus moet falen"],
+["Papier versus rekening groot gat",base({goal:"cashflow",income:5000,cost:3000,savingGrowth:200}),a=>a.scenarios.reconciliation&&a.scenarios.reconciliation.material,"grote reconciliatiekloof moet opvallen"],
+["Papier versus rekening klopt",base({goal:"cashflow",income:5000,cost:3000,savingGrowth:1950}),a=>a.scenarios.reconciliation&&!a.scenarios.reconciliation.material,"kleine kloof hoeft geen alarm te zijn"],
+["Inkomen ontbreekt",base({income:null}),a=>a.missing.some(x=>x.key==="income")&&a.score.value===null,"geen oordeel zonder inkomen"],
+["Uitgaven ontbreken",base({cost:null}),a=>a.missing.some(x=>x.key==="cost")&&a.score.value===null,"geen oordeel zonder uitgaven"],
+["Pensioenleeftijd ontbreekt",base({age:55,goal:"early",retireAge:null,cash:100000,investments:500000}),a=>a.missing.some(x=>x.key==="retireAge")&&!a.decision,"geen vroeg-stopbesluit zonder doelleeftijd"],
+["Aankoopbedrag ontbreekt",base({goal:"purchase",purchaseAmount:null,purchaseMonths:24}),a=>a.missing.some(x=>x.key==="purchaseAmount"),"geen aankoopbesluit zonder bedrag"],
+["Aankooptermijn ontbreekt",base({goal:"purchase",purchaseAmount:20000,purchaseMonths:null}),a=>a.missing.some(x=>x.key==="purchaseMonths"),"geen aankoopbesluit zonder termijn"],
+["Hoge hypotheek versus inkomen",base({income:3000,cost:2500,housing:"mortgage",mortgage:600000,mortgageRate:.05,mortgageEndAge:75,mortgagePayment:2500}),a=>a.dimensions.debt.mortgageToIncome>10,"extreme leverage moet meetbaar blijven"],
+["Rentestress aanwezig",base({housing:"mortgage",mortgage:500000,mortgageRate:.04,mortgageEndAge:75,mortgagePayment:2200}),a=>a.intelligence.stress.some(x=>x.key==="rate"),"hypotheek moet rentestress activeren"],
+["Beursstress domineert miljonair",base({income:4000,cost:3000,cash:20000,investments:3000000}),a=>a.intelligence.dominant&&a.intelligence.dominant.key==="market","bij miljoenenbeleggingen hoort markt als dominante shock"],
+["Inkomensstress zonder beleggingen",base({income:10000,cost:4000,cash:50000,investments:0}),a=>a.intelligence.dominant&&a.intelligence.dominant.key==="income","zonder beleggingen kan inkomensshock dominant zijn"],
+["Nul schuld geen dure-schuldalarm",base({debt:0,debtRate:.15}),a=>!a.dimensions.debt.highInterest,"rente zonder schuld mag geen alarm geven"],
+["Veel schuld maar lage rente",base({debt:100000,debtRate:.02}),a=>!a.dimensions.debt.highInterest,"lage rente mag niet als dure schuld gelden"],
+["Cash exact drie maanden",base({cash:9000,cost:3000}),a=>a.dimensions.liquidity.status==="thin","grens 3 maanden moet consistent zijn"],
+["Cash exact zes maanden",base({cash:18000,cost:3000}),a=>a.dimensions.liquidity.status==="solid","grens 6 maanden moet consistent zijn"]
+];
+document.getElementById("run").onclick=function(){
+ var out=[],pass=0;
+ T.forEach(function(t,i){try{var a=GeldcheckEngine.analyze(t[1]);var ok=!!t[2](a);if(ok)pass++;out.push({i:i+1,n:t[0],ok:ok,w:t[3]});}catch(e){out.push({i:i+1,n:t[0],ok:false,w:t[3]+" · "+e});}});
+ var all=pass===T.length;
+ document.getElementById("summary").innerHTML='<div class="score '+(all?'ok':'bad')+'">'+pass+' / '+T.length+'</div><b>'+(all?'ALLE MENSELIJKE RED-TEAM CASES GROEN':'We hebben inhoudelijke zwakke plekken gevonden')+'</b>';
+ document.getElementById("cases").innerHTML=out.map(function(x){return '<div class="case"><span class="tag '+(x.ok?'ok':'bad')+'">'+(x.ok?'PASS':'FAIL')+'</span><b>'+x.i+'. '+x.n+'</b><div class="why">'+x.w+'</div></div>'}).join('');
+};
+})();</script></body></html>
