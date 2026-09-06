@@ -36,7 +36,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   <div class="field"><label>Minimaal over op eindleeftijd</label><input id="endBuffer" type="number" value="50000"></div>
   <div class="field"><label>Inflatie-aanname %</label><input id="inflation" type="number" step="0.1" value="2"></div>
   <div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" value="245000"></div>
-  <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>
+  <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>\n  <div class="field"><label>Hypotheekbetaling p/m</label><input id="mortPayment" type="number" value="1100"></div>
 </div><button class="primary" onclick="recalc()">Bereken mijn plan</button></div>
 
 <div id="result"></div>
@@ -76,18 +76,18 @@ function plan(){
     age:n('age'),stopAge:n('stopAge'),income:n('income'),spend:n('spend'),capital:n('capital'),
     workReduction:n('workReduction')/100,aowAge:n('aowAge'),aow:n('aow'),pension:n('pension'),
     endAge:n('endAge'),endBuffer:n('endBuffer'),inflation:n('inflation')/100,
-    mortgage:n('mortgage'),mortRate:n('mortRate')/100
+    mortgage:n('mortgage'),mortRate:n('mortRate')/100,mortPayment:n('mortPayment')
   };
 }
 
-function simulateReal(p, realReturn){
+function mortgageInfo(p){ const r=p.mortRate/12, pay=p.mortPayment; if(p.mortgage<=0||pay<=0)return {months:0,endAge:p.age,interest:0,principal:0}; const interest=p.mortgage*r; const principal=Math.max(0,pay-interest); if(r<=0)return {months:Math.ceil(p.mortgage/pay),endAge:p.age+p.mortgage/pay/12,interest:0,principal:pay}; if(pay<=interest)return {months:Infinity,endAge:Infinity,interest,principal:0}; const months=-Math.log(1-r*p.mortgage/pay)/Math.log(1+r); return {months,endAge:p.age+months/12,interest,principal}; }\n\nfunction simulateReal(p, realReturn){
   let cap=p.capital, min=cap, depletionAge=null;
   const keptIncome=p.income*(1-p.workReduction);
   for(let age=p.age; age<p.endAge; age++){
     let annualIncome=0;
     if(age<p.stopAge) annualIncome+=keptIncome*12;
     if(age>=p.aowAge) annualIncome+=(p.aow+p.pension)*12;
-    let annualSpend=p.spend*12;
+    let annualSpend=p.spend*12; const mi=mortgageInfo(p); if(age>=mi.endAge) annualSpend-=p.mortPayment*12;
     let oneOff=0, monthlyIncomeChange=0, monthlySpendChange=0;
     changes.forEach(e=>{
       if(e.kind==='oneoff'&&e.age===age) oneOff+=e.amount;
@@ -127,7 +127,7 @@ window.recalc=function(){
   const p=plan();
   const rr=requiredReal(p);
   const nominal=isFinite(rr)?(1+rr)*(1+p.inflation)-1:Infinity;
-  const kept=p.income*(1-p.workReduction);
+  const kept=p.income*(1-p.workReduction);\n  const mi=mortgageInfo(p);
   const workOnlyNet=kept-p.spend;
   const workPlusAowNet=kept+p.aow+p.pension-p.spend;
   const stoppedBeforeAowNet=-p.spend;
@@ -184,14 +184,14 @@ window.recalc=function(){
   '</div></div>'+
   '<div class="card"><h2>Waar ligt je speelruimte?</h2><div class="kpis">'+
     '<div class="kpi"><span>Bij 3% rendement</span><b>'+(earliest3!==null?'volledig stoppen rond '+earliest3:'nog niet genoeg')+'</b></div>'+
-    '<div class="kpi"><span>Hypotheekrente</span><b>'+pct(p.mortRate)+'</b></div>'+
+    '<div class="kpi"><span>Hypotheek nu</span><b>'+euro(p.mortPayment)+'/mnd</b></div>'+\n    '<div class="kpi"><span>Nu: rente / aflossing</span><b>'+euro(mi.interest)+' / '+euro(mi.principal)+'</b></div>'+\n    '<div class="kpi"><span>Hypotheek klaar rond</span><b>'+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace(\'.\',\',\')+\' jaar\':\'loopt niet af\')+'</b></div>'+
   '</div></div>'+
   '<div class="card"><h2>Als rendement tegenvalt</h2>'+
     '<div class="scenario"><span>0% nominaal</span><span>'+(e0.depletionAge?'geld op rond '+e0.depletionAge:'houdt stand')+'</span><b>'+euro(e0.end)+'</b></div>'+
     '<div class="scenario"><span>3% nominaal</span><span>'+(e3.depletionAge?'geld op rond '+e3.depletionAge:'houdt stand')+'</span><b>'+euro(e3.end)+'</b></div>'+
     '<div class="scenario"><span>5% nominaal</span><span>'+(e5.depletionAge?'geld op rond '+e5.depletionAge:'houdt stand')+'</span><b>'+euro(e5.end)+'</b></div>'+
     '<p class="note">Eindbedragen zijn in koopkracht van vandaag. Het doel is niet vermogen maximaliseren, maar genoeg houden tot je gekozen eindleeftijd.</p></div>'+
-  '<div class="card"><h2>Belangrijkste risico’s</h2><div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.\n\n2. Je hypotheek van '+euro(p.mortgage)+' tegen '+pct(p.mortRate)+' blijft een belangrijke vaste balanspost. De exacte maandlast en einddatum horen straks in de definitieve intelligentie.\n\n3. AOW en pensioen bepalen hoeveel je portefeuille na '+p.aowAge+' nog hoeft te dragen.\n\n4. Je hoeft je vermogen niet per se te laten groeien. Als je einddoel '+euro(p.endBuffer)+' op '+p.endAge+' is, mag het onderweg gecontroleerd dalen.</div></div>'+
+  '<div class="card"><h2>Belangrijkste risico’s</h2><div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.\n\n2. Je hypotheek van '+euro(p.mortgage)+' tegen '+pct(p.mortRate)+' kost nu '+euro(p.mortPayment)+'/mnd. Daarvan is nu ongeveer '+euro(mi.interest)+' rente en '+euro(mi.principal)+' aflossing. Bij gelijkblijvende rente en betaling loopt hij rond leeftijd '+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'—')+' af; vanaf dan valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.\n\n3. AOW en pensioen bepalen hoeveel je portefeuille na '+p.aowAge+' nog hoeft te dragen.\n\n4. Je hoeft je vermogen niet per se te laten groeien. Als je einddoel '+euro(p.endBuffer)+' op '+p.endAge+' is, mag het onderweg gecontroleerd dalen.</div></div>'+
   (baseNarrative?'<div class="card"><h2>Onderliggende Geldcheck-intelligentie</h2><p class="note">De bestaande engine blijft als veiligheidslaag actief.</p><div class="answer">'+baseNarrative.story+'</div></div>':'');
 };
 
