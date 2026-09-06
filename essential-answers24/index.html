@@ -1,0 +1,62 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Essential Answers 24</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}main{max-width:820px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}.ans{font-weight:900;margin-top:5px}</style></head><body><main>
+<div class="card"><h1>Essential Answers 24</h1><p>Nu testen we de vragen die een gebruiker écht stelt: kan ik stoppen, kan ik dit betalen, wat als inkomen wegvalt, en telt toekomstig vermogen terecht wel of niet mee?</p><p class="small"><b>Build EA1 · 24 end-to-end antwoordtests · bestaande engine + Future Bridge</b></p><button id="run">Run 24 essentiële antwoordtests</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge.js?v=0.5"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,goal:"early",income:5000,cost:3000,cash:100000,investments:500000,debt:0,retireAge:60,aow:1500,aowStartAge:67,pension:800,pensionStartAge:67},o||{});
+const gift=(id,amt,age,certainty="certain")=>({id,type:certainty==="uncertain"?"uncertain_asset":"future_lump_sum",amount:amt,availableFromAge:age,certainty,liquidity:"immediate"});
+const inc=(id,m,age,end)=>({id,type:"temporary_income",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"contractual",liquidity:"immediate"});
+const exp=(id,m,age,end)=>({id,type:"future_expense",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"certain"});
+const blocked=(id,val,age)=>({id,type:"blocked_asset",currentValue:val,availableFromAge:age,certainty:"contractual",liquidity:"restricted",restricted:true});
+
+function futureRetirement(c,f){
+  const conservative=GeldcheckFutureBridge.simulate(c,f||{},{mode:"conservative",nominalReturn:.03,crashAtRetirement:true,endAge:95});
+  const base=GeldcheckFutureBridge.simulate(c,f||{},{mode:"base",nominalReturn:.05,crashAtRetirement:false,endAge:95});
+  if(conservative.success)return {answer:"JA",conservative,base};
+  if(base.success)return {answer:"MOGELIJK",conservative,base};
+  return {answer:"NEE",conservative,base};
+}
+function purchaseAnswer(c,amount,months){
+  const x=Object.assign({},c,{goal:"purchase",purchaseAmount:amount,purchaseMonths:months});
+  const a=GeldcheckEngine.analyze(x), p=a.scenarios.purchase;
+  if(!p)return {answer:"ONBEKEND",raw:a};
+  const bufferOK=p.bufferMonthsAfter===null||p.bufferMonthsAfter>=3;
+  const monthlyOK=p.fitsMonthly===true;
+  return {answer:(monthlyOK&&bufferOK)?"JA":"NEE",raw:a};
+}
+function shockAnswer(c,f){
+  const r=GeldcheckFutureBridge.simulate(c,f||{},{mode:"conservative",nominalReturn:.03,crashAtRetirement:true,endAge:95});
+  return {answer:r.success?"HOUDT STAND":"KWETSBAAR",raw:r};
+}
+let T=[]; const add=(q,run,expect,why)=>T.push({q,run,expect,why});
+
+add("Kan ik nu stoppen met werken? Sterke positie",()=>futureRetirement(B({cash:200000,investments:1200000,cost:2500}),{}).answer,"JA","ruime buffer en vermogen");
+add("Kan ik nu stoppen? Te weinig vermogen",()=>futureRetirement(B({cash:5000,investments:20000,cost:3500,aow:1000,pension:0}),{}).answer,"NEE","structureel tekort");
+add("Kan ik nu stoppen? Alleen basisscenario redt het",()=>futureRetirement(B({cash:30000,investments:430000,cost:3200,aow:1400,pension:500}),{}).answer,"MOGELIJK","gevoelig voor aannames");
+add("Helpt later stoppen?",()=>{let a=futureRetirement(B({retireAge:60,cash:30000,investments:180000,cost:3000}),{}),b=futureRetirement(B({retireAge:67,cash:30000,investments:180000,cost:3000}),{});return (a.answer!=="JA"&&b.answer==="JA")?"JA":"NEE"},"JA","minder jaren overbruggen");
+add("Helpt een zekere erfenis vóór pensioen?",()=>{let c=B({cash:10000,investments:100000,cost:3200});let a=futureRetirement(c,{}),b=futureRetirement(c,{events:[gift("e",500000,65)]});return (a.answer==="NEE"&&b.answer!=="NEE")?"JA":"NEE"},"JA","zekere toekomstige ontvangst mag helpen");
+add("Mag een onzekere erfenis het antwoord verbeteren?",()=>{let c=B({cash:10000,investments:100000,cost:3200});let a=futureRetirement(c,{}),b=futureRetirement(c,{events:[gift("e",1000000,65,"uncertain")]});return a.answer===b.answer?"NEE":"JA"},"NEE","geen voorschot op onzekerheid");
+add("Mag geblokkeerd banksparen nu helpen?",()=>{let c=B({cash:10000,investments:100000,cost:3200});let a=futureRetirement(c,{}),b=futureRetirement(c,{assets:[blocked("b",1000000,67)]});return a.answer===b.answer?"NEE":"JA"},"NEE","restricted is geen vrije cash");
+add("Helpt contractuele lijfrente?",()=>{let c=B({cash:10000,investments:120000,cost:3200});let a=futureRetirement(c,{}),b=futureRetirement(c,{events:[inc("l",1800,65,90)]});return (a.answer==="NEE"&&b.answer!=="NEE")?"JA":"NEE"},"JA","zeker pensioeninkomen telt");
+add("Kunnen hoge zorgkosten pensioen breken?",()=>{let c=B({cash:120000,investments:550000,cost:2800});let a=futureRetirement(c,{}),b=futureRetirement(c,{events:[exp("z",1800,72,94)]});return (a.answer==="JA"&&b.answer!=="JA")?"JA":"NEE"},"JA","late kosten horen risico toe te voegen");
+add("Verslechtert baanverlies vóór pensioen de uitkomst?",()=>{let c=B({age:55,retireAge:60,income:5000,cost:3500,cash:40000,investments:180000});let a=futureRetirement(c,{}),b=futureRetirement(c,{events:[inc("loss",-2500,55,59)]});return b.conservative.endCapital<a.conservative.endCapital?"JA":"NEE"},"JA","minder opbouw vóór pensioen");
+add("Helpt hogere AOW?",()=>{let a=futureRetirement(B({aow:1000,cash:50000,investments:250000,cost:3000}),{}),b=futureRetirement(B({aow:2200,cash:50000,investments:250000,cost:3000}),{});return b.conservative.endCapital>a.conservative.endCapital?"JA":"NEE"},"JA","meer levenslang inkomen");
+add("Helpt hoger pensioen?",()=>{let a=futureRetirement(B({pension:0,cash:50000,investments:250000,cost:3000}),{}),b=futureRetirement(B({pension:1400,cash:50000,investments:250000,cost:3000}),{});return b.conservative.endCapital>a.conservative.endCapital?"JA":"NEE"},"JA","meer structureel inkomen");
+
+add("Kan ik €50.000 uitgeven met ruime maandruimte en buffer?",()=>purchaseAnswer(B({goal:"purchase",income:8000,cost:3000,cash:150000,investments:300000}),50000,24).answer,"JA","reservering past en buffer blijft ruim");
+add("Kan ik €50.000 uitgeven met bijna geen buffer?",()=>purchaseAnswer(B({goal:"purchase",income:4000,cost:3500,cash:10000,investments:0}),50000,24).answer,"NEE","te weinig vrije ruimte/buffer");
+add("Kan ik €20.000 in 24 maanden sparen bij €1.500 maandruimte?",()=>purchaseAnswer(B({goal:"purchase",income:5000,cost:3500,cash:30000,investments:0}),20000,24).answer,"JA","€833 reservering past");
+add("Kan ik €50.000 in 12 maanden sparen bij €1.000 maandruimte?",()=>purchaseAnswer(B({goal:"purchase",income:4500,cost:3500,cash:30000,investments:0}),50000,12).answer,"NEE","€4.167 reservering past niet");
+add("Is één jaar inkomensverlies met grote buffer overleefbaar?",()=>shockAnswer(B({cash:150000,investments:500000,cost:3000}),{events:[inc("loss",-3000,60,60)]}).answer,"HOUDT STAND","buffer vangt tijdelijke schok op");
+add("Is vijf jaar zware inkomensval bij kleine buffer kwetsbaar?",()=>shockAnswer(B({age:55,retireAge:60,cash:5000,investments:30000,cost:3500}),{events:[inc("loss",-2500,55,59)]}).answer,"KWETSBAAR","te weinig draagkracht");
+add("Maakt €100.000 extra cash de positie beter?",()=>{let a=futureRetirement(B({cash:0,investments:200000,cost:3000}),{}),b=futureRetirement(B({cash:100000,investments:200000,cost:3000}),{});return b.conservative.endCapital>a.conservative.endCapital?"JA":"NEE"},"JA","liquiditeit heeft waarde");
+add("Maakt €100.000 extra beleggingen de positie beter?",()=>{let a=futureRetirement(B({cash:30000,investments:100000,cost:3000}),{}),b=futureRetirement(B({cash:30000,investments:200000,cost:3000}),{});return b.conservative.endCapital>a.conservative.endCapital?"JA":"NEE"},"JA","meer financierbaar vermogen");
+add("Maken hogere uitgaven de positie slechter?",()=>{let a=futureRetirement(B({cost:2500}),{}),b=futureRetirement(B({cost:4000}),{});return b.conservative.endCapital<a.conservative.endCapital?"JA":"NEE"},"JA","meer jaarlijkse behoefte");
+add("Maken lagere uitgaven de positie beter?",()=>{let a=futureRetirement(B({cost:3500}),{}),b=futureRetirement(B({cost:2500}),{});return b.conservative.endCapital>a.conservative.endCapital?"JA":"NEE"},"JA","minder jaarlijkse behoefte");
+add("Mag toekomstige woningoverwaarde automatisch consumptiegeld worden?",()=>{let c=B({cash:5000,investments:50000,cost:3200});let a=futureRetirement(c,{}),b=futureRetirement(c,{assets:[{id:"h",type:"illiquid_property",currentValue:1000000,certainty:"certain",liquidity:"illiquid"}]});return a.answer===b.answer?"NEE":"JA"},"NEE","woning is niet vanzelf liquide");
+add("Blijft een combinatie van zekere gift + lijfrente logisch positief?",()=>{let c=B({cash:10000,investments:80000,cost:3200});let a=futureRetirement(c,{}),b=futureRetirement(c,{events:[gift("g",200000,65),inc("l",1000,67,90)]});return b.conservative.endCapital>a.conservative.endCapital?"JA":"NEE"},"JA","meerdere zekere toekomstbronnen mogen stapelen");
+
+if(T.length!==24){document.body.innerHTML="<pre>TEST COUNT ERROR "+T.length+"</pre>";return}
+document.getElementById("run").onclick=()=>{let p=0,h="";T.forEach((t,i)=>{let got="FOUT",ok=false,err="";try{got=t.run();ok=got===t.expect}catch(e){err=String(e)}if(ok)p++;h+='<div class="case"><b class="'+(ok?'ok':'bad')+'">'+(ok?'PASS':'FAIL')+' · '+(i+1)+'. '+t.q+'</b><div class="ans">Antwoord: '+got+' · verwacht: '+t.expect+'</div><div class="why">'+t.why+(err?' · '+err:'')+'</div></div>'});document.getElementById("sum").innerHTML='<div class="score '+(p===24?'ok':'bad')+'">'+p+' / 24</div><b>'+(p===24?'Alle essentiële antwoorden logisch':'Essentiële antwoordfouten gevonden')+'</b>';document.getElementById("out").innerHTML=h};
+})();</script></body></html>
