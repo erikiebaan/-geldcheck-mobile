@@ -1,0 +1,269 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Geldcheck · Heb ik straks genoeg?</title>
+<style>
+:root{--bg:#f6f4fb;--card:#fff;--ink:#171526;--muted:#747187;--g:#6550a8;--g2:#493783;--blue:#3978d4;--yellow:#f2c94c;--line:#dfdbea;--soft:#eef4ff;--soft2:#f8f7fc;--warn:#fff6cf;--danger:#b84b62}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;padding:0}
+main{max-width:760px;margin:auto;padding:18px 14px 110px}.appbar{position:sticky;top:0;z-index:50;background:rgba(246,244,251,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(223,219,234,.75);padding:12px 16px}.appbarin{max-width:760px;margin:auto;display:flex;align-items:center;justify-content:space-between}.brand{font-weight:950;letter-spacing:-.03em}.brand small{display:block;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:0}.editbtn{border:1px solid var(--line);background:white;color:var(--g);border-radius:999px;padding:9px 13px;font-weight:850}.bottomask{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}.bottomaskin{max-width:760px;margin:auto;display:flex;gap:8px}.bottomask input{flex:1;border:1px solid var(--line);border-radius:16px;padding:13px 14px;font-size:16px}.bottomask button{background:var(--blue);color:white;border-radius:16px;padding:0 16px;font-weight:900}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:12px;box-shadow:0 8px 28px rgba(32,42,36,.035)}
+h1{font-size:44px;line-height:.98;letter-spacing:-.05em;margin:0 0 10px}h2{font-size:25px;letter-spacing:-.025em;margin:0 0 10px}p{color:var(--muted);line-height:1.5}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin:0 0 5px}
+input{width:100%;border:1px solid var(--line);border-radius:14px;padding:13px;font:inherit;font-size:17px;background:#fff}
+button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:16px}.primary{width:100%;background:var(--g);color:#fff}.ghost{background:#eeeae1}
+.hero{background:linear-gradient(145deg,#7257b5,#4e3d91);color:#fff;border:0;padding:26px}.hero p{color:#e9f2ee;margin-bottom:0} .hero .big{font-size:64px;font-weight:950;line-height:.88;letter-spacing:-.055em;margin:12px 0}.hero .sub{font-size:18px;font-weight:850;opacity:.96}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid var(--line);border-radius:18px;padding:14px;background:var(--soft2)}.kpi span{font-size:12px;color:var(--muted)}.kpi b{display:block;font-size:22px;margin-top:4px}
+.chat{background:#faf8f3;border-radius:18px;padding:14px;margin-top:12px}.chatrow{display:flex;gap:8px}.chatrow input{flex:1}.chatrow button{background:var(--blue);color:white;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{background:#fff8dc;border:1px solid var(--line);border-radius:999px;padding:9px 11px;font-size:13px;font-weight:800}
+.answer{white-space:pre-line;line-height:1.58}.good{color:var(--g)}.warn{color:#a86600}.bad{color:var(--danger)}.leadanswer{font-size:18px;line-height:1.55}.mutedcard{background:var(--soft2)}
+.scenario{display:grid;grid-template-columns:.55fr 1fr 1fr;gap:8px;padding:13px 0;border-bottom:1px solid #eee}.scenario:last-child{border:0}.scenario b{text-align:right}.scenario span:nth-child(2){font-weight:800}
+.note{font-size:12px;color:var(--muted)} .chartwrap{height:360px;margin-top:8px}.chartwrap svg{width:100%;height:100%;overflow:visible}.chartgrid{stroke:#ebe7df;stroke-width:1}.chartline{fill:none;stroke:var(--blue);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.chartfill{fill:#eef4ff}.chartaxis{font-size:11px;fill:#777}.chartdot{fill:#19765f}.chartzero{stroke:#b43131;stroke-dasharray:5 5;stroke-width:1.5}.chartmark{stroke:#d3ad31;stroke-width:1;stroke-dasharray:3 4}.chartmarktext{font-size:10px;fill:#8a6b00;font-weight:700}
+.phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
+.topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}
+@media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}h1{font-size:44px}}
+</style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Heb ik straks genoeg?</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
+<div class="topintro">
+  <h1>Heb ik straks genoeg?</h1>
+  <p>Je antwoord in één getal. Daarna zie je waar de kwetsbaarheid zit en wat je kunt veranderen.</p>
+</div>
+
+<div class="card mutedcard" id="gegevens"><h2>Mijn situatie</h2><div class="summaryrow">
+<div class="summarypill"><span>Vermogen</span><b id="sumCapital">€250.000</b></div>
+<div class="summarypill"><span>Stoppen</span><b id="sumStop">60 jaar</b></div>
+<div class="summarypill"><span>Buffer</span><b id="sumBuffer">€50.000</b></div>
+</div><div class="statusline"><span class="dot"></span><span>Tik op <b>Mijn gegevens</b> om je plan aan te passen.</span></div><div class="details" id="details"><div class="grid">
+  <div class="field"><label>Leeftijd nu</label><input id="age" type="number" value="55"></div>
+  <div class="field"><label>Volledig stoppen op</label><input id="stopAge" type="number" value="60"></div>
+  <div class="field"><label>Netto inkomen p/m</label><input id="income" type="number" value="3000"></div>
+  <div class="field"><label>Uitgaven p/m</label><input id="spend" type="number" value="2100"></div>
+  <div class="field"><label>Belegd vermogen</label><input id="capital" type="number" value="250000"></div>
+  <div class="field"><label>Minder werken tot stop (%)</label><input id="workReduction" type="number" value="40"></div>
+  <div class="field"><label>AOW vanaf leeftijd</label><input id="aowAge" type="number" value="67"></div>
+  <div class="field"><label>AOW netto p/m</label><input id="aow" type="number" value="1500"></div>
+  <div class="field"><label>Pensioen netto p/m bovenop AOW</label><input id="pension" type="number" value="0"></div>
+  <div class="field"><label>Genoeg tot leeftijd</label><input id="endAge" type="number" value="90"></div>
+  <div class="field"><label>Minimale buffer tijdens je hele plan</label><input id="endBuffer" type="number" value="50000"></div>
+  <div class="field"><label>Inflatie-aanname %</label><input id="inflation" type="number" step="0.1" value="2"></div>
+  <div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" value="245000"></div>
+  <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>
+  <div class="field"><label>Hypotheekbetaling p/m</label><input id="mortPayment" type="number" value="1100"></div>
+</div><button class="primary" onclick="recalc();toggleDetails(false)">Bereken mijn plan</button></div></div>
+
+<div id="result"></div>
+
+
+</main><div class="bottomask"><div class="bottomaskin"><input id="ask" placeholder="Wat wil je veranderen?"><button onclick="applyAsk()">Pas aan</button></div></div>
+<script src="../engine_v123.js"></script>
+<script src="../future_layer.js?v=0.1"></script>
+<script src="../future_bridge_v041.js?v=0.41"></script>
+<script src="../answer_engine.js?v=0.1"></script>
+<script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+let changes=[];
+
+const n=id=>Number(document.getElementById(id).value)||0;
+const euro=x=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Math.round(x));
+const pct=x=>(x*100).toFixed(1).replace('.',',')+'%';
+
+function plan(){
+  return {
+    age:n('age'),stopAge:n('stopAge'),income:n('income'),spend:n('spend'),capital:n('capital'),
+    workReduction:n('workReduction')/100,aowAge:n('aowAge'),aow:n('aow'),pension:n('pension'),
+    endAge:n('endAge'),endBuffer:n('endBuffer'),inflation:n('inflation')/100,
+    mortgage:n('mortgage'),mortRate:n('mortRate')/100,mortPayment:n('mortPayment')
+  };
+}
+
+function mortgageInfo(p){ const r=p.mortRate/12, pay=p.mortPayment; if(p.mortgage<=0||pay<=0)return {months:0,endAge:p.age,interest:0,principal:0}; const interest=p.mortgage*r; const principal=Math.max(0,pay-interest); if(r<=0)return {months:Math.ceil(p.mortgage/pay),endAge:p.age+p.mortgage/pay/12,interest:0,principal:pay}; if(pay<=interest)return {months:Infinity,endAge:Infinity,interest,principal:0}; const months=-Math.log(1-r*p.mortgage/pay)/Math.log(1+r); return {months,endAge:p.age+months/12,interest,principal}; }
+
+function simulatePath(p, realReturn){ let cap=p.capital, out=[{age:p.age,capital:cap}]; const keptIncome=p.income*(1-p.workReduction); const mi=mortgageInfo(p); for(let age=p.age; age<p.endAge; age++){ let annualIncome=0; if(age<p.stopAge) annualIncome+=keptIncome*12; if(age>=p.aowAge) annualIncome+=(p.aow+p.pension)*12; let annualSpend=p.spend*12; if(age>=mi.endAge) annualSpend-=p.mortPayment*12; let oneOff=0, monthlyIncomeChange=0, monthlySpendChange=0; changes.forEach(e=>{ if(e.kind==='oneoff'&&e.age===age) oneOff+=e.amount; if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) monthlyIncomeChange+=e.monthly; if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) monthlySpendChange+=e.monthly; }); annualIncome+=monthlyIncomeChange*12; annualSpend+=monthlySpendChange*12; cap=cap*(1+realReturn)+annualIncome-annualSpend-oneOff; out.push({age:age+1,capital:cap}); } return out; }
+
+function chartSvg(path,markers=[]){ const w=760,h=300,padL=56,padR=18,padT=18,padB=34; const xs=path.map(d=>d.age), ys=path.map(d=>d.capital); let ymin=Math.min(0,...ys), ymax=Math.max(1,...ys); const range=Math.max(1,ymax-ymin); ymin-=range*.08; ymax+=range*.08; const x=a=>padL+(a-xs[0])/(xs[xs.length-1]-xs[0])*(w-padL-padR); const y=v=>padT+(ymax-v)/(ymax-ymin)*(h-padT-padB); const pts=path.map(d=>x(d.age).toFixed(1)+','+y(d.capital).toFixed(1)).join(' '); const area=padL+','+y(0)+' '+pts+' '+x(xs[xs.length-1])+','+y(0); let grid=''; for(let i=0;i<=4;i++){ const v=ymin+(ymax-ymin)*i/4; const yy=y(v); grid+='<line class="chartgrid" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+yy+'" y2="'+yy+'"/><text class="chartaxis" x="4" y="'+(yy+4)+'">'+euro(v)+'</text>'; } let labels=''; const step=Math.max(1,Math.ceil((xs[xs.length-1]-xs[0])/6)); for(let a=xs[0];a<=xs[xs.length-1];a+=step){ labels+='<text class="chartaxis" x="'+x(a)+'" y="'+(h-8)+'" text-anchor="middle">'+a+'</text>'; } let z=(0>=ymin&&0<=ymax)?'<line class="chartzero" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(0)+'" y2="'+y(0)+'"/>':''; let marks=''; markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age); const ty=padT+12+(j%3)*14; marks+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+m.label+' '+Math.round(m.age)+'</text>';}); return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop">'+grid+z+'<polygon class="chartfill" points="'+area+'"/>'+marks+'<polyline class="chartline" points="'+pts+'"/>'+labels+'</svg>'; }
+
+function simulateReal(p, realReturn){
+  let cap=p.capital, min=cap, depletionAge=null;
+  const keptIncome=p.income*(1-p.workReduction);
+  for(let age=p.age; age<p.endAge; age++){
+    let annualIncome=0;
+    if(age<p.stopAge) annualIncome+=keptIncome*12;
+    if(age>=p.aowAge) annualIncome+=(p.aow+p.pension)*12;
+    let annualSpend=p.spend*12; const mi=mortgageInfo(p); if(age>=mi.endAge) annualSpend-=p.mortPayment*12;
+    let oneOff=0, monthlyIncomeChange=0, monthlySpendChange=0;
+    changes.forEach(e=>{
+      if(e.kind==='oneoff'&&e.age===age) oneOff+=e.amount;
+      if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) monthlyIncomeChange+=e.monthly;
+      if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) monthlySpendChange+=e.monthly;
+    });
+    annualIncome+=monthlyIncomeChange*12;
+    annualSpend+=monthlySpendChange*12;
+    cap=cap*(1+realReturn)+annualIncome-annualSpend-oneOff;
+    min=Math.min(min,cap);
+    if(cap<0&&depletionAge===null)depletionAge=age+1;
+  }
+  return {end:cap,min,depletionAge};
+}
+
+function requiredReal(p){
+  const floorReal=(1/(1+p.inflation))-1; // 0% nominaal
+  const survives=r=>{ const s=simulateReal(p,r); return s.end>=p.endBuffer && s.min>=p.endBuffer; };
+  if(survives(floorReal))return floorReal;
+  let lo=floorReal,hi=0.30;
+  if(!survives(hi))return Infinity;
+  for(let i=0;i<120;i++){
+    const mid=(lo+hi)/2;
+    if(survives(mid))hi=mid;else lo=mid;
+  }
+  return hi;
+}
+
+function earliestAtNominal(p, nominal){
+  const real=(1+nominal)/(1+p.inflation)-1;
+  const orig=p.stopAge;
+  for(let s=p.age;s<=Math.min(p.aowAge+5,p.endAge-1);s++){
+    const q={...p,stopAge:s};
+    { const sim=simulateReal(q,real); if(sim.end>=p.endBuffer && sim.min>=p.endBuffer)return s; }
+  }
+  return null;
+}
+
+window.toggleDetails=function(force){
+  const el=document.getElementById('details');
+  if(!el)return;
+  const open=typeof force==='boolean'?force:!el.classList.contains('open');
+  el.classList.toggle('open',open);
+  if(open)document.getElementById('gegevens')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+window.recalc=function(){
+  const p=plan();
+  const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
+  if(sc)sc.textContent=euro(p.capital); if(ss)ss.textContent=Math.round(p.stopAge)+' jaar'; if(sb)sb.textContent=euro(p.endBuffer);
+  const rr=requiredReal(p);
+  const nominal=isFinite(rr)?(1+rr)*(1+p.inflation)-1:Infinity;
+  const kept=p.income*(1-p.workReduction);
+  const mi=mortgageInfo(p);
+  const workOnlyNet=kept-p.spend;
+  const workPlusAowNet=kept+p.aow+p.pension-p.spend;
+  const stoppedBeforeAowNet=-p.spend;
+  const stoppedAfterAowNet=p.aow+p.pension-p.spend;
+  const beforeGap=Math.max(0,-workOnlyNet);
+  const afterAowGap=Math.max(0,-stoppedAfterAowNet);
+  const engineInput={age:p.age,goal:'early',income:p.income,cost:p.spend,cash:0,investments:p.capital,debt:0,retireAge:p.stopAge,aow:p.aow,aowStartAge:p.aowAge,pension:p.pension,pensionStartAge:p.aowAge};
+  let baseNarrative=null;try{baseNarrative=GeldcheckNarrative.story(engineInput,{})}catch(e){}
+  const e0=simulateReal(p,(1+0)/(1+p.inflation)-1);
+  const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1);
+  const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);
+  const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
+  const pathNeeded=simulatePath(p,chartReal);
+  const earliest3=earliestAtNominal(p,.03);
+  const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
+  let headline;
+  if(!isFinite(nominal))headline='Dit plan redt het zelfs niet met 30% rendement';
+  else if(nominal<=0.00001)headline='Je hebt geen rendement nodig';
+  else if(nominal<=.03)headline='Je plan vraagt weinig rendement';
+  else if(nominal<=.05)headline='Je plan lijkt haalbaar, maar rendement telt mee';
+  else headline='Je plan vraagt een hoog rendement';
+
+  let eventsTxt=changes.length?changes.map(e=>{
+    if(e.kind==='oneoff') return e.label+' '+euro(e.amount)+' op '+e.age;
+    if(e.kind==='income') return e.label+' +'+euro(e.monthly)+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
+    return e.label+' '+(e.monthly<0?'-':'')+euro(Math.abs(e.monthly))+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
+  }).join(' · '):'geen extra veranderingen';
+  let phases=[];
+  const firstEnd=Math.min(p.stopAge,p.aowAge);
+  if(p.age<firstEnd){
+    phases.push('Van '+p.age+' tot '+firstEnd+': werkinkomen '+euro(kept)+'/mnd tegenover '+euro(p.spend)+'/mnd uitgaven. '+(workOnlyNet>=0?'Je houdt '+euro(workOnlyNet)+'/mnd over; er hoeft niets uit vermogen.':'Je onttrekt '+euro(-workOnlyNet)+'/mnd uit vermogen.'));
+  }
+  if(p.aowAge<p.stopAge){
+    phases.push('Van '+p.aowAge+' tot '+p.stopAge+': je werkt nog én ontvangt AOW/pensioen. Inkomen samen '+euro(kept+p.aow+p.pension)+'/mnd tegenover '+euro(p.spend)+'/mnd uitgaven. '+(workPlusAowNet>=0?'Je houdt '+euro(workPlusAowNet)+'/mnd over; er is geen onttrekking uit vermogen.':'Je onttrekt '+euro(-workPlusAowNet)+'/mnd uit vermogen.'));
+  } else if(p.stopAge<p.aowAge){
+    phases.push('Van '+p.stopAge+' tot '+p.aowAge+': je bent gestopt en ontvangt nog geen AOW. Je onttrekt '+euro(p.spend)+'/mnd uit vermogen.');
+  }
+  if(isFinite(mi.endAge)&&mi.endAge>p.age&&mi.endAge<p.endAge){
+    phases.push('Rond je '+mi.endAge.toFixed(1).replace('.',',')+'e is je hypotheek afgelost. Vanaf dan dalen je maandlasten automatisch met '+euro(p.mortPayment)+'.');
+  }
+  const lastStart=Math.max(p.stopAge,p.aowAge);
+  if(lastStart<p.endAge){
+    phases.push('Vanaf '+lastStart+': werkinkomen valt weg en AOW/pensioen is '+euro(p.aow+p.pension)+'/mnd. '+(stoppedAfterAowNet>=0?'Je houdt '+euro(stoppedAfterAowNet)+'/mnd over.':'Je onttrekt '+euro(-stoppedAfterAowNet)+'/mnd uit vermogen.'));
+  }
+
+  const scenarioStatus=s=>s.min>=p.endBuffer?'✓ buffer intact':'! buffer te laag';
+  let phaseCards=[];
+  const preEnd=Math.min(p.stopAge,p.aowAge);
+  if(p.age<preEnd){
+    phaseCards.push({age:p.age+'–'+preEnd,amount:workOnlyNet>=0?('+'+euro(workOnlyNet)+'/mnd'):(euro(-workOnlyNet)+'/mnd uit vermogen'),desc:'werken vóór stoppen/AOW'});
+  }
+  if(p.stopAge<p.aowAge){
+    phaseCards.push({age:p.stopAge+'–'+p.aowAge,amount:euro(p.spend)+'/mnd uit vermogen',desc:'gestopt, nog geen AOW'});
+  } else if(p.aowAge<p.stopAge){
+    phaseCards.push({age:p.aowAge+'–'+p.stopAge,amount:workPlusAowNet>=0?('+'+euro(workPlusAowNet)+'/mnd'):euro(-workPlusAowNet)+'/mnd uit vermogen',desc:'werken + AOW/pensioen'});
+  }
+  phaseCards.push({age:Math.max(p.stopAge,p.aowAge)+'+',amount:stoppedAfterAowNet>=0?('+'+euro(stoppedAfterAowNet)+'/mnd'):euro(-stoppedAfterAowNet)+'/mnd uit vermogen',desc:'na stoppen met AOW/pensioen'});
+  const markers=[
+    {age:p.stopAge,label:'Stoppen'},
+    {age:p.aowAge,label:'AOW/pensioen'},
+    ...(isFinite(mi.endAge)?[{age:mi.endAge,label:'Hypotheek af'}]:[])
+  ];
+  document.getElementById('result').innerHTML=
+  '<div class="card hero"><div class="sub">'+headline+'</div><div class="big">'+(isFinite(nominal)?pct(Math.max(0,nominal)):'—')+'</div><p>'+(isFinite(nominal)&&nominal<=0.00001?'Zelfs zonder beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e.':'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en onderweg minimaal '+euro(p.endBuffer)+' buffer te houden.')+'</p></div>'+
+  '<div class="card"><h2>Verloop van je vermogen</h2><p class="sectionhint">De lijn laat zien hoe je vermogen zich ontwikkelt bij het benodigde rendement.</p><div class="chartwrap">'+chartSvg(pathNeeded,markers)+'</div><p class="note">STOPPEN · AOW/PENSIOEN · HYPOTHEEK AF zijn gemarkeerd. Je buffer mag nergens onder '+euro(p.endBuffer)+' komen.</p></div>'+
+  '<div class="card"><h2>Wat gebeurt wanneer?</h2><div class="phasegrid">'+phaseCards.map(x=>'<div class="phase"><div class="age">'+x.age+'</div><div class="amount">'+x.amount+'</div><div class="desc">'+x.desc+'</div></div>').join('')+'</div></div>'+
+  '<div class="card"><h2>Als rendement tegenvalt</h2>'+
+    '<div class="scenario"><span>0%</span><span>'+scenarioStatus(e0)+'</span><b>laagste '+euro(e0.min)+'</b></div>'+
+    '<div class="scenario"><span>3%</span><span>'+scenarioStatus(e3)+'</span><b>laagste '+euro(e3.min)+'</b></div>'+
+    '<div class="scenario"><span>5%</span><span>'+scenarioStatus(e5)+'</span><b>laagste '+euro(e5.min)+'</b></div>'+
+    '<p class="note">Hier telt niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.</p></div>'+
+  '<div class="card"><h2>Wat betekent dit voor jou?</h2><div class="answer leadanswer"><b>'+(isFinite(nominal)?'Met '+pct(Math.max(0,nominal))+' gemiddeld rendement blijft je minimale buffer van '+euro(p.endBuffer)+' intact.':'Met deze invoer is je bufferdoel niet haalbaar binnen de geteste rendementen.')+'</b>\n\n'+phases.join('\n\n')+'\n\nVeranderingen die zijn meegenomen: '+eventsTxt+'.</div></div>'+
+  '<div class="card"><h2>Wanneer komt geld uit je vermogen?</h2><div class="answer">'+
+    (p.age<Math.min(p.stopAge,p.aowAge)
+      ?('Van '+p.age+' tot '+Math.min(p.stopAge,p.aowAge)+': '+(workOnlyNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(workOnlyNet)+'/mnd over':'<b>'+euro(-workOnlyNet)+'/mnd uit vermogen</b>'))
+      :'')+
+    (p.aowAge<p.stopAge
+      ?('\n\nVan '+p.aowAge+' tot '+p.stopAge+': werk + AOW/pensioen samen '+euro(kept+p.aow+p.pension)+'/mnd. '+(workPlusAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(workPlusAowNet)+'/mnd over':'<b>'+euro(-workPlusAowNet)+'/mnd uit vermogen</b>'))
+      :'')+
+    (p.stopAge<p.aowAge
+      ?('\n\nVan '+p.stopAge+' tot '+p.aowAge+': <b>'+euro(p.spend)+'/mnd uit vermogen</b> · nog geen AOW/pensioen')
+      :'')+
+    ('\n\nVanaf '+Math.max(p.stopAge,p.aowAge)+': '+(stoppedAfterAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(stoppedAfterAowNet)+'/mnd over':'<b>'+euro(-stoppedAfterAowNet)+'/mnd uit vermogen</b>'))+
+  '</div></div>'+
+  '<div class="card"><h2>Waar ligt je speelruimte?</h2><div class="kpis">'+
+    '<div class="kpi"><span>Bij 3% rendement</span><b>'+(earliest3!==null?'volledig stoppen rond '+earliest3:'nog niet genoeg')+'</b></div>'+
+    '<div class="kpi"><span>Hypotheek nu</span><b>'+euro(p.mortPayment)+'/mnd</b></div>'+
+    '<div class="kpi"><span>Nu: rente / aflossing</span><b>'+euro(mi.interest)+' / '+euro(mi.principal)+'</b></div>'+
+    '<div class="kpi"><span>Hypotheek klaar rond</span><b>'+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',',')+' jaar':'loopt niet af')+'</b></div>'+
+  '</div></div>'+
+
+  '<div class="card"><h2>Belangrijkste risico’s</h2><div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.\n\n2. Je hypotheek van '+euro(p.mortgage)+' tegen '+pct(p.mortRate)+' kost nu '+euro(p.mortPayment)+'/mnd. Daarvan is nu ongeveer '+euro(mi.interest)+' rente en '+euro(mi.principal)+' aflossing. Bij gelijkblijvende rente en betaling loopt hij rond leeftijd '+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'—')+' af; vanaf dan valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.\n\n3. AOW en pensioen bepalen hoeveel je portefeuille na '+p.aowAge+' nog hoeft te dragen.\n\n4. Je hoeft je vermogen niet per se te laten groeien. Je vermogen mag gecontroleerd dalen, maar in deze berekening nooit onder je minimale buffer van '+euro(p.endBuffer)+'.</div></div>'+
+  (baseNarrative?'<div class="card"><h2>Onderliggende Geldcheck-intelligentie</h2><p class="note">De bestaande engine blijft als veiligheidslaag actief.</p><div class="answer">'+baseNarrative.story+'</div></div>':'');
+};
+
+function setField(id,val){document.getElementById(id).value=val}
+function parseMoney(s){let m=s.match(/(?:€\s*)?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?/i);if(!m)return null;let v=parseFloat(m[1].replace(',','.'));if(m[2])v*=1000;return v}
+window.applyAsk=function(){
+  const raw=document.getElementById('ask').value.trim();if(!raw)return;
+  const s=raw.toLowerCase();let changesText=[];
+  let m;
+  if((m=s.match(/([0-9]+)\s*(?:euro|€)?\s*(?:per maand|p\/m|maand)\s*(?:meer|extra)(?:\s*uitgeven)?/i))){
+    setField('spend',n('spend')+Number(m[1]));changesText.push('uitgaven +'+euro(Number(m[1]))+' p/m');
+  }
+  if((m=s.match(/wereldreis.*?([0-9\.]+)\s*(k|duizend)?[^0-9]+(?:op|als ik)\s*(?:mijn\s*)?([0-9]{2})/i))){
+    let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;
+    changes.push({kind:'oneoff',label:'wereldreis',amount:amt,age:Number(m[3])});changesText.push('wereldreis '+euro(amt)+' op '+m[3]);
+  }
+  if((m=s.match(/vanaf\s*([0-9]{2}).*?(?:werk|werken).*?([0-9\.]+)\s*(k|duizend)?\s*(?:netto\s*)?(?:per maand|p\/m|maand)(?:.*?tot\s*([0-9]{2}))?/i))){
+    let amt=Number(m[2].replace('.',''));if(m[3])amt*=1000;
+    changes.push({kind:'income',label:'extra werkinkomen',monthly:amt,startAge:Number(m[1]),endAge:m[4]?Number(m[4]):null});
+    changesText.push('extra inkomen +'+euro(amt)+'/mnd vanaf '+m[1]+(m[4]?' tot '+m[4]:''));
+  }
+  if((m=s.match(/vanaf\s*([0-9]{2}).*?([0-9\.]+)\s*(k|duizend)?\s*(?:euro|€)?\s*(?:per maand|p\/m|maand).*?(?:minder uitgaven|lagere lasten|minder kosten)/i))){
+    let amt=Number(m[2].replace('.',''));if(m[3])amt*=1000;
+    changes.push({kind:'expense',label:'lagere lasten',monthly:-amt,startAge:Number(m[1]),endAge:null});
+    changesText.push('lasten -'+euro(amt)+'/mnd vanaf '+m[1]);
+  }
+  if((m=s.match(/([0-9\.]+)\s*(k|duizend)?\s*(?:euro|€)?\s*nalaten/i))){let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;setField('endBuffer',amt);changesText.push('eindvermogen '+euro(amt))}
+  if((m=s.match(/(?:stoppen|stop)\s*(?:op|met)\s*([0-9]{2})/i))){setField('stopAge',Number(m[1]));changesText.push('volledig stoppen op '+m[1])}
+  if((m=s.match(/(?:tot|t\/m)\s*([0-9]{2})\s*(?:genoeg|geld|leven|jaar)?/i))){setField('endAge',Number(m[1]));changesText.push('genoeg tot '+m[1])}
+  if((m=s.match(/([0-9]{1,2})%\s*(?:minder werken|afbouwen)/i))){setField('workReduction',Number(m[1]));changesText.push(m[1]+'% minder werken')}
+  const msg=changesText.length?'Aangepast: '+changesText.join(' · '):'Ik kon deze zin nog niet goed begrijpen. Pas je gegevens aan via Mijn gegevens.';
+  if(changesText.length){ const b=document.querySelector('.bottomask button'); if(b){const old=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=old,1000);} }
+  recalc();
+}
+window.quick=function(t){document.getElementById('ask').value=t;applyAsk()}
+recalc();
+})();</script></body></html>
