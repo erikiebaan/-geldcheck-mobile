@@ -134,7 +134,8 @@ window.recalc=function(){
   const p=plan();
   const rr=requiredReal(p);
   const nominal=isFinite(rr)?(1+rr)*(1+p.inflation)-1:Infinity;
-  const kept=p.income*(1-p.workReduction);\n  const mi=mortgageInfo(p);
+  const kept=p.income*(1-p.workReduction);
+  const mi=mortgageInfo(p);
   const workOnlyNet=kept-p.spend;
   const workPlusAowNet=kept+p.aow+p.pension-p.spend;
   const stoppedBeforeAowNet=-p.spend;
@@ -192,7 +193,9 @@ window.recalc=function(){
   '</div></div>'+
   '<div class="card"><h2>Waar ligt je speelruimte?</h2><div class="kpis">'+
     '<div class="kpi"><span>Bij 3% rendement</span><b>'+(earliest3!==null?'volledig stoppen rond '+earliest3:'nog niet genoeg')+'</b></div>'+
-    '<div class="kpi"><span>Hypotheek nu</span><b>'+euro(p.mortPayment)+'/mnd</b></div>'+\n    '<div class="kpi"><span>Nu: rente / aflossing</span><b>'+euro(mi.interest)+' / '+euro(mi.principal)+'</b></div>'+\n    '<div class="kpi"><span>Hypotheek klaar rond</span><b>'+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace(\'.\',\',\')+\' jaar\':\'loopt niet af\')+'</b></div>'+
+    '<div class="kpi"><span>Hypotheek nu</span><b>'+euro(p.mortPayment)+'/mnd</b></div>'+
+    '<div class="kpi"><span>Nu: rente / aflossing</span><b>'+euro(mi.interest)+' / '+euro(mi.principal)+'</b></div>'+
+    '<div class="kpi"><span>Hypotheek klaar rond</span><b>'+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',',')+' jaar':'loopt niet af')+'</b></div>'+
   '</div></div>'+
   '<div class="card"><h2>Verloop van je vermogen</h2><p>Van vandaag tot je '+p.endAge+'e bij het benodigde rendement van '+(isFinite(nominal)?pct(nominal):'—')+'.</p><div class="chartwrap">'+chartSvg(pathNeeded)+'</div><p class="note">De lijn verwerkt werkinkomen, AOW/pensioen, je hypotheek die afloopt en de veranderingen die je toevoegt.</p></div>'+
   '<div class="card"><h2>Als rendement tegenvalt</h2>'+
