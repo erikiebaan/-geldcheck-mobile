@@ -71,10 +71,16 @@ function simulate(raw,futureRaw,opts){
   while(age<endAge){
     const all=fm.assets.concat(fm.events);
     let injected=0,extraIncome=0,extraExpense=0;
+    const injectedItems=[];
     all.forEach(x=>{
       if(!consumed.has(x.id)&&canUseCapital(x,age,mode)){
         const amt=finite(x.netAmount)?x.netAmount:x.netCurrentValue;
-        if(amt>0){applyPositiveAmount(state,amt);injected+=amt;consumed.add(x.id);}
+        if(amt>0){
+          applyPositiveAmount(state,amt);
+          injected+=amt;
+          injectedItems.push({id:x.id,amount:amt,availableFromAge:x.availableFromAge});
+          consumed.add(x.id);
+        }
       }
       extraIncome+=annualIncome(x,age,mode);
       extraExpense+=annualExpense(x,age,mode);
@@ -97,7 +103,7 @@ function simulate(raw,futureRaw,opts){
     }
     if(firstGapAge!==null&&state.fundingGap===0&&recoveredAge===null)recoveredAge=age;
     const netPosition=state.cash+state.invested-state.fundingGap;
-    ledger.push({age,cash:state.cash,invested:state.invested,fundingGap:state.fundingGap,netPosition,injected,extraIncome,extraExpense,annualNet});
+    ledger.push({age,cash:state.cash,invested:state.invested,fundingGap:state.fundingGap,netPosition,injected,injectedItems,extraIncome,extraExpense,annualNet});
     age++;
   }
   const endCapital=state.cash+state.invested-state.fundingGap;
