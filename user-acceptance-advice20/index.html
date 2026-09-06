@@ -1,0 +1,55 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>User Acceptance Advice 20</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;margin-top:10px;line-height:1.45}.persona{font-weight:900;font-size:18px}
+</style></head><body><main>
+<div class="card"><h1>User Acceptance Advice 20</h1>
+<p>Twintig complete mensen alsof ze Geldcheck echt gebruiken. We toetsen niet alleen rekenen, maar of het uiteindelijke antwoord past bij hun financiële situatie: sterk, twijfelachtig, kwetsbaar, onvolledig of afhankelijk van onzeker toekomstgeld.</p>
+<p class="small"><b>Build UAA1 · 20 realistische persona's · financieel + menselijk acceptatiecriterium</b></p>
+<button id="run">Run 20 User Acceptance tests</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67},o||{});
+const S=(c,f)=>GeldcheckNarrative.story(c,f||{});
+const inc=(s,x)=>String(s).toLowerCase().includes(String(x).toLowerCase());
+const finite=o=>!JSON.stringify(o).includes("NaN")&&!JSON.stringify(o).includes("Infinity");
+let T=[];const add=(name,profile,future,check,why)=>T.push({name,profile,future,check,why});
+
+add("1. Marieke, 60, ruim vermogen, wil op 63 stoppen",B({age:60,retireAge:63,cash:180000,investments:1200000,cost:2800,aow:1650,pension:1100}),{},x=>x.facts.verdict==="JA"&&inc(x.story,"haalbaar"),"Sterke positie moet een duidelijk maar niet overdreven positief antwoord krijgen.");
+add("2. Peter, 60, weinig vermogen, wil nu stoppen",B({age:60,retireAge:60,cash:8000,investments:45000,cost:3600,aow:1400,pension:150}),{},x=>x.facts.verdict==="NEE"&&inc(x.headline,"Nee"),"Overduidelijk tekort moet ook echt nee zijn.");
+add("3. Karin, 60, groot vermogen maar hoge levensstijl",B({age:60,retireAge:60,cash:150000,investments:1100000,cost:5000,aow:1600,pension:1200}),{},x=>x.facts.verdict==="MOGELIJK"&&inc(x.story,"geen harde ja"),"Rijk maar duur leven hoort nuance te geven.");
+add("4. Johan, 59, verwacht onzekere erfenis",B({age:59,retireAge:62,cash:30000,investments:180000,cost:3300,aow:1450,pension:450}),{events:[{id:"erfenis",type:"uncertain_asset",amount:700000,availableFromAge:66,certainty:"uncertain",liquidity:"immediate"}]},x=>inc(x.story,"niet als zeker"),"Onzekere erfenis mag niet als reddingsboei worden verkocht.");
+add("5. Saskia, 61, lijfrente staat contractueel vast",B({age:61,retireAge:63,cash:50000,investments:260000,cost:3200,aow:1500,pension:400}),{events:[{id:"lijfrente",type:"temporary_income",monthlyAmount:1400,availableFromAge:65,endAge:84,certainty:"contractual",liquidity:"immediate"}]},x=>x.facts.future.certain.includes("lijfrente")&&x.story.length>0,"Zeker toekomstinkomen moet zichtbaar helpen.");
+add("6. Henk, 60, veel banksparen maar niet vrij beschikbaar",B({age:60,retireAge:60,cash:15000,investments:50000,cost:3200,aow:1400,pension:300}),{assets:[{id:"banksparen",type:"blocked_asset",currentValue:600000,availableFromAge:67,certainty:"contractual",liquidity:"restricted",restricted:true}]},x=>inc(x.story,"niet als vrij besteedbaar"),"Geblokkeerd vermogen mag de jaren vóór pensioen niet kunstmatig redden.");
+add("7. Anna, 58, woningrijk maar weinig liquide",B({age:58,retireAge:60,cash:10000,investments:50000,cost:3000,aow:1500,pension:500,housing:"ownfree"}),{assets:[{id:"woning",type:"illiquid_property",currentValue:700000,certainty:"certain",liquidity:"illiquid"}]},x=>inc(x.story,"niet als vrij besteedbaar"),"Overwaarde is geen cash zonder expliciet plan.");
+add("8. Bas, 45, financieel gezond maar weinig cashbuffer",B({age:45,goal:"health",income:6200,cost:4200,cash:5000,investments:450000}),{},x=>inc(x.story,"aandachtspunt")&&x.facts.monthlySurplus===2000,"Sterke cashflow met lage buffer moet genuanceerd worden.");
+add("9. Linda, 42, sterke cashflow en ruime buffer",B({age:42,goal:"health",income:6500,cost:3500,cash:90000,investments:250000}),{},x=>inc(x.story,"sterk")&&x.facts.monthlySurplus===3000,"Gezonde basis moet als sterk herkenbaar zijn.");
+add("10. Mark, 40, negatieve maandruimte",B({age:40,goal:"health",income:3800,cost:4600,cash:25000,investments:60000}),{},x=>x.facts.monthlySurplus===-800&&inc(x.story,"aandachtspunt"),"Structurele negatieve cashflow moet duidelijk naar voren komen.");
+add("11. Eva, 46, wil €24k in 24 maanden sparen",B({age:46,goal:"purchase",income:5500,cost:3500,cash:30000,investments:100000,purchaseAmount:24000,purchaseMonths:24}),{},x=>x.facts.purchase&&x.facts.purchase.fitsMonthly===true,"Haalbare grote uitgave moet haalbaar blijven.");
+add("12. Tom, 46, wil €50k in 12 maanden sparen",B({age:46,goal:"purchase",income:5000,cost:4000,cash:10000,investments:30000,purchaseAmount:50000,purchaseMonths:12}),{},x=>x.facts.purchase&&x.facts.purchase.fitsMonthly===false,"Onhaalbaar spaardoel moet geen positief verhaal krijgen.");
+add("13. Ria, 55, baanverlies komende vier jaar",B({age:55,retireAge:62,income:5200,cost:3500,cash:50000,investments:220000,aow:1450,pension:700}),{events:[{id:"baanverlies",type:"temporary_income",monthlyAmount:-2200,availableFromAge:55,endAge:59,certainty:"certain",liquidity:"immediate"}]},x=>x.story.length>100&&finite(x),"Tijdelijke inkomensschok moet verwerkt worden zonder rare conclusie.");
+add("14. Willem, 62, hoge zorgkosten vanaf 78",B({age:62,retireAge:65,cash:100000,investments:700000,cost:2800,aow:1600,pension:900}),{events:[{id:"zorg",type:"future_expense",monthlyAmount:1800,availableFromAge:78,endAge:94,certainty:"certain"}]},x=>x.facts.conservativeEndCapital<300000&&x.story.length>0,"Late zorglasten moeten het lange termijnbeeld drukken.");
+add("15. Noor, 60, pensioenleeftijd niet ingevuld",B({age:60,retireAge:null}),{},x=>inc(x.headline,"mis nog informatie"),"Geen schijnzekerheid bij essentiële ontbrekende invoer.");
+add("16. Daan, 60, geen AOW of pensioen opgegeven",B({age:60,retireAge:62,aow:0,pension:0,cash:300000,investments:600000,cost:3000}),{},x=>x.facts.monthlyAow===0&&x.facts.monthlyPension===0,"Niets verzinnen wat de gebruiker niet heeft opgegeven.");
+add("17. Fatima, 52, samenwonend met kinderen",B({age:52,household:"Samenwonend",kids:2,goal:"health",income:7600,cost:5200,cash:70000,investments:280000}),{},x=>x.story.length>0&&finite(x),"Normaal complex huishouden moet stabiel en leesbaar blijven.");
+add("18. Rob, 60, wil pas op 67 stoppen",B({age:60,retireAge:67,cash:80000,investments:300000,cost:3000,aow:1500,aowStartAge:67,pension:800}),{},x=>x.facts.bridgeYears===0&&x.story.length>0,"Geen overbrugging verzinnen als stoppen samenvalt met AOW.");
+add("19. Ingrid, 54, extreem veel vermogen maar extreem hoge kosten",B({age:54,retireAge:55,cash:1000000,investments:8000000,cost:25000,aow:1600,pension:1000}),{},x=>finite(x)&&x.story.length>0,"Extreme geldige situatie moet numeriek en narratief stabiel blijven.");
+add("20. Sam, 60, later zekere gift plus matige basis",B({age:60,retireAge:62,cash:30000,investments:180000,cost:3300,aow:1450,pension:500}),{events:[{id:"gift",type:"future_lump_sum",amount:300000,availableFromAge:66,certainty:"certain",liquidity:"immediate"}]},x=>x.facts.future.certain.includes("gift")&&x.story.length>0,"Zekere toekomstige ontvangst moet wel meetellen, maar pas vanaf juiste moment.");
+
+document.getElementById("run").onclick=()=>{
+ let p=0,h="",cats={financial:[0,0],human:[0,0]};
+ T.forEach((t,i)=>{let ok=false,err="",x;try{x=S(t.profile,t.future);ok=!!t.check(x)}catch(e){err=String(e)}
+ const cat=i<10?"financial":"human";cats[cat][1]++;if(ok){p++;cats[cat][0]++}
+ if(!ok)h+='<div class="case"><div class="persona bad">FAIL · '+(i+1)+'. '+t.name+'</div><div class="why">'+t.why+(err?' · '+err:'')+'</div>'+(x?'<div class="story">'+x.story+'</div>':'')+'</div>';
+ });
+ let k='<div class="kpis">';Object.entries(cats).forEach(([n,v])=>k+='<div class="kpi"><span>'+n+'</span><br><b class="'+(v[0]===v[1]?'ok':'bad')+'">'+v[0]+'/'+v[1]+'</b></div>');k+='</div>';
+ document.getElementById("sum").innerHTML='<div class="score '+(p===20?'ok':'bad')+'">'+p+' / 20</div><b>'+(p===20?'Alle 20 gebruikersadviezen acceptabel':'User Acceptance vond inhoudelijke aandachtspunten')+'</b>'+k;
+ document.getElementById("out").innerHTML=h||'<div class="card"><b class="ok">PASS · Alle 20 realistische gebruikersadviezen zijn financieel en menselijk verdedigbaar</b></div>';
+};
+})();</script></body></html>
