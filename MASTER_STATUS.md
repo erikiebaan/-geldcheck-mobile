@@ -310,3 +310,22 @@ Update this document whenever:
 - the NEXT STEP changes.
 
 The goal is that a new conversation can reconstruct the project state from the repository alone.
+
+
+## 11. Latest validated milestones — 2026-09-06
+
+The following additional layers are now validated and should be treated as frozen regression baselines unless superseded by a diagnosed version:
+
+- **RA2 — Realistic Advice Review 18:** 18/18. RA1 cases 1 and 3 were diagnosed in RAD1 as overly optimistic test-oracles; production engine remained unchanged.
+- **NI3 — Narrative Intelligence 30:** 30/30 = 24/24 grounding + 6/6 counterfactual. NI1/NI2 failures were diagnosed as oracle/parser defects, not narrative or engine defects. Narrative Intelligence v0.1 remained unchanged.
+- **FSC1 — Full System Challenge 40:** 40/40 = 32/32 full-stack households + 8/8 metamorphic/counterfactual. Full chain input → calculation → future logic → verdict → personal narrative stayed consistent.
+
+### Current next step
+
+Run **Human Input Stress 30 (HIS1)** at `human-input-stress30/index.html`.
+
+Purpose: simulate how real people enter data — omitted fields, zero values, extreme but valid amounts, unusual timing, household combinations, and incomplete purchase inputs. The suite checks that the full Geldcheck chain does not crash, does not emit NaN/Infinity, does not create negative-time bridges, does not invent missing pension/AOW amounts, and preserves basic economic direction.
+
+Do **not** weaken production logic merely to make HIS1 green. Diagnose any red case first as one of: production bug, normalization/input-model gap, narrative/advice issue, or test-oracle defect.
+
+After HIS1, if the input layer is stable, move from synthetic validation toward **UX/product integration of the intelligent narrative layer** in the actual Geldcheck flow, while keeping the regression gates frozen.
