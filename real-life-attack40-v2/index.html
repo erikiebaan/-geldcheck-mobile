@@ -1,0 +1,69 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Real Life 40</title>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}main{max-width:820px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}</style></head><body><main>
+<div class="card"><h1>Real Life Attack 40</h1><p>Veertig herkenbare levenssituaties vallen de Geldcheck aan: scheiding, overlijden, arbeidsongeschiktheid, baanverlies, kinderen, wonen, zorg, pensioen en grote toekomstige ontvangsten.</p><p class="small"><b>Build RL2 · 40 economische richtingstests · bridge fix</b></p><button id="run">Run 40 Real Life tests</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge.js?v=0.4"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:55,goal:"early",income:5000,cost:3500,cash:100000,investments:500000,retireAge:60,aow:1600,aowStartAge:67,pension:800,pensionStartAge:67},o||{});
+const S=(c,f)=>GeldcheckFutureBridge.simulate(c,f||{},{mode:"conservative",nominalReturn:.02,crashAtRetirement:false});
+const ev=(type,amount,age,end,extra)=>Object.assign({id:Math.random().toString(36),type,availableFromAge:age,certainty:"certain",liquidity:"immediate"},amount!==null?{amount}: {},end?{endAge:end}:{},extra||{});
+let T=[]; const add=(n,a,b,dir,why)=>T.push({n,a,b,dir,why});
+const pos=r=>r.endCapital;
+function income(month,age,end){return ev("temporary_income",null,age,end,{monthlyAmount:month,certainty:"contractual"})}
+function expense(month,age,end){return ev("future_expense",null,age,end,{monthlyAmount:month})}
+function gift(amount,age,certainty="certain"){return ev(certainty==="uncertain"?"uncertain_asset":"future_lump_sum",amount,age,null,{certainty})}
+function asset(value,age,type="blocked_asset"){return {id:Math.random().toString(36),type,currentValue:value,availableFromAge:age,certainty:"contractual",liquidity:"restricted",restricted:true}}
+const base=B();
+add("Scheiding: structureel hogere woonlast verslechtert",base,{events:[expense(900,56,94)]},"down","één huishouden wordt duurder");
+add("Scheiding: lagere vaste lasten verbetert",base,{events:[expense(-500,56,94)]},"up","lagere consumptiebehoefte helpt");
+add("Overlijden partner: partnerinkomen valt weg",base,{events:[income(-1200,60,66)]},"down","minder inkomen vóór pensioen");
+add("Overlijden partner: nabestaandenpensioen helpt",base,{events:[income(900,60,94)]},"up","levenslange ontvangst");
+add("Arbeidsongeschiktheid: inkomen daalt",base,{events:[income(-1500,56,66)]},"down","lagere inkomsten");
+add("Arbeidsongeschiktheidsuitkering compenseert",base,{events:[income(1200,56,66)]},"up","extra contractueel inkomen");
+add("Baanverlies drie jaar",base,{events:[income(-2500,56,58)]},"down","tijdelijk inkomensgat");
+add("Nieuwe baan met hoger inkomen",base,{events:[income(1000,56,66)]},"up","meer inkomen");
+add("Kind studeert vijf jaar",base,{events:[expense(700,56,60)]},"down","tijdelijke gezinskosten");
+add("Kind uit huis: kosten dalen",base,{events:[expense(-500,56,64)]},"up","lagere uitgaven");
+add("Mantelzorgkosten",base,{events:[expense(600,60,70)]},"down","extra langdurige kosten");
+add("Grote zorgkosten later",base,{events:[expense(1000,75,84)]},"down","late-life spending");
+add("Zorgverzekering vergoeding",base,{events:[income(600,75,84)]},"up","vergoeding helpt");
+add("Hypotheek afgelost op 65: woonlast daalt",base,{events:[expense(-900,65,94)]},"up","structurele kostenval");
+add("Nieuwe hypotheeklast vanaf 60",base,{events:[expense(1000,60,79)]},"down","hogere woonlast");
+add("Huurstijging structureel",base,{events:[expense(500,60,94)]},"down","hogere vaste lasten");
+add("Woningoverwaarde geblokkeerd helpt niet",base,{assets:[asset(500000,65,"illiquid_property")]},"same","illiquide woning is geen consumptiegeld");
+add("Banksparen geblokkeerd helpt niet vóór vrijgave",base,{assets:[asset(300000,67)]},"same","restricted blijft buiten consumptie");
+add("Zekere schenking op 65 helpt",base,{events:[gift(100000,65)]},"up","zekere liquide ontvangst");
+add("Onzekere schenking telt conservatief niet",base,{events:[gift(500000,65,"uncertain")]},"same","onzeker geld niet consumeren");
+add("Zekere erfenis helpt",base,{events:[gift(250000,70)]},"up","zekere toekomstige ontvangst");
+add("Onzekere erfenis helpt conservatief niet",base,{events:[gift(1000000,70,"uncertain")]},"same","geen voorschot op onzekerheid");
+add("Bedrijfsverkoop zeker op 60 helpt",base,{events:[gift(400000,60)]},"up","liquide verkoopopbrengst");
+add("Bedrijfsverkoop pas op 70 helpt minder dan op 60",base,{events:[gift(400000,70)]},"custom","timing heeft economische waarde");
+add("Vervroegd pensioen: eerder stoppen verslechtert",B({retireAge:57}),{},"custom","meer jaren uit vermogen");
+add("Later pensioen: later stoppen verbetert",B({retireAge:65}),{},"custom","minder onttrekkingsjaren");
+add("Extra lijfrente vanaf 65 helpt",base,{events:[income(700,65,85)]},"up","extra pensioeninkomen");
+add("Lijfrente die stopt op 75 helpt minder dan levenslang",base,{events:[income(700,65,75)]},"up","tijdelijke ontvangst helpt wel");
+add("AOW hoger verbetert",B({aow:2100}),{},"custom","meer levenslang inkomen");
+add("AOW lager verslechtert",B({aow:1000}),{},"custom","minder levenslang inkomen");
+add("Pensioen hoger verbetert",B({pension:1500}),{},"custom","meer pensioen");
+add("Pensioen later starten verslechtert",B({pensionStartAge:72}),{},"custom","later beschikbare cashflow");
+add("Noodbuffer +50k verbetert",B({cash:150000}),{},"custom","meer liquide middelen");
+add("Beleggingen +100k verbetert",B({investments:600000}),{},"custom","meer financierbaar vermogen");
+add("Kosten +500 per maand verslechtert",B({cost:4000}),{},"custom","hogere behoefte");
+add("Kosten -500 per maand verbetert",B({cost:3000}),{},"custom","lagere behoefte");
+add("Twee zekere ontvangsten helpen samen",base,{events:[gift(50000,62),gift(75000,68)]},"up","beide één keer beschikbaar");
+add("Ontvangst en gelijke kosten zelfde jaar neutraliseren",base,{events:[gift(12000,65),expense(1000,65,65)]},"same","economische collision netto nul");
+add("Grote late zorgkosten kunnen zekere gift deels opeten",base,{events:[gift(120000,70),expense(1000,75,84)]},"same","120k ontvangst versus 120k kosten bij nul reële return");
+add("Combi baanverlies + zorgkosten verslechtert",base,{events:[income(-1500,56,60),expense(500,60,70)]},"down","meerdere negatieve shocks stapelen");
+if(T.length!==40){document.body.innerHTML="<pre>TEST COUNT ERROR "+T.length+"</pre>";return}
+document.getElementById("run").onclick=()=>{let p=0,h="";let rb=S(base,{});
+T.forEach((t,i)=>{let r=S(t.a,t.b),ok;
+if(t.dir==="up")ok=pos(r)>pos(S(t.a,{})); else if(t.dir==="down")ok=pos(r)<pos(S(t.a,{})); else if(t.dir==="same")ok=Math.abs(pos(r)-pos(S(t.a,{})))<2;
+else {switch(t.n){
+case "Bedrijfsverkoop pas op 70 helpt minder dan op 60":ok=pos(r)<pos(S(base,{events:[gift(400000,60)]}));break;
+case "Vervroegd pensioen: eerder stoppen verslechtert":ok=pos(r)<pos(rb);break;
+case "Later pensioen: later stoppen verbetert":ok=pos(r)>pos(rb);break;
+case "AOW hoger verbetert":case "Pensioen hoger verbetert":case "Noodbuffer +50k verbetert":case "Beleggingen +100k verbetert":case "Kosten -500 per maand verbetert":ok=pos(r)>pos(rb);break;
+default:ok=pos(r)<pos(rb)}
+}if(ok)p++;h+='<div class="case"><b class="'+(ok?'ok':'bad')+'">'+(ok?'PASS':'FAIL')+'</b> · '+(i+1)+'. '+t.n+'<div class="why">'+t.why+'</div></div>'});
+document.getElementById("sum").innerHTML='<div class="score '+(p===40?'ok':'bad')+'">'+p+' / 40</div><b>'+(p===40?'Alle real-life richtingen groen':'Real-life test vond economische fouten')+'</b>';document.getElementById("out").innerHTML=h};
+})();</script></body></html>
