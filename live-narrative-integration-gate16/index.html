@@ -1,0 +1,55 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Narrative Integration Gate 16</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;margin-top:10px;line-height:1.45}
+</style></head><body><main>
+<div class="card"><h1>Live Narrative Integration Gate 16</h1>
+<p>Deze gate test niet meer een losse testpagina, maar controleert of Narrative Intelligence werkelijk in de live Geldcheck is aangesloten. Eerst controleren we de live broncode; daarna draaien we tien runtime-cases door dezelfde narrative-laag.</p>
+<p class="small"><b>Build LNIG1 · 6 live-wiring checks + 10 runtime narrative checks</b></p>
+<button id="run">Run 16 Live Integration checks</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67},o||{});
+const S=(c,f)=>GeldcheckNarrative.story(c,f||{});
+const inc=(s,x)=>String(s).toLowerCase().includes(String(x).toLowerCase());
+const finite=o=>!JSON.stringify(o).includes("NaN")&&!JSON.stringify(o).includes("Infinity");
+const rank=x=>({NEE:0,MOGELIJK:1,JA:2}[x]??-1);
+document.getElementById("run").onclick=async()=>{
+ let p=0,h="",cats={wiring:[0,0],runtime:[0,0]};
+ let src="";
+ try{src=await (await fetch("../index.html?lnig="+Date.now(),{cache:"no-store"})).text()}catch(e){src=""}
+ const checks=[
+  ["1. Live index laadt narrative_engine.js",()=>/narrative_engine\.js/.test(src),"Narrative-engine moet in echte pagina geladen zijn.","wiring"],
+  ["2. Live index roept GeldcheckNarrative.story aan",()=>/GeldcheckNarrative\.story\s*\(/.test(src),"Live analyse moet narrative daadwerkelijk aanroepen.","wiring"],
+  ["3. Live output rendert narrative headline",()=>/headline/.test(src)&&/Narrative|persoonlijk|verhaal/i.test(src),"Persoonlijke conclusie moet zichtbaar worden gerenderd.","wiring"],
+  ["4. Live output rendert narrative story/paragraphs",()=>/\.story|paragraphs/.test(src)&&/GeldcheckNarrative/.test(src),"Niet alleen callen; ook tonen.","wiring"],
+  ["5. Live index houdt bestaande engine call intact",()=>/GeldcheckEngine\.analyze\s*\(/.test(src),"Narrative mag engine niet vervangen.","wiring"],
+  ["6. Live index bevat disclaimer over scenario-aannames",()=>/scenario-aannames/i.test(src),"Bestaande prudentie moet behouden blijven.","wiring"],
+
+  ["7. Runtime JA krijgt begrijpelijke headline",()=>{let x=S(B({retireAge:65,cash:200000,investments:1200000,cost:2600,aow:1700,pension:1200}),{});return x.facts.verdict==="JA"&&inc(x.headline,"haalbaar")},"JA blijft helder.","runtime"],
+  ["8. Runtime NEE blijft NEE",()=>{let x=S(B({retireAge:60,cash:10000,investments:50000,cost:3800,aow:1400,pension:100}),{});return x.facts.verdict==="NEE"&&inc(x.headline,"Nee, stoppen")},"Geen verzachting.","runtime"],
+  ["9. Runtime MOGELIJK blijft genuanceerd",()=>{let x=S(B({age:60,retireAge:60,cash:150000,investments:1100000,cost:5000,aow:1600,pension:1200}),{});return x.facts.verdict==="MOGELIJK"&&inc(x.story,"geen harde ja")},"Geen schijnzekerheid.","runtime"],
+  ["10. Runtime missing data geen hard verdict",()=>{let x=S(B({retireAge:null}),{});return inc(x.headline,"mis nog informatie")},"Incomplete input veilig.","runtime"],
+  ["11. Runtime onzekere erfenis niet zeker",()=>{let x=S(B({retireAge:61,cash:20000,investments:120000,cost:3300,aow:1400,pension:500}),{events:[{id:"erfenis",type:"uncertain_asset",amount:900000,availableFromAge:66,certainty:"uncertain",liquidity:"immediate"}]});return inc(x.story,"niet als zeker")},"Onzekerheid blijft expliciet.","runtime"],
+  ["12. Runtime restricted niet vrij besteedbaar",()=>{let x=S(B({retireAge:60,cash:10000,investments:50000,cost:3200,aow:1400,pension:300}),{assets:[{id:"banksparen",type:"blocked_asset",currentValue:600000,availableFromAge:67,certainty:"contractual",liquidity:"restricted",restricted:true}]});return inc(x.story,"niet als vrij besteedbaar")},"Liquiditeitsdiscipline.","runtime"],
+  ["13. Runtime maandruimte health gegrond",()=>{let x=S(B({goal:"health",income:5200,otherIncome:300,cost:3400}),{});return x.facts.monthlySurplus===2100&&inc(x.story,"€2.100")},"Live cashflow klopt.","runtime"],
+  ["14. Runtime +vermogen niet slechter",()=>{let x=S(B({retireAge:62,cash:50000,investments:250000,cost:3200}),{}),y=S(B({retireAge:62,cash:50000,investments:350000,cost:3200}),{});return rank(y.facts.verdict)>=rank(x.facts.verdict)},"Economische richting.","runtime"],
+  ["15. Runtime lagere kosten niet slechter",()=>{let x=S(B({retireAge:62,cash:50000,investments:250000,cost:3500}),{}),y=S(B({retireAge:62,cash:50000,investments:250000,cost:3000}),{});return rank(y.facts.verdict)>=rank(x.facts.verdict)},"Economische richting.","runtime"],
+  ["16. Runtime narrative blijft numeriek stabiel",()=>{let x=S(B({cash:5000000,investments:20000000,cost:50000}),{});return finite(x)&&x.story.length>0},"Geen NaN/Infinity.","runtime"]
+ ];
+ for(const [name,fn,why,kind] of checks){
+   let ok=false,err="";try{ok=!!fn()}catch(e){err=String(e)}
+   cats[kind][1]++;if(ok){p++;cats[kind][0]++}
+   if(!ok)h+='<div class="case"><b class="bad">FAIL · '+name+'</b><div class="why">'+why+(err?' · '+err:'')+'</div></div>';
+ }
+ let k='<div class="kpis">';Object.entries(cats).forEach(([n,v])=>k+='<div class="kpi"><span>'+n+'</span><br><b class="'+(v[0]===v[1]?'ok':'bad')+'">'+v[0]+'/'+v[1]+'</b></div>');k+='</div>';
+ document.getElementById("sum").innerHTML='<div class="score '+(p===16?'ok':'bad')+'">'+p+' / 16</div><b>'+(p===16?'Narrative Intelligence live geïntegreerd':'Live integration gate vond ontbrekende koppelingen')+'</b>'+k;
+ document.getElementById("out").innerHTML=h||'<div class="card"><b class="ok">PASS · Narrative Intelligence zit aantoonbaar in de live Geldcheck</b></div>';
+};
+})();</script></body></html>
