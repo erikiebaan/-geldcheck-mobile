@@ -1,0 +1,70 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Counterexamples 30</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:820px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}.ans{font-weight:900;margin-top:6px}
+</style></head><body><main>
+<div class="card"><h1>Counterexamples 30</h1>
+<p>Dertig bijna-identieke huishoudens. Per paar verandert maar één financieel relevante variabele. De Geldcheck moet precies op die verandering reageren — niet eerder, niet later en nooit de verkeerde kant op.</p>
+<p class="small"><b>Build CE1 · 30 near-neighbor beslispairs · Answer Engine v0.1 + Future Bridge v0.4</b></p>
+<button id="run">Run 30 Counterexample tests</button><div id="sum"></div></div><div id="out"></div></main>
+
+<script src="../engine.js?v=1.2"></script>
+<script src="../future_layer.js?v=0.1"></script>
+<script src="../future_bridge_v04.js?v=0.4"></script>
+<script src="../answer_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,goal:"early",income:5000,cost:3000,cash:100000,investments:500000,debt:0,retireAge:60,aow:1500,aowStartAge:67,pension:800,pensionStartAge:67},o||{});
+const gift=(id,amt,age,certainty="certain")=>({id,type:certainty==="uncertain"?"uncertain_asset":"future_lump_sum",amount:amt,availableFromAge:age,certainty,liquidity:"immediate"});
+const inc=(id,m,age,end)=>({id,type:"temporary_income",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"contractual",liquidity:"immediate"});
+const exp=(id,m,age,end)=>({id,type:"future_expense",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"certain"});
+const blocked=(id,val,age)=>({id,type:"blocked_asset",currentValue:val,availableFromAge:age,certainty:"contractual",liquidity:"restricted",restricted:true});
+const illiquid=(id,val)=>({id,type:"illiquid_property",currentValue:val,certainty:"certain",liquidity:"illiquid"});
+
+const R=(c,f)=>GeldcheckAnswerEngine.retirement(c,f||{});
+const P=(c,a,m)=>GeldcheckAnswerEngine.purchase(c,a,m);
+const rank=x=>({"NEE":0,"MOGELIJK":1,"JA":2}[x]??-1);
+let T=[]; const add=(n,fn,why)=>T.push({n,fn,why});
+
+add("1. +€50.000 cash mag pensioenbesluit niet verslechteren",()=>{let a=R(B({cash:20000,investments:250000}),{}),b=R(B({cash:70000,investments:250000}),{});return rank(b.answer)>=rank(a.answer)},"meer liquide vermogen is nooit slechter");
+add("2. -€50.000 cash mag pensioenbesluit niet verbeteren",()=>{let a=R(B({cash:70000,investments:250000}),{}),b=R(B({cash:20000,investments:250000}),{});return rank(b.answer)<=rank(a.answer)},"minder buffer mag niet helpen");
+add("3. +€100.000 beleggingen mag pensioenbesluit niet verslechteren",()=>{let a=R(B({investments:200000}),{}),b=R(B({investments:300000}),{});return rank(b.answer)>=rank(a.answer)},"meer vrij belegbaar vermogen helpt of is neutraal");
+add("4. Hogere maanduitgaven mogen pensioenbesluit niet verbeteren",()=>{let a=R(B({cost:2500}),{}),b=R(B({cost:3500}),{});return rank(b.answer)<=rank(a.answer)},"hogere behoefte is nooit gunstiger");
+add("5. Lagere maanduitgaven mogen pensioenbesluit niet verslechteren",()=>{let a=R(B({cost:3500}),{}),b=R(B({cost:2500}),{});return rank(b.answer)>=rank(a.answer)},"lagere behoefte helpt of is neutraal");
+
+add("6. AOW +€500 p/m mag pensioenbesluit niet verslechteren",()=>{let a=R(B({aow:1000}),{}),b=R(B({aow:1500}),{});return rank(b.answer)>=rank(a.answer)},"meer levenslang inkomen");
+add("7. Pensioen +€500 p/m mag pensioenbesluit niet verslechteren",()=>{let a=R(B({pension:300}),{}),b=R(B({pension:800}),{});return rank(b.answer)>=rank(a.answer)},"meer structureel pensioeninkomen");
+add("8. AOW 5 jaar later mag pensioenbesluit niet verbeteren",()=>{let a=R(B({aowStartAge:67}),{}),b=R(B({aowStartAge:72}),{});return rank(b.answer)<=rank(a.answer)},"later inkomen is niet beter");
+add("9. Pensioen 5 jaar later mag pensioenbesluit niet verbeteren",()=>{let a=R(B({pensionStartAge:67}),{}),b=R(B({pensionStartAge:72}),{});return rank(b.answer)<=rank(a.answer)},"later pensioen is niet beter");
+add("10. Later stoppen mag niet slechter zijn",()=>{let a=R(B({retireAge:60}),{}),b=R(B({retireAge:65}),{});return rank(b.answer)>=rank(a.answer)},"kortere pensioenbrug");
+
+add("11. Zekere gift van €100k mag niet slechter zijn dan geen gift",()=>{let c=B({cash:10000,investments:150000,cost:3200});let a=R(c,{}),b=R(c,{events:[gift("g",100000,65)]});return rank(b.answer)>=rank(a.answer)},"zekere ontvangst helpt of is neutraal");
+add("12. Onzekere gift van €1m mag conservatief niets veranderen",()=>{let c=B({cash:10000,investments:150000,cost:3200});let a=R(c,{}),b=R(c,{events:[gift("g",1000000,65,"uncertain")]});return b.answer===a.answer},"onzeker blijft buiten conservatieve beslissing");
+add("13. Restricted asset €1m mag pensioenbesluit niet verbeteren",()=>{let c=B({cash:10000,investments:150000,cost:3200});let a=R(c,{}),b=R(c,{assets:[blocked("b",1000000,67)]});return b.answer===a.answer},"geblokkeerd is geen vrije cash");
+add("14. Illiquide woning €1m mag pensioenbesluit niet verbeteren",()=>{let c=B({cash:10000,investments:150000,cost:3200});let a=R(c,{}),b=R(c,{assets:[illiquid("h",1000000)]});return b.answer===a.answer},"woningwaarde is niet vanzelf consumptiegeld");
+add("15. Gift op 60 mag bij positief rendement niet minder waarde hebben dan gift op 70",()=>{let c=B({cash:0,investments:100000,cost:3000});let e=R(c,{events:[gift("e",200000,60)]}),l=R(c,{events:[gift("l",200000,70)]});return e.base.endCapital>=l.base.endCapital},"timingwaarde van eerder beschikbaar kapitaal");
+
+add("16. Contractuele lijfrente mag pensioenbesluit niet verslechteren",()=>{let c=B({cash:10000,investments:150000,cost:3200});let a=R(c,{}),b=R(c,{events:[inc("l",1000,67,90)]});return rank(b.answer)>=rank(a.answer)},"zeker inkomen helpt of is neutraal");
+add("17. Hogere lijfrente moet minstens zo goed zijn als lagere",()=>{let c=B({cash:10000,investments:150000,cost:3200});let a=R(c,{events:[inc("l1",500,67,90)]}),b=R(c,{events:[inc("l2",1500,67,90)]});return rank(b.answer)>=rank(a.answer)&&b.conservative.endCapital>=a.conservative.endCapital},"meer inkomen mag niet slechter uitpakken");
+add("18. Extra zorgkosten mogen pensioenbesluit niet verbeteren",()=>{let c=B({cash:80000,investments:400000,cost:2800});let a=R(c,{}),b=R(c,{events:[exp("z",1000,75,94)]});return rank(b.answer)<=rank(a.answer)},"hogere toekomstige kosten zijn niet gunstiger");
+add("19. Hogere zorgkosten moeten slechter zijn dan lagere",()=>{let c=B({cash:80000,investments:400000,cost:2800});let a=R(c,{events:[exp("z1",500,75,94)]}),b=R(c,{events:[exp("z2",1500,75,94)]});return b.conservative.endCapital<=a.conservative.endCapital},"meer kosten → lagere eindpositie");
+add("20. Baanverlies vóór pensioen mag eindpositie niet verbeteren",()=>{let c=B({age:55,retireAge:60,income:5000,cost:3500,cash:30000,investments:150000});let a=R(c,{}),b=R(c,{events:[inc("loss",-2000,55,59)]});return b.conservative.endCapital<=a.conservative.endCapital},"minder opbouw vóór pensioen");
+
+add("21. Groter baanverlies moet slechter zijn dan kleiner",()=>{let c=B({age:55,retireAge:60,income:5000,cost:3500,cash:30000,investments:150000});let a=R(c,{events:[inc("l1",-1000,55,59)]}),b=R(c,{events:[inc("l2",-2500,55,59)]});return b.conservative.endCapital<=a.conservative.endCapital},"grotere inkomensschok mag niet helpen");
+add("22. €20k sparen in 24 maanden moet haalbaarder zijn dan €20k in 12 maanden",()=>{let c=B({goal:"purchase",income:5000,cost:3500,cash:30000,investments:0});let a=P(c,20000,24),b=P(c,20000,12);return a.answer==="JA"&&rank(a.answer)>=rank(b.answer)},"langere termijn verlaagt reserveringsdruk");
+add("23. Zelfde termijn, lager aankoopbedrag mag niet slechter zijn",()=>{let c=B({goal:"purchase",income:5000,cost:3500,cash:30000,investments:0});let a=P(c,10000,24),b=P(c,30000,24);return (a.answer==="JA"||a.answer===b.answer)},"lager doelbedrag is niet moeilijker");
+add("24. Hogere maandruimte mag aankoopbesluit niet verslechteren",()=>{let a=P(B({goal:"purchase",income:4500,cost:3500,cash:30000,investments:0}),20000,24),b=P(B({goal:"purchase",income:5500,cost:3500,cash:30000,investments:0}),20000,24);return !(a.answer==="JA"&&b.answer==="NEE")},"meer vrije ruimte helpt");
+add("25. Grotere cashbuffer mag aankoopbesluit niet verslechteren",()=>{let a=P(B({goal:"purchase",income:5000,cost:3500,cash:10000,investments:0}),20000,24),b=P(B({goal:"purchase",income:5000,cost:3500,cash:50000,investments:0}),20000,24);return !(a.answer==="JA"&&b.answer==="NEE")},"meer liquiditeit helpt");
+
+add("26. Exact €833 p/m reservering bij €1.500 ruimte moet JA blijven",()=>P(B({goal:"purchase",income:5000,cost:3500,cash:30000,investments:0}),20000,24).answer==="JA","geen fout op veilige kant van grens");
+add("27. Exact boven maandruimte moet NEE zijn",()=>P(B({goal:"purchase",income:4500,cost:3500,cash:30000,investments:0}),13000,12).answer==="NEE","€1083 reservering > €1000 ruimte");
+add("28. 3 maanden buffer exact op grens mag niet slechter zijn dan 2,9 maanden",()=>{let c1=B({goal:"purchase",income:5000,cost:3000,cash:8700,investments:0}),c2=B({goal:"purchase",income:5000,cost:3000,cash:9000,investments:0});let a=P(c1,6000,24),b=P(c2,6000,24);return !(a.answer==="JA"&&b.answer==="NEE")},"buffergrens moet monotone logica hebben");
+add("29. Twee zekere toekomstige bronnen samen mogen niet slechter zijn dan één",()=>{let c=B({cash:10000,investments:100000,cost:3200});let a=R(c,{events:[gift("g",100000,65)]}),b=R(c,{events:[gift("g",100000,65),inc("l",1000,67,90)]});return rank(b.answer)>=rank(a.answer)&&b.conservative.endCapital>=a.conservative.endCapital},"zekere bronnen mogen stapelen");
+add("30. Negatieve en positieve future flow van exact gelijke grootte mogen netto niet verbeteren",()=>{let c=B({cash:10000,investments:150000,cost:3000});let a=R(c,{}),b=R(c,{events:[inc("i",1000,67,80),exp("e",1000,67,80)]});return Math.abs(b.conservative.endCapital-a.conservative.endCapital)<2},"gelijke inkomsten en kosten neutraliseren");
+
+if(T.length!==30){document.body.innerHTML="<pre>TEST COUNT ERROR "+T.length+"</pre>";return}
+document.getElementById("run").onclick=()=>{let p=0,h="";T.forEach((t,i)=>{let ok=false,err="";try{ok=!!t.fn()}catch(e){err=String(e)}if(ok)p++;h+='<div class="case"><b class="'+(ok?'ok':'bad')+'">'+(ok?'PASS':'FAIL')+' · '+t.n+'</b><div class="why">'+t.why+(err?' · '+err:'')+'</div></div>'});document.getElementById("sum").innerHTML='<div class="score '+(p===30?'ok':'bad')+'">'+p+' / 30</div><b>'+(p===30?'Alle tegenvoorbeelden logisch':'Tegenvoorbeeldfouten gevonden')+'</b>';document.getElementById("out").innerHTML=h};
+})();</script></body></html>
