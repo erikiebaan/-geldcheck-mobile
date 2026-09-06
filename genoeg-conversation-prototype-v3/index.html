@@ -33,7 +33,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   <div class="field"><label>AOW netto p/m</label><input id="aow" type="number" value="1500"></div>
   <div class="field"><label>Pensioen netto p/m bovenop AOW</label><input id="pension" type="number" value="0"></div>
   <div class="field"><label>Genoeg tot leeftijd</label><input id="endAge" type="number" value="90"></div>
-  <div class="field"><label>Minimaal over op eindleeftijd</label><input id="endBuffer" type="number" value="50000"></div>
+  <div class="field"><label>Minimale buffer tijdens je hele plan</label><input id="endBuffer" type="number" value="50000"></div>
   <div class="field"><label>Inflatie-aanname %</label><input id="inflation" type="number" step="0.1" value="2"></div>
   <div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" value="245000"></div>
   <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>
@@ -112,7 +112,7 @@ function simulateReal(p, realReturn){
 
 function requiredReal(p){
   const floorReal=(1/(1+p.inflation))-1; // 0% nominaal
-  const survives=r=>{ const s=simulateReal(p,r); return s.end>=p.endBuffer && s.min>=0; };
+  const survives=r=>{ const s=simulateReal(p,r); return s.end>=p.endBuffer && s.min>=p.endBuffer; };
   if(survives(floorReal))return floorReal;
   let lo=floorReal,hi=0.30;
   if(!survives(hi))return Infinity;
@@ -128,7 +128,7 @@ function earliestAtNominal(p, nominal){
   const orig=p.stopAge;
   for(let s=p.age;s<=Math.min(p.aowAge+5,p.endAge-1);s++){
     const q={...p,stopAge:s};
-    { const sim=simulateReal(q,real); if(sim.end>=p.endBuffer && sim.min>=0)return s; }
+    { const sim=simulateReal(q,real); if(sim.end>=p.endBuffer && sim.min>=p.endBuffer)return s; }
   }
   return null;
 }
@@ -182,7 +182,7 @@ window.recalc=function(){
   }
 
   document.getElementById('result').innerHTML=
-  '<div class="card hero"><div class="sub">'+headline+'</div><div class="big">'+(isFinite(nominal)?pct(Math.max(0,nominal)):'—')+'</div><p>'+(isFinite(nominal)&&nominal<=0.00001?'Zelfs zonder beleggingsrendement is je plan voldoende om tot je '+p.endAge+'e te financieren en minimaal '+euro(p.endBuffer)+' over te houden.':'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en dan '+euro(p.endBuffer)+' over te houden.')+'</p></div>'+
+  '<div class="card hero"><div class="sub">'+headline+'</div><div class="big">'+(isFinite(nominal)?pct(Math.max(0,nominal)):'—')+'</div><p>'+(isFinite(nominal)&&nominal<=0.00001?'Zelfs zonder beleggingsrendement is je plan voldoende om tot je '+p.endAge+'e te financieren én je buffer van '+euro(p.endBuffer)+' onderweg intact te houden.':'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en onderweg minimaal '+euro(p.endBuffer)+' buffer te houden.')+'</p></div>'+
   '<div class="card"><h2>Wat betekent dit voor jou?</h2><div class="answer">'+phases.join('\n\n')+'\n\nVeranderingen die zijn meegenomen: '+eventsTxt+'.</div></div>'+
   '<div class="card"><h2>Wanneer komt geld uit je vermogen?</h2><div class="answer">'+
     (p.age<Math.min(p.stopAge,p.aowAge)
@@ -207,8 +207,8 @@ window.recalc=function(){
     '<div class="scenario"><span>0% nominaal</span><span>'+(e0.depletionAge?'geld op rond '+e0.depletionAge:'houdt stand')+'</span><b>'+euro(e0.end)+'</b></div>'+
     '<div class="scenario"><span>3% nominaal</span><span>'+(e3.depletionAge?'geld op rond '+e3.depletionAge:'houdt stand')+'</span><b>'+euro(e3.end)+'</b></div>'+
     '<div class="scenario"><span>5% nominaal</span><span>'+(e5.depletionAge?'geld op rond '+e5.depletionAge:'houdt stand')+'</span><b>'+euro(e5.end)+'</b></div>'+
-    '<p class="note">Eindbedragen zijn in koopkracht van vandaag. Het doel is niet vermogen maximaliseren, maar genoeg houden tot je gekozen eindleeftijd.</p></div>'+
-  '<div class="card"><h2>Belangrijkste risico’s</h2><div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.\n\n2. Je hypotheek van '+euro(p.mortgage)+' tegen '+pct(p.mortRate)+' kost nu '+euro(p.mortPayment)+'/mnd. Daarvan is nu ongeveer '+euro(mi.interest)+' rente en '+euro(mi.principal)+' aflossing. Bij gelijkblijvende rente en betaling loopt hij rond leeftijd '+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'—')+' af; vanaf dan valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.\n\n3. AOW en pensioen bepalen hoeveel je portefeuille na '+p.aowAge+' nog hoeft te dragen.\n\n4. Je hoeft je vermogen niet per se te laten groeien. Als je einddoel '+euro(p.endBuffer)+' op '+p.endAge+' is, mag het onderweg gecontroleerd dalen.</div></div>'+
+    '<p class="note">Eindbedragen zijn in koopkracht van vandaag. Je plan geldt alleen als je vermogen onderweg nooit onder je minimale buffer van '+euro(p.endBuffer)+' komt.</p></div>'+
+  '<div class="card"><h2>Belangrijkste risico’s</h2><div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.\n\n2. Je hypotheek van '+euro(p.mortgage)+' tegen '+pct(p.mortRate)+' kost nu '+euro(p.mortPayment)+'/mnd. Daarvan is nu ongeveer '+euro(mi.interest)+' rente en '+euro(mi.principal)+' aflossing. Bij gelijkblijvende rente en betaling loopt hij rond leeftijd '+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'—')+' af; vanaf dan valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.\n\n3. AOW en pensioen bepalen hoeveel je portefeuille na '+p.aowAge+' nog hoeft te dragen.\n\n4. Je hoeft je vermogen niet per se te laten groeien. Je vermogen mag gecontroleerd dalen, maar in deze berekening nooit onder je minimale buffer van '+euro(p.endBuffer)+'.</div></div>'+
   (baseNarrative?'<div class="card"><h2>Onderliggende Geldcheck-intelligentie</h2><p class="note">De bestaande engine blijft als veiligheidslaag actief.</p><div class="answer">'+baseNarrative.story+'</div></div>':'');
 };
 
