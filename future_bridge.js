@@ -1,4 +1,4 @@
-/* Geldcheck Future Retirement Bridge v0.2
+/* Geldcheck Future Retirement Bridge v0.3
    Test-only integration. Does not alter validated engine.js.
    Future assets/events affect retirement cashflow only when available, usable and certain enough.
 */
@@ -44,6 +44,7 @@ function simulate(raw,futureRaw,opts){
   const retireAge=Math.max(base.age,base.retireAge);
   const endAge=opts.endAge||95;
   let cash=Math.max(0,base.cash),invested=Math.max(0,base.investments),age=base.age;
+  let fundingGap=0;
   const consumed=new Set(),ledger=[];
 
   while(age<retireAge){
@@ -71,14 +72,24 @@ function simulate(raw,futureRaw,opts){
     const need=Math.max(0,base.cost*12+extraExpense-aow-pension-extraIncome);
     const useCash=Math.min(cash,need);cash-=useCash;
     const rem=need-useCash;
-    invested=invested*(1+realReturn)-rem;
-    if(invested<0){failedAge=age;invested=0;}
-    ledger.push({age,cash,invested,injected,extraIncome,extraExpense,need});
-    /* Keep projecting after depletion. This is essential: future income/assets/costs
-       must remain observable even when the household fails before their start age. */
+    invested=invested*(1+realReturn);
+    if(rem>invested){
+      const shortfall=rem-invested;
+      if(failedAge===null)failedAge=age;
+      fundingGap+=shortfall;
+      invested=0;
+    }else{
+      invested-=rem;
+    }
+    const netPosition=cash+invested-fundingGap;
+    ledger.push({age,cash,invested,fundingGap,netPosition,injected,extraIncome,extraExpense,need});
+    /* Keep projecting after depletion and preserve unmet funding as a deficit.
+       This lets later income/assets reduce the economic shortfall instead of
+       making all failed paths look identical at zero. */
     age++;
   }
-  return {mode,retireAge,success:failedAge===null,failedAge,endCapital:cash+invested,cash,invested,ledger,consumed:[...consumed]};
+  return {mode,retireAge,success:failedAge===null,failedAge,endCapital:cash+invested-fundingGap,
+          grossCapital:cash+invested,fundingGap,cash,invested,ledger,consumed:[...consumed]};
 }
 function compare(raw,futureRaw){
   return {
