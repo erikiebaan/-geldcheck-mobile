@@ -111,7 +111,9 @@ function simulateReal(p, realReturn){
 }
 
 function requiredReal(p){
-  let lo=-0.95,hi=0.30;
+  const floorReal=(1/(1+p.inflation))-1; // 0% nominaal
+  if(simulateReal(p,floorReal).end>=p.endBuffer)return floorReal;
+  let lo=floorReal,hi=0.30;
   if(simulateReal(p,hi).end<p.endBuffer)return Infinity;
   for(let i=0;i<120;i++){
     const mid=(lo+hi)/2;
@@ -147,11 +149,13 @@ window.recalc=function(){
   const e0=simulateReal(p,(1+0)/(1+p.inflation)-1);
   const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1);
   const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);
-  const pathNeeded=simulatePath(p,rr);
+  const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
+  const pathNeeded=simulatePath(p,chartReal);
   const earliest3=earliestAtNominal(p,.03);
   const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
   let headline;
   if(!isFinite(nominal))headline='Dit plan redt het zelfs niet met 30% rendement';
+  else if(nominal<=0.00001)headline='Je hebt geen rendement nodig';
   else if(nominal<=.03)headline='Je plan vraagt weinig rendement';
   else if(nominal<=.05)headline='Je plan lijkt haalbaar, maar rendement telt mee';
   else headline='Je plan vraagt een hoog rendement';
@@ -177,7 +181,7 @@ window.recalc=function(){
   }
 
   document.getElementById('result').innerHTML=
-  '<div class="card hero"><div class="sub">'+headline+'</div><div class="big">'+(isFinite(nominal)?pct(nominal):'—')+'</div><p>gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en dan '+euro(p.endBuffer)+' over te houden.</p></div>'+
+  '<div class="card hero"><div class="sub">'+headline+'</div><div class="big">'+(isFinite(nominal)?pct(Math.max(0,nominal)):'—')+'</div><p>'+(isFinite(nominal)&&nominal<=0.00001?'Zelfs zonder beleggingsrendement is je plan voldoende om tot je '+p.endAge+'e te financieren en minimaal '+euro(p.endBuffer)+' over te houden.':'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en dan '+euro(p.endBuffer)+' over te houden.')+'</p></div>'+
   '<div class="card"><h2>Wat betekent dit voor jou?</h2><div class="answer">'+phases.join('\n\n')+'\n\nVeranderingen die zijn meegenomen: '+eventsTxt+'.</div></div>'+
   '<div class="card"><h2>Wanneer komt geld uit je vermogen?</h2><div class="answer">'+
     (p.age<Math.min(p.stopAge,p.aowAge)
@@ -197,7 +201,7 @@ window.recalc=function(){
     '<div class="kpi"><span>Nu: rente / aflossing</span><b>'+euro(mi.interest)+' / '+euro(mi.principal)+'</b></div>'+
     '<div class="kpi"><span>Hypotheek klaar rond</span><b>'+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',',')+' jaar':'loopt niet af')+'</b></div>'+
   '</div></div>'+
-  '<div class="card"><h2>Verloop van je vermogen</h2><p>Van vandaag tot je '+p.endAge+'e bij het benodigde rendement van '+(isFinite(nominal)?pct(nominal):'—')+'.</p><div class="chartwrap">'+chartSvg(pathNeeded)+'</div><p class="note">De lijn verwerkt werkinkomen, AOW/pensioen, je hypotheek die afloopt en de veranderingen die je toevoegt.</p></div>'+
+  '<div class="card"><h2>Verloop van je vermogen</h2><p>Van vandaag tot je '+p.endAge+'e bij het benodigde rendement van '+(isFinite(nominal)?pct(Math.max(0,nominal)):'—')+'.</p><div class="chartwrap">'+chartSvg(pathNeeded)+'</div><p class="note">De lijn verwerkt werkinkomen, AOW/pensioen, je hypotheek die afloopt en de veranderingen die je toevoegt.</p></div>'+
   '<div class="card"><h2>Als rendement tegenvalt</h2>'+
     '<div class="scenario"><span>0% nominaal</span><span>'+(e0.depletionAge?'geld op rond '+e0.depletionAge:'houdt stand')+'</span><b>'+euro(e0.end)+'</b></div>'+
     '<div class="scenario"><span>3% nominaal</span><span>'+(e3.depletionAge?'geld op rond '+e3.depletionAge:'houdt stand')+'</span><b>'+euro(e3.end)+'</b></div>'+
