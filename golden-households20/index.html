@@ -1,0 +1,50 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Golden Household Suite 20</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:820px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}.truth{font-weight:800;margin-top:7px}
+</style></head><body><main>
+<div class="card"><h1>Golden Household Suite 20</h1>
+<p>Twintig complete huishoudens met vooraf vastgelegde economische waarheid. Geen tweede engine en geen relatieve richtingstest: elk huishouden heeft handmatig narekenbare bedragen, timing en een verwachte eindpositie.</p>
+<p class="small"><b>Build GH1 · 20 handmatig vastgelegde huishoudens · 0% reëel rendement · Future Bridge v0.41</b></p>
+<button id="run">Run 20 Golden Households</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,goal:"early",income:0,cost:0,cash:0,investments:0,debt:0,retireAge:60,aow:0,aowStartAge:67,pension:0,pensionStartAge:67},o||{});
+const gift=(id,amt,age,certainty="certain")=>({id,type:certainty==="uncertain"?"uncertain_asset":"future_lump_sum",amount:amt,availableFromAge:age,certainty,liquidity:"immediate"});
+const inc=(id,m,age,end)=>({id,type:"temporary_income",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"contractual",liquidity:"immediate"});
+const exp=(id,m,age,end)=>({id,type:"future_expense",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"certain"});
+const blocked=(id,v,age)=>({id,type:"blocked_asset",currentValue:v,availableFromAge:age,certainty:"contractual",liquidity:"restricted",restricted:true});
+const sim=(c,f,endAge)=>GeldcheckFutureBridgeV04.simulate(c,f||{},{mode:"conservative",nominalReturn:.02,crashAtRetirement:false,endAge});
+const eq=(a,b,t=.01)=>Math.abs(a-b)<=t;
+let T=[];const add=(name,c,f,endAge,check,truth)=>T.push({name,c,f,endAge,check,truth});
+
+add("1. Vijf jaar leven van exact €60.000 cash",B({cost:1000,cash:60000}),{},65,r=>eq(r.endCapital,0)&&eq(r.fundingGap,0),"5 × €12.000 kosten = €60.000. Eindpositie exact €0.");
+add("2. Eén euro te weinig",B({cost:1000,cash:59999}),{},65,r=>eq(r.endCapital,-1)&&eq(r.fundingGap,1),"€59.999 tegenover €60.000 behoefte → exact €1 tekort.");
+add("3. Zeven jaar brug tot AOW",B({cost:1000,aow:1000,aowStartAge:67}),{},70,r=>eq(r.endCapital,-84000)&&r.firstGapAge===60,"60–66: 7 × €12.000 tekort = €84.000; vanaf 67 dekt AOW alles.");
+add("4. Zekere erfenis repareert brug exact",B({cost:1000,aow:1000,aowStartAge:67}),{events:[gift("e",84000,67)]},70,r=>eq(r.endCapital,0)&&eq(r.fundingGap,0)&&r.recoveredAge===67,"€84.000 zekere erfenis op 67 repareert exact het opgebouwde tekort.");
+add("5. Onzekere erfenis repareert niets",B({cost:1000,aow:1000,aowStartAge:67}),{events:[gift("u",84000,67,"uncertain")]},70,r=>eq(r.endCapital,-84000)&&!r.consumed.includes("u"),"Onzekere erfenis telt conservatief niet mee.");
+add("6. AOW + pensioen samen dekken kosten",B({cost:1000,cash:84000,aow:500,aowStartAge:67,pension:500,pensionStartAge:67}),{},70,r=>eq(r.endCapital,0)&&eq(r.fundingGap,0),"€84.000 overbrugging tot 67; daarna €500 AOW + €500 pensioen = kosten.");
+add("7. Lijfrente drie jaar exact €18.000",B({cost:500}),{events:[inc("l",500,60,62)]},63,r=>eq(r.endCapital,0)&&eq(r.fundingGap,0),"60–62: €6.000 kosten en €6.000 lijfrente per jaar. Netto exact nul.");
+add("8. Lijfrente stopt en daarna ontstaat tekort",B({cost:500}),{events:[inc("l",500,60,61)]},63,r=>eq(r.endCapital,-6000)&&r.firstGapAge===62,"60–61 netto nul; in 62 ontbreekt €6.000.");
+add("9. Eén jaar extra zorgkosten",B({cost:1000,cash:42000}),{events:[exp("z",500,61,61)]},63,r=>eq(r.endCapital,0),"Basis 3 jaar = €36.000 plus €6.000 zorg in 61 = €42.000.");
+add("10. Gift en zorgkosten hetzelfde jaar",B({cost:1000,cash:24000}),{events:[gift("g",12000,61),exp("z",1000,61,61)]},62,r=>eq(r.endCapital,0),"Twee basisjaren kosten €24.000; extra €12.000 zorg wordt exact gedekt door gift €12.000.");
+
+add("11. Twee gifts hetzelfde jaar tellen één keer",B({cost:0}),{events:[gift("a",10000,60),gift("b",20000,60)]},61,r=>eq(r.endCapital,30000)&&r.consumed.length===2,"€10.000 + €20.000 = €30.000, ieder precies één keer.");
+add("12. Restricted banksparen blijft buiten bereik",B({cost:1000}),{assets:[blocked("b",100000,60)]},61,r=>eq(r.endCapital,-12000)&&!r.consumed.includes("b"),"€100.000 restricted vermogen mag €12.000 jaarbehoefte niet financieren.");
+add("13. Pre-retirement sparen bouwt exact €24.000 op",B({age:60,retireAge:62,income:4000,cost:3000}),{},63,r=>eq(r.endCapital,-12000),"60–61: 2 × €12.000 opbouw = €24.000; pensioenjaar 62 kost €36.000 → €12.000 tekort.");
+add("14. Baanverlies halveert pre-retirement opbouw",B({age:60,retireAge:62,income:4000,cost:3000}),{events:[inc("loss",-500,60,61)]},63,r=>eq(r.endCapital,-24000),"Surplus daalt naar €6.000 per jaar: €12.000 opgebouwd; jaar 62 kost €36.000 → €24.000 tekort.");
+add("15. Gift na eerdere tekorten betaalt eerst gap terug",B({cost:1000}),{events:[gift("g",30000,62)]},63,r=>eq(r.endCapital,-6000)&&eq(r.fundingGap,6000),"60–61 bouwen €24.000 gap op. Gift €30.000 laat €6.000 over; jaar 62 kost €12.000 → eindgap €6.000.");
+add("16. Gift groter dan gap wordt resterend vermogen",B({cost:1000}),{events:[gift("g",50000,62)]},63,r=>eq(r.endCapital,14000)&&eq(r.fundingGap,0),"€24.000 gap + €12.000 jaarbehoefte = €36.000; van €50.000 blijft €14.000.");
+add("17. AOW start exact op 65",B({age:64,retireAge:64,cost:1000,cash:12000,aow:1000,aowStartAge:65}),{},66,r=>eq(r.endCapital,0),"64 kost €12.000 uit cash; vanaf 65 dekt AOW exact.");
+add("18. Pensioen één jaar later kost exact €12.000 extra",B({cost:1000,cash:12000,pension:1000,pensionStartAge:61}),{},62,r=>eq(r.endCapital,0),"Jaar 60 uit cash €12.000; vanaf 61 dekt pensioen exact.");
+add("19. Levenslange dekking houdt vermogen intact",B({cost:2000,cash:25000,investments:75000,aow:1200,aowStartAge:60,pension:800,pensionStartAge:60}),{},80,r=>eq(r.endCapital,100000)&&eq(r.fundingGap,0),"AOW €1.200 + pensioen €800 = €2.000 kosten; €100.000 vermogen blijft intact.");
+add("20. Structureel €500 p/m tekort over tien jaar",B({cost:2000,aow:1000,aowStartAge:60,pension:500,pensionStartAge:60,cash:60000}),{},70,r=>eq(r.endCapital,0)&&eq(r.fundingGap,0),"Netto tekort €500 p/m = €6.000 per jaar. 10 jaar = exact €60.000 cash.");
+
+if(T.length!==20){document.body.innerHTML="<pre>TEST COUNT ERROR "+T.length+"</pre>";return}
+document.getElementById("run").onclick=()=>{let p=0,h="";T.forEach((t,i)=>{let ok=false,err="",r;try{r=sim(t.c,t.f,t.endAge);ok=!!t.check(r)}catch(e){err=String(e)}if(ok)p++;h+='<div class="case"><b class="'+(ok?'ok':'bad')+'">'+(ok?'PASS':'FAIL')+' · '+t.name+'</b><div class="truth">'+t.truth+'</div>'+(r?'<div class="why">Engine: eind €'+Math.round(r.endCapital).toLocaleString("nl-NL")+' · gap €'+Math.round(r.fundingGap).toLocaleString("nl-NL")+(r.firstGapAge!==null?' · eerste tekort '+r.firstGapAge:'')+'</div>':'')+(err?'<div class="why">'+err+'</div>':'')+'</div>'});
+document.getElementById("sum").innerHTML='<div class="score '+(p===20?'ok':'bad')+'">'+p+' / 20</div><b>'+(p===20?'Alle Golden Households exact volgens economische waarheid':'Golden Household afwijkingen gevonden')+'</b>';document.getElementById("out").innerHTML=h};
+})();</script></body></html>
