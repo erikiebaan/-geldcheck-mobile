@@ -50,7 +50,7 @@
     return c;
   }
 
-  function requiredEvidence(c){
+  function requiredEvidence(c,raw){
     const req = [
       ["age","leeftijd",finite(c.age)],
       ["income","netto inkomen",c.totalIncome>0],
@@ -365,7 +365,7 @@
 
   function analyze(raw){
     const c=normalize(raw||{});
-    const missing=requiredEvidence(c);
+    const missing=requiredEvidence(c,raw);
     const d=dimensions(c);
     const s=scenarios(c);
     const f=findings(c,d,s);
