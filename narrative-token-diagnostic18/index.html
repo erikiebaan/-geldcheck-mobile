@@ -1,0 +1,49 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Narrative Token Diagnostic 18</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p{color:#777;line-height:1.45}.small{font-size:13px}.ok{color:#19765f}.bad{color:#b43131}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.verdict{font-size:30px;font-weight:900}.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;line-height:1.45}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{padding:8px 4px;border-bottom:1px solid #eee;text-align:left}.token{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+</style></head><body><main>
+<div class="card"><h1>Narrative Token Diagnostic 18</h1>
+<p>We bekijken exact welke eurotokens de huidige parser uit case 18 haalt en vergelijken die één-op-één met de toegestane engine-facts. Geen wijziging aan engine of narrative.</p>
+<p class="small"><b>Build NTD18 · exact euro-token audit · NI2 case 18</b></p>
+<button id="run">Run Token Diagnostic</button><div id="sum"></div></div><div id="out"></div></main>
+
+<script src="../engine.js?v=1.2"></script>
+<script src="../future_layer.js?v=0.1"></script>
+<script src="../future_bridge_v041.js?v=0.41"></script>
+<script src="../answer_engine.js?v=0.1"></script>
+<script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67},o||{});
+const nums=s=>(String(s).match(/€[0-9\.]+/g)||[]);
+const euro=n=>"€"+Math.round(n).toLocaleString("nl-NL");
+
+document.getElementById("run").onclick=()=>{
+  const x=GeldcheckNarrative.story(B({retireAge:62}),{});
+  const tokens=nums(x.story);
+  const allowed=[
+    {name:"conservativeEndCapital",token:euro(x.facts.conservativeEndCapital),value:x.facts.conservativeEndCapital},
+    {name:"conservativeGap",token:euro(x.facts.conservativeGap),value:x.facts.conservativeGap}
+  ];
+  const rows=tokens.map(t=>({token:t,match:allowed.find(a=>a.token===t)||null}));
+  const unmatched=rows.filter(r=>!r.match);
+  let h='<div class="card"><div class="verdict '+(unmatched.length===0?'ok':'bad')+'">'+
+    (unmatched.length===0?'ALLE EUROTOKENS GEGROUND':'ONGEGRONDE TOKEN GEVONDEN')+'</div>'+
+    '<table><tr><th>Token uit verhaal</th><th>Matcht fact</th><th>Factnaam</th></tr>'+
+    rows.map(r=>'<tr><td class="token">'+r.token+'</td><td>'+(r.match?'JA':'NEE')+'</td><td>'+(r.match?r.match.name:'—')+'</td></tr>').join('')+
+    '</table></div>'+
+    '<div class="card"><h2>Toegestane facts</h2><table><tr><th>Fact</th><th>Exacte eurotoken</th><th>Ruwe waarde</th></tr>'+
+    allowed.map(a=>'<tr><td>'+a.name+'</td><td class="token">'+a.token+'</td><td>'+a.value+'</td></tr>').join('')+
+    '</table></div>'+
+    '<div class="card"><h2>Verhaal</h2><div class="story">'+x.story+'</div></div>';
+  document.getElementById("sum").innerHTML='<div class="verdict '+(unmatched.length===0?'ok':'bad')+'">'+
+    (unmatched.length===0?'Parser-oracle fout bevestigd':'Narrative bevat werkelijk ongegrond eurobedrag')+'</div>'+
+    '<p>Tokens gevonden: '+tokens.length+' · unmatched: '+unmatched.length+'</p>';
+  document.getElementById("out").innerHTML=h;
+};
+})();</script></body></html>
