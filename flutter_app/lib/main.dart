@@ -423,7 +423,7 @@ double requiredNominal(Plan p){
   if(!survives(hi))return hi;
   for(var i=0;i<100;i++){
     final mid=(lo+hi)/2;
-    if(survives(mid))hi=mid;else lo=mid;
+    if (survives(mid)) { hi=mid; } else { lo=mid; }
   }
   return hi;
 }
