@@ -1,0 +1,51 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PFE2 Case 20 Assertion Audit</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p{color:#777;line-height:1.45}.small{font-size:13px}.ok{color:#19765f}.bad{color:#b43131}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.verdict{font-size:30px;font-weight:900}.row{display:grid;grid-template-columns:1.4fr .8fr .8fr;gap:8px;padding:12px 0;border-bottom:1px solid #eee}
+.hdr{font-weight:800}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.box{background:#faf8f3;border-radius:14px;padding:14px;white-space:pre-wrap;word-break:break-word;font-size:12px}
+</style></head><body><main>
+<div class="card"><h1>PFE2 Case 20 Assertion Audit</h1>
+<p>We splitsen alleen de vijf assertions van PFE2 case 20 uit. Zo zien we exact welke vergelijking faalt en welke ruwe waarden daarachter zitten. Geen wijziging aan engine, narrative of PFE2.</p>
+<p class="small"><b>Build PFD20B · vijf losse assertions · payload → engine.case → narrative facts</b></p>
+<button id="run">Run Assertion Audit</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const payload={
+ age:55,household:"",kids:null,goal:"health",
+ income:5200,otherIncome:300,cost:3400,
+ annualIncluded:false,savingGrowth:null,housing:"",
+ mortgage:null,mortgageRate:null,mortgageEndAge:null,mortgagePayment:null,rent:null,
+ cash:45000,investments:175000,debt:10000,debtRate:null,debtPayment:null,
+ retireAge:67,aow:1500,aowStartAge:67,pension:600,pensionStartAge:67,
+ change:"",purchaseAmount:null,purchaseMonths:null
+};
+document.getElementById("run").onclick=()=>{
+ const a=GeldcheckEngine.analyze(payload);
+ const n=GeldcheckNarrative.story(payload,{});
+ const c=a.case||{}, f=n.facts||{};
+ const checks=[
+  {name:"1. engine.case.monthlyIncome === 5200", actual:c.monthlyIncome, expected:5200, ok:c.monthlyIncome===5200},
+  {name:"2. engine.case.otherIncome === 300", actual:c.otherIncome, expected:300, ok:c.otherIncome===300},
+  {name:"3. engine.case.monthlyCosts === 3400", actual:c.monthlyCosts, expected:3400, ok:c.monthlyCosts===3400},
+  {name:"4. engine.case.monthlySurplus === 2100", actual:c.monthlySurplus, expected:2100, ok:c.monthlySurplus===2100},
+  {name:"5. narrative.facts.monthlySurplus === 2100", actual:f.monthlySurplus, expected:2100, ok:f.monthlySurplus===2100}
+ ];
+ const pass=checks.filter(x=>x.ok).length;
+ document.getElementById("sum").innerHTML='<div class="verdict '+(pass===5?'ok':'bad')+'">'+pass+' / 5 assertions groen</div><p>'+(pass===5?'Dan zit het verschil elders in de PFE2-testconstructie.':'De rode vergelijking staat hieronder exact zichtbaar.')+'</p>';
+ let rows='<div class="card"><div class="row hdr"><div>Assertion</div><div>Actual</div><div>Expected</div></div>';
+ checks.forEach(x=>rows+='<div class="row"><div class="'+(x.ok?'ok':'bad')+'"><b>'+(x.ok?'PASS':'FAIL')+'</b> · '+x.name+'</div><div class="mono">'+String(x.actual)+'</div><div class="mono">'+String(x.expected)+'</div></div>');
+ rows+='</div>';
+ const extra={
+  payloadIncome:payload.income,payloadOtherIncome:payload.otherIncome,
+  engineMonthlyIncome:c.monthlyIncome,engineOtherIncome:c.otherIncome,engineTotalIncome:c.totalIncome,
+  engineMonthlyCosts:c.monthlyCosts,engineMonthlySurplus:c.monthlySurplus,
+  narrativeMonthlySurplus:f.monthlySurplus,
+  engineCase:c,narrativeFacts:f
+ };
+ document.getElementById("out").innerHTML=rows+'<div class="card"><h2>Ruwe waarden</h2><div class="box">'+JSON.stringify(extra,null,2)+'</div></div>';
+};
+})();</script></body></html>
