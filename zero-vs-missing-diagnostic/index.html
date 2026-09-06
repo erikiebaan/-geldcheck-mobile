@@ -1,0 +1,42 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Zero vs Missing Diagnostic</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p{color:#777;line-height:1.45}.small{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.ok{color:#19765f}.bad{color:#b43131}.score{font-size:54px;font-weight:900;margin:16px 0}
+.row{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:8px;padding:12px 0;border-bottom:1px solid #eee}.hdr{font-weight:800}
+pre{white-space:pre-wrap;word-break:break-word;background:#faf8f3;padding:14px;border-radius:14px;font-size:12px}
+</style></head><body><main>
+<div class="card"><h1>Zero vs Missing Diagnostic</h1>
+<p>Gerichte test van het Red Team-breekpunt. We vergelijken expliciet ingevulde nullen met echt ontbrekende waarden voor cash en beleggingen. Geen wijziging aan productielogica.</p>
+<p class="small"><b>Build ZMD1 · 4 cases · requiredEvidence + Narrative missing-state</b></p>
+<button id="run">Run Diagnostic</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const base={age:60,goal:"early",income:5000,cost:3000,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67};
+const cases=[
+ {name:"1. cash=0, investments=0 expliciet ingevuld",raw:Object.assign({},base,{cash:0,investments:0}),expectMissing:false},
+ {name:"2. cash=null, investments=null",raw:Object.assign({},base,{cash:null,investments:null}),expectMissing:true},
+ {name:"3. cash=0, investments=10000",raw:Object.assign({},base,{cash:0,investments:10000}),expectMissing:false},
+ {name:"4. cash=10000, investments=0",raw:Object.assign({},base,{cash:10000,investments:0}),expectMissing:false}
+];
+document.getElementById("run").onclick=()=>{
+ let pass=0,html="";
+ cases.forEach((t,i)=>{
+   const a=GeldcheckEngine.analyze(t.raw);
+   const n=GeldcheckNarrative.story(t.raw,{});
+   const assetMissing=(a.missing||[]).some(x=>x.key==="assets");
+   const ok=assetMissing===t.expectMissing;
+   if(ok)pass++;
+   html+='<div class="case"><b class="'+(ok?'ok':'bad')+'">'+(ok?'PASS':'FAIL')+' · '+t.name+'</b>'+
+     '<p>Engine assets missing: <b>'+String(assetMissing)+'</b> · verwacht: <b>'+String(t.expectMissing)+'</b></p>'+
+     '<p>Narrative headline: '+n.headline+'</p>'+
+     '<pre>'+JSON.stringify({normalized:a.case,missing:a.missing,narrativeMissing:n.facts.liveMissing},null,2)+'</pre></div>';
+ });
+ document.getElementById("sum").innerHTML='<div class="score '+(pass===4?'ok':'bad')+'">'+pass+' / 4</div>'+
+   '<b>'+(pass===4?'0 en missing worden correct onderscheiden':'Zero/missing-bug bevestigd')+'</b>';
+ document.getElementById("out").innerHTML=html;
+};
+})();</script></body></html>
