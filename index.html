@@ -57,6 +57,10 @@
 <div class="nav" id="nav"><button class="btn back" type="button" id="back">Terug</button><button class="btn next" type="button" id="next">Verder</button></div>
 </div></main>
 <script src="engine.js?v=1.2"></script>
+<script src="future_layer.js?v=0.1"></script>
+<script src="future_bridge_v041.js?v=0.41"></script>
+<script src="answer_engine.js?v=0.1"></script>
+<script src="narrative_engine.js?v=0.1"></script>
 <script>
 (function(){
   var currentPos=0, annual=null, route=[];
@@ -148,11 +152,17 @@
       change:el('change').value, purchaseAmount:num('purchaseAmount'), purchaseMonths:num('purchaseMonths')
     };
     var a=GeldcheckEngine.analyze(input), c=a.case;
+    var narrative=GeldcheckNarrative.story(input,{});
     var title=a.missing.length>=3?'Nog te weinig informatie.':(a.decision?'Je Geldcheck is berekend.':'Je financiële basis is '+a.score.label+'.');
     var html='<div class="result"><b>'+title+'</b><p>';
     if(a.score.value!==null) html+='Geldcheck-score '+a.score.value+'/100. ';
     html+=a.missing.length?'Eerst ontbreken nog '+a.missing.map(function(x){return x.label}).join(', ')+'.':'De uitkomst combineert cashflow, buffer, vermogen, schuld, levensfase en jouw doel.';
     html+='</p></div>';
+    if(narrative){
+      html+='<div class="action" style="background:#fffefa;border:1px solid #dedbd3;margin-top:10px"><b>Jouw persoonlijke Geldcheck</b><br><span style="display:block;font-size:24px;font-weight:900;line-height:1.15;margin-top:6px">'+narrative.headline+'</span>';
+      if(narrative.story) html+='<div style="white-space:pre-line;line-height:1.55;margin-top:12px">'+narrative.story+'</div>';
+      html+='</div>';
+    }
     if(a.decision){
       var d=a.decision;
       var tone=d.tone==='yes'?'#dfeee8':d.tone==='maybe'?'#fff1d7':'#f6dfdc';
