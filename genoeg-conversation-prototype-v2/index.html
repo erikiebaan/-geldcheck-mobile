@@ -128,8 +128,12 @@ window.recalc=function(){
   const rr=requiredReal(p);
   const nominal=isFinite(rr)?(1+rr)*(1+p.inflation)-1:Infinity;
   const kept=p.income*(1-p.workReduction);
-  const beforeGap=Math.max(0,p.spend-kept);
-  const afterAowGap=Math.max(0,p.spend-p.aow-p.pension);
+  const workOnlyNet=kept-p.spend;
+  const workPlusAowNet=kept+p.aow+p.pension-p.spend;
+  const stoppedBeforeAowNet=-p.spend;
+  const stoppedAfterAowNet=p.aow+p.pension-p.spend;
+  const beforeGap=Math.max(0,-workOnlyNet);
+  const afterAowGap=Math.max(0,-stoppedAfterAowNet);
   const engineInput={age:p.age,goal:'early',income:p.income,cost:p.spend,cash:0,investments:p.capital,debt:0,retireAge:p.stopAge,aow:p.aow,aowStartAge:p.aowAge,pension:p.pension,pensionStartAge:p.aowAge};
   let baseNarrative=null;try{baseNarrative=GeldcheckNarrative.story(engineInput,{})}catch(e){}
   const e0=simulateReal(p,(1+0)/(1+p.inflation)-1);
@@ -148,9 +152,24 @@ window.recalc=function(){
     if(e.kind==='income') return e.label+' +'+euro(e.monthly)+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
     return e.label+' '+(e.monthly<0?'-':'')+euro(Math.abs(e.monthly))+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
   }).join(' · '):'geen extra veranderingen';
+  let phases=[];
+  const firstEnd=Math.min(p.stopAge,p.aowAge);
+  if(p.age<firstEnd){
+    phases.push('Van '+p.age+' tot '+firstEnd+': werkinkomen '+euro(kept)+'/mnd tegenover '+euro(p.spend)+'/mnd uitgaven. '+(workOnlyNet>=0?'Je houdt '+euro(workOnlyNet)+'/mnd over; er hoeft niets uit vermogen.':'Je onttrekt '+euro(-workOnlyNet)+'/mnd uit vermogen.'));
+  }
+  if(p.aowAge<p.stopAge){
+    phases.push('Van '+p.aowAge+' tot '+p.stopAge+': je werkt nog én ontvangt AOW/pensioen. Inkomen samen '+euro(kept+p.aow+p.pension)+'/mnd tegenover '+euro(p.spend)+'/mnd uitgaven. '+(workPlusAowNet>=0?'Je houdt '+euro(workPlusAowNet)+'/mnd over; er is geen onttrekking uit vermogen.':'Je onttrekt '+euro(-workPlusAowNet)+'/mnd uit vermogen.'));
+  } else if(p.stopAge<p.aowAge){
+    phases.push('Van '+p.stopAge+' tot '+p.aowAge+': je bent gestopt en ontvangt nog geen AOW. Je onttrekt '+euro(p.spend)+'/mnd uit vermogen.');
+  }
+  const lastStart=Math.max(p.stopAge,p.aowAge);
+  if(lastStart<p.endAge){
+    phases.push('Vanaf '+lastStart+': werkinkomen valt weg en AOW/pensioen is '+euro(p.aow+p.pension)+'/mnd. '+(stoppedAfterAowNet>=0?'Je houdt '+euro(stoppedAfterAowNet)+'/mnd over.':'Je onttrekt '+euro(-stoppedAfterAowNet)+'/mnd uit vermogen.'));
+  }
+
   document.getElementById('result').innerHTML=
   '<div class="card hero"><div class="sub">'+headline+'</div><div class="big">'+(isFinite(nominal)?pct(nominal):'—')+'</div><p>gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en dan '+euro(p.endBuffer)+' over te houden.</p></div>'+
-  '<div class="card"><h2>Wat betekent dit voor jou?</h2><div class="answer">Tot je '+p.stopAge+'e werk je '+Math.round((1-p.workReduction)*100)+'% door. Daardoor komt er ongeveer '+euro(kept)+' netto per maand binnen en hoeft je vermogen vóór volledig stoppen maar '+euro(beforeGap)+' per maand aan te vullen.\n\nVanaf je '+p.aowAge+'e krijg je in deze berekening '+euro(p.aow+p.pension)+' per maand uit AOW + pensioen. Dan resteert nog '+euro(afterAowGap)+' per maand dat uit vermogen moet komen.\n\nVeranderingen die zijn meegenomen: '+eventsTxt+'.</div></div>'+
+  '<div class="card"><h2>Wat betekent dit voor jou?</h2><div class="answer">'+phases.join('\n\n')+'\n\nVeranderingen die zijn meegenomen: '+eventsTxt+'.</div></div>'+
   '<div class="card"><h2>Waar ligt je speelruimte?</h2><div class="kpis">'+
     '<div class="kpi"><span>Bij 3% rendement</span><b>'+(earliest3!==null?'volledig stoppen rond '+earliest3:'nog niet genoeg')+'</b></div>'+
     '<div class="kpi"><span>Hypotheekrente</span><b>'+pct(p.mortRate)+'</b></div>'+
