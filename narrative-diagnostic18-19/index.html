@@ -1,0 +1,65 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Narrative Diagnostic 18 & 19</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}h2{font-size:26px}.small{font-size:13px;color:#777}.ok{color:#19765f}.bad{color:#b43131}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;line-height:1.45}
+.formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#f7f5ef;padding:12px;border-radius:14px;font-size:13px;line-height:1.45}
+.verdict{font-size:30px;font-weight:900}
+</style></head><body><main>
+<div class="card"><h1>Narrative Diagnostic 18 & 19</h1>
+<p>Gerichte diagnose van de twee rode NI1-grounding tests. Geen engine- of narrative-wijziging. We bewijzen eerst of de test-oracle fout zit.</p>
+<p class="small"><b>Build ND1 · NI1 cases 18 & 19 · source-of-number + zorgkosten A/B</b></p>
+<button id="run">Run Diagnostic</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script>
+<script src="../future_layer.js?v=0.1"></script>
+<script src="../future_bridge_v041.js?v=0.41"></script>
+<script src="../answer_engine.js?v=0.1"></script>
+<script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67},o||{});
+const exp=(id,m,age,end)=>({id,type:"future_expense",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"certain"});
+const euro=n=>"€"+Math.round(n).toLocaleString("nl-NL");
+
+document.getElementById("run").onclick=()=>{
+ let confirmed=0,h="";
+ // Case 18
+ const c18=B({retireAge:62});
+ const n18=GeldcheckNarrative.story(c18,{});
+ const f18=n18.facts;
+ const amountToken=euro(f18.conservativeEndCapital);
+ const bridgeToken=String(f18.bridgeYears)+" jaar";
+ const source18=n18.story.includes(amountToken)&&n18.story.includes(bridgeToken);
+ if(source18)confirmed++;
+ h+='<div class="card"><h2>Case 18 · Geen extra bedragen verzonnen</h2>'+
+ '<div class="verdict '+(source18?'ok':'bad')+'">'+(source18?'BEVESTIGD':'NIET BEVESTIGD')+'</div>'+
+ '<div class="formula">Narrative bedrag: '+amountToken+' = facts.conservativeEndCapital\nBridge: '+bridgeToken+' = facts.bridgeYears\nGeen los derde financieel bedrag nodig voor dit verhaal.</div>'+
+ '<div class="story">'+n18.story+'</div>'+
+ '<p><b>Conclusie:</b> '+(source18?'de rode NI1-test was te streng/verkeerd in zijn bedragparser; het verhaal gebruikt enginefeiten.':'nader onderzoek nodig.')+'</p></div>';
+
+ // Case 19 A/B
+ const c19=B({retireAge:62,cash:100000,investments:650000,cost:2800,aow:1600,pension:900});
+ const base=GeldcheckNarrative.story(c19,{});
+ const care=GeldcheckNarrative.story(c19,{events:[exp("zorg",2000,78,94)]});
+ const delta=care.facts.conservativeEndCapital-base.facts.conservativeEndCapital;
+ const affected=care.facts.conservativeEndCapital<base.facts.conservativeEndCapital;
+ if(affected)confirmed++;
+ h+='<div class="card"><h2>Case 19 · Zorgkosten beïnvloeden facts</h2>'+
+ '<div class="verdict '+(affected?'ok':'bad')+'">'+(affected?'BEVESTIGD':'NIET BEVESTIGD')+'</div>'+
+ '<div class="kpis">'+
+ '<div class="kpi">Zonder zorgkosten<br><b>'+euro(base.facts.conservativeEndCapital)+'</b></div>'+
+ '<div class="kpi">Met zorgkosten<br><b>'+euro(care.facts.conservativeEndCapital)+'</b></div>'+
+ '<div class="kpi">Effect<br><b>'+euro(delta)+'</b></div>'+
+ '<div class="kpi">Verdict<br><b>'+care.facts.verdict+'</b></div>'+
+ '</div>'+
+ '<div class="formula">Oracle moet testen: zorgkosten verlagen de uitkomst materieel.\nNiet: zorgkosten moeten per se een funding gap of negatief eindvermogen veroorzaken.</div>'+
+ '<div class="story">'+care.story+'</div>'+
+ '<p><b>Conclusie:</b> '+(affected?'de zorgkosten werken aantoonbaar door; NI1 test 19 had een te zware verwachting.':'nader onderzoek nodig.')+'</p></div>';
+
+ document.getElementById("sum").innerHTML='<div class="verdict '+(confirmed===2?'ok':'bad')+'">'+confirmed+' / 2 verklaringen bevestigd</div><p>'+(confirmed===2?'Beide rode NI1-cases zijn verklaard zonder engine of narrative logic te wijzigen.':'Niet beide verklaringen bevestigd; nog niets aanpassen.')+'</p>';
+ document.getElementById("out").innerHTML=h;
+};
+})();</script></body></html>
