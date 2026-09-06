@@ -1,0 +1,61 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Production Acceptance Gate 20</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;margin-top:10px;line-height:1.45}
+</style></head><body><main>
+<div class="card"><h1>Production Acceptance Gate 20</h1>
+<p>Dit is de eindpoort voor de huidige Geldcheck-build. We combineren live wiring, echte productroutes, menselijk advies en regressie-richting in één test. Geen losse module meer: de complete keten moet tegelijk kloppen.</p>
+<p class="small"><b>Build PAG1 · engine v1.2.3 · live UI + Future Bridge + Narrative Intelligence · 20 productiecriteria</b></p>
+<button id="run">Run 20 Production Acceptance checks</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine_v123.js"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67},o||{});
+const S=(c,f)=>GeldcheckNarrative.story(c,f||{});
+const finite=o=>{const j=JSON.stringify(o);return !j.includes("NaN")&&!j.includes("Infinity")&&!j.includes("-Infinity")};
+const rank=x=>({NEE:0,MOGELIJK:1,JA:2,KWETSBAAR:0,REDELIJK:1,STERK:2}[x]??-1);
+const inc=(s,x)=>String(s).toLowerCase().includes(String(x).toLowerCase());
+let T=[];const add=(name,fn,why,kind)=>T.push({name,fn,why,kind});
+
+add("1. Live pagina gebruikt engine v1.2.3",async()=>{const s=await (await fetch("../index.html?pag="+Date.now(),{cache:"no-store"})).text();return /engine_v123\.js/.test(s)},"Live UI moet op de bewezen baseline draaien.","live");
+add("2. Live pagina laadt Narrative Intelligence",async()=>{const s=await (await fetch("../index.html?pag="+Date.now(),{cache:"no-store"})).text();return /narrative_engine\.js/.test(s)},"Narrative moet echt aangesloten zijn.","live");
+add("3. Live pagina roept engine aan",async()=>{const s=await (await fetch("../index.html?pag="+Date.now(),{cache:"no-store"})).text();return /GeldcheckEngine\.analyze\s*\(/.test(s)},"Rekenengine blijft eigenaar van cijfers.","live");
+add("4. Live pagina roept Narrative aan",async()=>{const s=await (await fetch("../index.html?pag="+Date.now(),{cache:"no-store"})).text();return /GeldcheckNarrative\.story\s*\(/.test(s)},"Persoonlijk verhaal moet daadwerkelijk draaien.","live");
+
+add("5. Expliciete nul is geen missing",()=>{const a=GeldcheckEngine.analyze(B({cash:0,investments:0}));return !(a.missing||[]).some(m=>m.key==="assets")},"Red Team-fix moet in productiebaseline zitten.","contract");
+add("6. Null assets zijn wel missing",()=>{const a=GeldcheckEngine.analyze(B({cash:null,investments:null}));return (a.missing||[]).some(m=>m.key==="assets")},"Unknown en zero blijven verschillend.","contract");
+add("7. Productflow health rekent €2.100 maandruimte",()=>{const x=S(B({goal:"health",income:5200,otherIncome:300,cost:3400}),{});return x.facts.monthlySurplus===2100&&inc(x.story,"€2.100")},"UI → engine → verhaal moet dezelfde maandruimte geven.","contract");
+add("8. Ontbrekende pensioenleeftijd geeft geen hard oordeel",()=>{const x=S(B({retireAge:null}),{});return inc(x.headline,"mis nog informatie")},"Geen schijnzekerheid.","contract");
+
+add("9. Sterke stopper krijgt JA",()=>{const x=S(B({retireAge:63,cash:180000,investments:1200000,cost:2800,aow:1650,pension:1100}),{});return x.facts.verdict==="JA"},"Sterke case moet sterk blijven.","advice");
+add("10. Zwakke stopper krijgt NEE",()=>{const x=S(B({retireAge:60,cash:8000,investments:45000,cost:3600,aow:1400,pension:150}),{});return x.facts.verdict==="NEE"},"Zwakke case moet hard genoeg blijven.","advice");
+add("11. Grenscase blijft MOGELIJK",()=>{const x=S(B({retireAge:60,cash:150000,investments:1100000,cost:5000,aow:1600,pension:1200}),{});return x.facts.verdict==="MOGELIJK"},"Geen overdreven zekerheid.","advice");
+add("12. Onzekere erfenis blijft onzeker",()=>{const x=S(B({retireAge:62,cash:30000,investments:180000,cost:3300}),{events:[{id:"e",type:"uncertain_asset",amount:700000,availableFromAge:66,certainty:"uncertain",liquidity:"immediate"}]});return inc(x.story,"niet als zeker")},"Onzeker geld mag niet als zekere redding tellen.","advice");
+add("13. Restricted asset blijft niet vrij besteedbaar",()=>{const x=S(B({retireAge:60,cash:15000,investments:50000,cost:3200}),{assets:[{id:"r",type:"blocked_asset",currentValue:600000,availableFromAge:67,certainty:"contractual",liquidity:"restricted",restricted:true}]});return inc(x.story,"niet als vrij besteedbaar")},"Liquiditeitsdiscipline.","advice");
+add("14. Woningrijk met nul cash blijft voorzichtig",()=>{const x=S(B({retireAge:60,cash:0,investments:0,cost:3000}),{assets:[{id:"home",type:"illiquid_property",currentValue:1500000,certainty:"certain",liquidity:"illiquid"}]});return finite(x)&&!inc(x.story,"spaargeld of beleggingen ontbreken nog")},"0 is bekend; woning is niet cash.","advice");
+
+add("15. Hogere kosten verbeteren verdict nooit",()=>{const x=S(B({retireAge:62,cash:100000,investments:600000,cost:3000}),{}),y=S(B({retireAge:62,cash:100000,investments:600000,cost:6000}),{});return rank(y.facts.verdict)<=rank(x.facts.verdict)},"Monotoniciteit kosten.","regression");
+add("16. Meer vermogen verslechtert verdict nooit",()=>{const x=S(B({retireAge:62,cash:50000,investments:200000,cost:3200}),{}),y=S(B({retireAge:62,cash:50000,investments:700000,cost:3200}),{});return rank(y.facts.verdict)>=rank(x.facts.verdict)},"Monotoniciteit vermogen.","regression");
+add("17. Lagere kosten verslechteren verdict nooit",()=>{const x=S(B({retireAge:62,cash:50000,investments:250000,cost:3500}),{}),y=S(B({retireAge:62,cash:50000,investments:250000,cost:2800}),{});return rank(y.facts.verdict)>=rank(x.facts.verdict)},"Economische richting.","regression");
+add("18. Extreme grote getallen blijven stabiel",()=>{const x=S(B({income:1000000,otherIncome:500000,cost:900000,cash:50000000,investments:500000000,debt:100000000,retireAge:61,aow:100000,pension:100000}),{});return finite(x)&&x.story.length>0},"Geen numerieke ontsporing.","regression");
+add("19. Alles nul crasht niet",()=>{const x=S(B({goal:"health",income:0,otherIncome:0,cost:0,cash:0,investments:0,debt:0,aow:0,pension:0}),{});return finite(x)&&x.story.length>0},"Robuustheid minimale geldige case.","regression");
+add("20. Complete keten produceert cijfers én verhaal",()=>{const c=B({goal:"health",income:6500,cost:3500,cash:90000,investments:250000});const a=GeldcheckEngine.analyze(c);const n=S(c,{});return finite(a)&&finite(n)&&a.case.monthlySurplus===3000&&n.facts.monthlySurplus===3000&&n.headline&&n.story},"Eindcontract: één waarheid door hele keten.","regression");
+
+document.getElementById("run").onclick=async()=>{
+ let p=0,h="",cats={live:[0,0],contract:[0,0],advice:[0,0],regression:[0,0]};
+ for(let i=0;i<T.length;i++){
+   const t=T[i];let ok=false,err="";
+   try{ok=!!(await t.fn())}catch(e){err=String(e)}
+   cats[t.kind][1]++;if(ok){p++;cats[t.kind][0]++}
+   if(!ok)h+='<div class="case"><b class="bad">FAIL · '+(i+1)+'. '+t.name+'</b><div class="why">'+t.why+(err?' · '+err:'')+'</div></div>';
+ }
+ let k='<div class="kpis">';Object.entries(cats).forEach(([n,v])=>k+='<div class="kpi"><span>'+n+'</span><br><b class="'+(v[0]===v[1]?'ok':'bad')+'">'+v[0]+'/'+v[1]+'</b></div>');k+='</div>';
+ document.getElementById("sum").innerHTML='<div class="score '+(p===20?'ok':'bad')+'">'+p+' / 20</div><b>'+(p===20?'Productie-acceptatie volledig groen':'Productie-acceptatie vond aandachtspunten')+'</b>'+k;
+ document.getElementById("out").innerHTML=h||'<div class="card"><b class="ok">PASS · De huidige Geldcheck-build voldoet aan alle 20 productiecriteria</b><p>Live wiring, inputcontract, financiële logica, persoonlijk advies en regressierichting zijn tegelijk groen.</p></div>';
+};
+})();</script></body></html>
