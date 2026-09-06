@@ -112,12 +112,13 @@ function simulateReal(p, realReturn){
 
 function requiredReal(p){
   const floorReal=(1/(1+p.inflation))-1; // 0% nominaal
-  if(simulateReal(p,floorReal).end>=p.endBuffer)return floorReal;
+  const survives=r=>{ const s=simulateReal(p,r); return s.end>=p.endBuffer && s.min>=0; };
+  if(survives(floorReal))return floorReal;
   let lo=floorReal,hi=0.30;
-  if(simulateReal(p,hi).end<p.endBuffer)return Infinity;
+  if(!survives(hi))return Infinity;
   for(let i=0;i<120;i++){
     const mid=(lo+hi)/2;
-    if(simulateReal(p,mid).end>=p.endBuffer)hi=mid;else lo=mid;
+    if(survives(mid))hi=mid;else lo=mid;
   }
   return hi;
 }
@@ -127,7 +128,7 @@ function earliestAtNominal(p, nominal){
   const orig=p.stopAge;
   for(let s=p.age;s<=Math.min(p.aowAge+5,p.endAge-1);s++){
     const q={...p,stopAge:s};
-    if(simulateReal(q,real).end>=p.endBuffer)return s;
+    { const sim=simulateReal(q,real); if(sim.end>=p.endBuffer && sim.min>=0)return s; }
   }
   return null;
 }
