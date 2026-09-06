@@ -1,0 +1,172 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Realistic Advice Review 18</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:860px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}.ans{font-weight:850;margin-top:6px}
+.meta{font-size:12px;color:#777;margin-top:6px}.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+</style></head><body><main>
+<div class="card"><h1>Realistic Advice Review 18</h1>
+<p>Achttien rommelige huishoudens die niet rond één formule zijn gebouwd. We testen of het uiteindelijke advies economisch verdedigbaar is, of onzeker geld correct wordt behandeld, en of belangrijke risico's de conclusie begrenzen.</p>
+<p class="small"><b>Build RA2 · 18 messy households · cases 1 & 3 oracle gecorrigeerd na RAD1 · Engine v1.2 + Answer Engine v0.1 + Future Bridge v0.41</b></p>
+<button id="run">Run 18 Realistic Advice Reviews</button><div id="sum"></div></div><div id="out"></div></main>
+
+<script src="../engine.js?v=1.2"></script>
+<script src="../future_layer.js?v=0.1"></script>
+<script src="../future_bridge_v041.js?v=0.41"></script>
+<script src="../answer_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({
+ age:58,household:"Alleen",kids:0,goal:"early",income:4500,otherIncome:0,cost:3000,cash:50000,investments:250000,debt:0,
+ housing:"rent",rent:1200,retireAge:62,aow:1450,aowStartAge:67,pension:600,pensionStartAge:67
+},o||{});
+const gift=(id,amt,age,certainty="certain")=>({id,type:certainty==="uncertain"?"uncertain_asset":"future_lump_sum",amount:amt,availableFromAge:age,certainty,liquidity:"immediate"});
+const inc=(id,m,age,end,certainty="contractual")=>({id,type:"temporary_income",monthlyAmount:m,availableFromAge:age,endAge:end,certainty,liquidity:"immediate"});
+const exp=(id,m,age,end)=>({id,type:"future_expense",monthlyAmount:m,availableFromAge:age,endAge:end,certainty:"certain"});
+const blocked=(id,v,age)=>({id,type:"blocked_asset",currentValue:v,availableFromAge:age,certainty:"contractual",liquidity:"restricted",restricted:true});
+const illiquid=(id,v)=>({id,type:"illiquid_property",currentValue:v,certainty:"certain",liquidity:"illiquid"});
+
+const rank=x=>({"NEE":0,"MOGELIJK":1,"JA":2}[x]??-1);
+const R=(c,f)=>GeldcheckAnswerEngine.retirement(c,f||{});
+const A=(c)=>GeldcheckEngine.analyze(c);
+
+let T=[]; const add=(name,c,f,check,why)=>T.push({name,c,f,check,why});
+
+add("1. 60-jarige met royaal vermogen maar hoge kosten",
+ B({age:60,retireAge:60,income:6000,cost:5000,cash:150000,investments:1100000,aow:1600,pension:1200}),
+ {},
+ x=>x.ret.answer==="MOGELIJK"&&x.ret.conservative.endCapital<0&&x.ret.conservative.firstGapAge===90,
+ "RAD1 bevestigde: groot vermogen helpt, maar de hoge levensstijl breekt het conservatieve pad pas rond 90. MOGELIJK is hier de juiste uitkomst.");
+
+add("2. 60-jarige met laag vermogen en hoge huur",
+ B({age:60,retireAge:60,income:3800,cost:3600,cash:12000,investments:60000,aow:1400,pension:200,rent:1500}),
+ {},
+ x=>x.ret.answer==="NEE",
+ "Zes à zeven jaar overbruggen plus structureel tekort na AOW maakt direct stoppen niet verdedigbaar.");
+
+add("3. Zekere erfenis op 66 redt anders krap plan",
+ B({age:60,retireAge:61,cost:3300,cash:20000,investments:120000,aow:1400,pension:500}),
+ {events:[gift("e",350000,66)]},
+ x=>x.ret.answer==="NEE"&&x.ret.conservative.consumed.includes("e")&&x.ret.conservative.firstGapAge===63,
+ "RAD1 bevestigde: de zekere erfenis wordt correct op 66 gebruikt, maar is onvoldoende om het structurele pensioenpad te redden. NEE blijft economisch juist.");
+
+add("4. Dezelfde erfenis maar onzeker",
+ B({age:60,retireAge:61,cost:3300,cash:20000,investments:120000,aow:1400,pension:500}),
+ {events:[gift("u",700000,66,"uncertain")]},
+ x=>x.ret.answer==="NEE"&&!x.ret.conservative.consumed.includes("u"),
+ "Een mogelijke erfenis mag een negatief plan niet kunstmatig positief maken.");
+
+add("5. Groot banksparen maar geblokkeerd tot later",
+ B({age:59,retireAge:60,cost:3200,cash:15000,investments:100000,aow:1450,pension:500}),
+ {assets:[blocked("b",500000,67)]},
+ x=>!x.ret.conservative.consumed.includes("b"),
+ "Restricted vermogen mag niet als vrij overbruggingsgeld worden gebruikt.");
+
+add("6. Eigen woning met grote overwaarde maar weinig liquide middelen",
+ B({age:61,retireAge:61,cost:3100,cash:10000,investments:70000,housing:"ownfree",aow:1500,pension:500}),
+ {assets:[illiquid("h",650000)]},
+ x=>x.ret.answer==="NEE"&&!x.ret.conservative.consumed.includes("h"),
+ "Woningwaarde is zonder verkoop/verzilvering geen cash voor de pensioenbrug.");
+
+add("7. Contractuele lijfrente vanaf 65",
+ B({age:60,retireAge:62,cost:3200,cash:30000,investments:170000,aow:1400,pension:300}),
+ {events:[inc("l",1400,65,84)]},
+ x=>x.ret.answer!=="NEE"&&x.ret.conservative.ledger.some(r=>r.age===65&&r.extraIncome>0),
+ "Een contractuele lijfrente hoort vanaf de juiste leeftijd mee te tellen.");
+
+add("8. Zorgkosten vanaf 78 breken een anders sterk plan",
+ B({age:62,retireAge:62,cost:2800,cash:100000,investments:650000,aow:1600,pension:900}),
+ {events:[exp("z",2200,78,94)]},
+ x=>x.ret.conservative.endCapital < R(B({age:62,retireAge:62,cost:2800,cash:100000,investments:650000,aow:1600,pension:900}),{}).conservative.endCapital,
+ "Langdurige late zorgkosten moeten materieel zichtbaar zijn.");
+
+add("9. Baanverlies vijf jaar vóór pensioen",
+ B({age:55,retireAge:62,income:5200,cost:3500,cash:40000,investments:200000,aow:1450,pension:700}),
+ {events:[inc("loss",-2200,55,59)]},
+ x=>x.ret.conservative.endCapital < R(B({age:55,retireAge:62,income:5200,cost:3500,cash:40000,investments:200000,aow:1450,pension:700}),{}).conservative.endCapital,
+ "Minder inkomen vóór pensionering hoort de opbouw te verzwakken.");
+
+add("10. Later stoppen na baanverlies herstelt deels",
+ B({age:55,retireAge:67,income:5200,cost:3500,cash:40000,investments:200000,aow:1450,pension:700}),
+ {events:[inc("loss",-2200,55,59)]},
+ x=>rank(x.ret.answer)>=rank(R(B({age:55,retireAge:62,income:5200,cost:3500,cash:40000,investments:200000,aow:1450,pension:700}),{events:[inc("loss2",-2200,55,59)]}).answer),
+ "Meer werkjaren na dezelfde inkomensschok mogen het plan niet verslechteren.");
+
+add("11. Hypotheek loopt door na pensioen",
+ B({goal:"retirement",age:60,retireAge:67,cost:3600,cash:80000,investments:450000,housing:"mortgage",mortgage:260000,mortgageRate:.035,mortgageEndAge:78,mortgagePayment:1200,aow:1500,pension:800}),
+ {},
+ x=>x.live.dimensions.housing.mortgageEndsAfterRetirement===true&&x.live.topFindings.some(f=>f.dimension==="housing"),
+ "De huidige engine moet expliciet waarschuwen dat woonlasten na pensioen doorlopen.");
+
+add("12. Gezond vermogen maar negatieve maandbasis",
+ B({goal:"health",age:54,income:3500,cost:4200,cash:100000,investments:500000,retireAge:67}),
+ {},
+ x=>x.live.case.monthlySurplus<0&&x.live.topFindings.some(f=>f.title.includes("maandbasis is negatief")),
+ "Sterk vermogen mag een structureel negatief huishoudbudget niet verbergen.");
+
+add("13. Krappe cashbuffer ondanks hoog belegd vermogen",
+ B({goal:"health",age:50,income:6000,cost:5000,cash:3000,investments:700000,retireAge:67}),
+ {},
+ x=>x.live.dimensions.liquidity.status==="weak"&&x.live.topFindings.some(f=>f.dimension==="liquidity"),
+ "Liquiditeitsrisico moet apart zichtbaar blijven.");
+
+add("14. Grote uitgave op papier haalbaar maar buffer te laag",
+ Object.assign(B({goal:"purchase",income:7000,cost:4000,cash:15000,investments:200000}),{purchaseAmount:12000,purchaseMonths:12}),
+ {},
+ x=>x.live.scenarios.purchase&&x.live.scenarios.purchase.fitsMonthly===true&&x.live.scenarios.purchase.bufferMonthsAfter<3,
+ "Cashflow kan positief zijn terwijl directe betaling de buffer onacceptabel verlaagt.");
+
+add("15. Grote uitgave over 36 maanden is spaarplan",
+ Object.assign(B({goal:"purchase",income:5000,cost:3500,cash:30000,investments:100000}),{purchaseAmount:36000,purchaseMonths:36}),
+ {},
+ x=>x.live.scenarios.purchase&&x.live.scenarios.purchase.fitsMonthly===true,
+ "De termijn moet als reservering per maand worden behandeld.");
+
+add("16. Onvolledige pensioeninvoer mag geen hard oordeel geven",
+ B({goal:"early",age:59,retireAge:null,cash:150000,investments:400000,cost:3000,aow:0,pension:0}),
+ {},
+ x=>x.live.missing.some(m=>m.key==="retireAge")&&x.live.decision===null,
+ "Ontbrekende target age moet tot informatievraag leiden, niet tot schijnzekerheid.");
+
+add("17. Combinatie zekere gift + lijfrente + zorgkosten",
+ B({age:60,retireAge:62,cost:3400,cash:25000,investments:150000,aow:1450,pension:400}),
+ {events:[gift("g",180000,64),inc("l",1000,67,85),exp("z",900,80,94)]},
+ x=>x.ret.conservative.consumed.includes("g")&&x.ret.conservative.ledger.some(r=>r.age===67&&r.extraIncome>0)&&x.ret.conservative.ledger.some(r=>r.age===80&&r.extraExpense>0),
+ "Meerdere toekomstlagen moeten tegelijk correct blijven werken.");
+
+add("18. Zekere gift wordt niet vóór beschikbaarheidsleeftijd gebruikt",
+ B({age:60,retireAge:60,cost:3200,cash:10000,investments:80000,aow:1400,pension:300}),
+ {events:[gift("g",250000,70)]},
+ x=>{
+   const row=x.ret.conservative.ledger.find(r=>Array.isArray(r.injectedItems)&&r.injectedItems.some(it=>it.id==="g"));
+   return row&&row.age===70;
+ },
+ "Zelfs een zekere gift mag geen euro eerder beschikbaar worden gemaakt.");
+
+if(T.length!==18){document.body.innerHTML="<pre>TEST COUNT ERROR "+T.length+"</pre>";return}
+
+document.getElementById("run").onclick=()=>{
+ let pass=0,h="",cats={advies:[0,0],future:[0,0],live:[0,0]};
+ T.forEach((t,i)=>{
+   let ok=false,err="",ret=null,live=null;
+   try{
+     live=A(t.c);
+     ret=(t.c.goal==="early"||t.c.goal==="retirement")?R(t.c,t.f):null;
+     ok=!!t.check({live,ret});
+   }catch(e){err=String(e)}
+   if(ok)pass++;
+   const cat=(t.c.goal==="health"||t.c.goal==="purchase")?"live":((t.f&&((t.f.events&&t.f.events.length)||(t.f.assets&&t.f.assets.length)))?"future":"advies");
+   cats[cat][1]++;if(ok)cats[cat][0]++;
+   h+='<div class="case"><b class="'+(ok?'ok':'bad')+'">'+(ok?'PASS':'FAIL')+' · '+(i+1)+'. '+t.name+'</b>'+
+      '<div class="ans">'+(ret?'Future antwoord: '+ret.answer:'Live score/verdict-route')+'</div>'+
+      '<div class="why">'+t.why+(err?' · '+err:'')+'</div>'+
+      (ret?'<div class="meta">Conservatief eind €'+Math.round(ret.conservative.endCapital).toLocaleString("nl-NL")+' · gap €'+Math.round(ret.conservative.fundingGap).toLocaleString("nl-NL")+(ret.conservative.firstGapAge!==null?' · eerste tekort '+ret.conservative.firstGapAge:'')+'</div>':'')+
+      '</div>';
+ });
+ let k='<div class="kpis">';Object.entries(cats).forEach(([n,v])=>k+='<div class="kpi"><span>'+n+'</span><br><b class="'+(v[0]===v[1]?'ok':'bad')+'">'+v[0]+'/'+v[1]+'</b></div>');k+='</div>';
+ document.getElementById("sum").innerHTML='<div class="score '+(pass===18?'ok':'bad')+'">'+pass+' / 18</div><b>'+(pass===18?'Alle realistische adviezen economisch verdedigbaar':'Realistic Advice Review vond inhoudelijke aandachtspunten')+'</b>'+k;
+ document.getElementById("out").innerHTML=h;
+};
+})();</script></body></html>
