@@ -58,7 +58,7 @@
     ];
     if(c.goal==="retirement"||c.goal==="early"){
       req.push(["retireAge","gewenste pensioenleeftijd",finite(c.retireAge)]);
-      req.push(["assets","spaargeld of beleggingen",c.cash>0||c.investments>0]);
+      req.push(["assets","spaargeld of beleggingen",raw.cash!==null&&raw.cash!==undefined&&raw.cash!==""&&raw.investments!==null&&raw.investments!==undefined&&raw.investments!==""]);
     }
     if(c.goal==="purchase"){
       req.push(["purchaseAmount","bedrag van de grote uitgave",finite(c.purchaseAmount)&&c.purchaseAmount>0]);
