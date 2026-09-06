@@ -1,0 +1,75 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Product Flow E2E 20</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;margin-top:10px;line-height:1.45}
+</style></head><body><main>
+<div class="card"><h1>Product Flow E2E 20</h1>
+<p>Twintig routes alsof iemand de huidige mobiele Geldcheck echt invult. We bouwen exact dezelfde payload als de live UI, voeren die door de bestaande engine én Narrative Intelligence, en controleren of route, resultaat en persoonlijk verhaal bij elkaar blijven.</p>
+<p class="small"><b>Build PFE3 · case 20 contract gecorrigeerd na PFD20B · live UI payload contract · 20 echte productroutes</b></p>
+<button id="run">Run 20 Product Flow tests</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+function payload(v){
+ return {
+  age:v.age??null, household:v.household||"", kids:v.kids??null, goal:v.goal||"health",
+  income:v.income??null, otherIncome:v.otherIncome??null, cost:v.cost??null,
+  annualIncluded:v.annualIncluded===true, savingGrowth:v.savingGrowth??null,
+  housing:v.housing||"", mortgage:v.mortgage??null, mortgageRate:v.mortgageRate??null,
+  mortgageEndAge:v.mortgageEndAge??null, mortgagePayment:v.mortgagePayment??null, rent:v.rent??null,
+  cash:v.cash??null, investments:v.investments??null, debt:v.debt??null, debtRate:v.debtRate??null,
+  debtPayment:v.debtPayment??null, retireAge:v.retireAge??null, aow:v.aow??null, aowStartAge:v.aowStartAge??null,
+  pension:v.pension??null, pensionStartAge:v.pensionStartAge??null, change:v.change||"",
+  purchaseAmount:v.purchaseAmount??null, purchaseMonths:v.purchaseMonths??null
+ };
+}
+function route(v){
+ let r=[0,1,2],g=v.goal||"health",age=v.age??null;
+ if(g==="health"||g==="retirement"||g==="early"||v.housing)r.push(3);
+ if(g!=="cashflow"||v.annualIncluded===false||v.savingGrowth!=null)r.push(4);
+ if(g==="retirement"||g==="early"||g==="purchase"||(g==="health"&&age!=null&&age>=50))r.push(5);
+ r.push(7);return [...new Set(r)];
+}
+const run=v=>{const p=payload(v),a=GeldcheckEngine.analyze(p),n=GeldcheckNarrative.story(p,{});return{p,a,n,r:route(v)}};
+const finite=o=>!JSON.stringify(o).includes("NaN")&&!JSON.stringify(o).includes("Infinity");
+const inc=(s,x)=>String(s).toLowerCase().includes(String(x).toLowerCase());
+let T=[];const add=(name,v,check,why)=>T.push({name,v,check,why});
+
+add("1. Health jong: korte route", {age:35,goal:"health",income:4200,cost:2800,cash:20000,investments:80000}, x=>x.r.join(",")==="0,1,2,3,4,7"&&finite(x),"Jonge health-route mag future overslaan.");
+add("2. Health 55+: future verschijnt", {age:55,goal:"health",income:5000,cost:3200,cash:60000,investments:250000,retireAge:67,aow:1500,aowStartAge:67,pension:500,pensionStartAge:67}, x=>x.r.includes(5)&&finite(x),"Oudere health-route bevat Later.");
+add("3. Early: volledige pensioenroute", {age:58,goal:"early",income:6000,cost:3500,cash:100000,investments:600000,retireAge:62,aow:1500,aowStartAge:67,pension:800,pensionStartAge:67}, x=>x.r.includes(5)&&x.n.facts.kind==="retirement","Early moet naar pensioen/narrative route.");
+add("4. Retirement: verdict en verhaal", {age:60,goal:"retirement",income:5000,cost:3000,cash:150000,investments:700000,retireAge:65,aow:1600,aowStartAge:67,pension:900,pensionStartAge:67}, x=>x.a.decision&&x.n.story.length>0,"Live decision en narrative beide aanwezig.");
+add("5. Cashflow basic: assets overslaan", {age:40,goal:"cashflow",income:4000,cost:3600,annualIncluded:true}, x=>!x.r.includes(4)&&!x.r.includes(5)&&finite(x),"Narrow cashflow-route blijft kort.");
+add("6. Cashflow annual nee: assets erbij", {age:40,goal:"cashflow",income:4000,cost:3600,annualIncluded:false,savingGrowth:200,cash:10000,investments:50000}, x=>x.r.includes(4),"Meer onzekerheid activeert assets.");
+add("7. Purchase: future plan zichtbaar", {age:45,goal:"purchase",income:5500,cost:3500,cash:30000,investments:100000,purchaseAmount:24000,purchaseMonths:24}, x=>x.r.includes(5)&&x.a.scenarios.purchase,"Purchase moet planstap en scenario hebben.");
+add("8. Rent fields in payload", {age:50,goal:"health",housing:"rent",rent:1450,income:5000,cost:3500,cash:40000,investments:150000,retireAge:67,aow:1500,aowStartAge:67}, x=>x.p.housing==="rent"&&x.p.rent===1450,"UI-huurdata moet exact landen.");
+add("9. Mortgage fields in payload", {age:50,goal:"health",housing:"mortgage",mortgage:300000,mortgageRate:.035,mortgageEndAge:80,mortgagePayment:1300,income:6000,cost:4000,cash:50000,investments:200000,retireAge:67,aow:1500,aowStartAge:67}, x=>x.p.mortgage===300000&&x.p.mortgageRate===.035,"Hypotheekcontract exact behouden.");
+add("10. Debt fields in payload", {age:45,goal:"health",debt:25000,debtRate:.07,debtPayment:350,income:4500,cost:3200,cash:15000,investments:50000}, x=>x.p.debt===25000&&x.p.debtRate===.07,"Andere schuld exact behouden.");
+add("11. Samenwonend route", {age:52,household:"Samenwonend",goal:"health",income:7000,cost:4200,cash:80000,investments:300000,retireAge:67,aow:1500,aowStartAge:67}, x=>x.p.household==="Samenwonend"&&finite(x),"Huishoudtype live UI contract.");
+add("12. Gezin met kinderen", {age:44,household:"Gezin",kids:3,goal:"health",income:7500,cost:5200,cash:50000,investments:180000}, x=>x.p.kids===3&&finite(x),"Kinderen gaan mee in payload.");
+add("13. Missing retireAge: geen hard narrative", {age:60,goal:"early",income:5000,cost:3000,cash:100000,investments:400000,aow:1500,aowStartAge:67,pension:500,pensionStartAge:67}, x=>x.n.facts.liveMissing.length>0&&inc(x.n.headline,"mis nog informatie"),"Live flow mag bij ontbrekend target geen schijnzekerheid geven.");
+add("14. Missing income: engine meldt missing", {age:40,goal:"health",cost:3000,cash:20000,investments:80000}, x=>x.a.missing.length>0&&finite(x),"Gebrekkige intake moet veilig eindigen.");
+add("15. Zero cash is geldige invoer", {age:60,goal:"retirement",income:5000,cost:3000,cash:0,investments:800000,retireAge:65,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67}, x=>x.p.cash===0&&finite(x),"0 mag niet als missing worden overschreven.");
+add("16. Purchase onhaalbaar zichtbaar", {age:42,goal:"purchase",income:4200,cost:3700,cash:5000,investments:30000,purchaseAmount:30000,purchaseMonths:12}, x=>x.a.scenarios.purchase&&x.a.scenarios.purchase.fitsMonthly===false,"Productantwoord moet onhaalbare reservering zien.");
+add("17. Purchase haalbaar zichtbaar", {age:42,goal:"purchase",income:8000,cost:3500,cash:50000,investments:100000,purchaseAmount:18000,purchaseMonths:18}, x=>x.a.scenarios.purchase&&x.a.scenarios.purchase.fitsMonthly===true,"Haalbare reservering correct.");
+add("18. Retirement MOGELIJK blijft MOGELIJK in verhaal", {age:60,goal:"retirement",income:6000,cost:5000,cash:150000,investments:1100000,retireAge:60,aow:1600,aowStartAge:67,pension:1200,pensionStartAge:67}, x=>x.n.facts.verdict==="MOGELIJK"&&inc(x.n.story,"geen harde ja"),"Productflow mag nuance niet verliezen.");
+add("19. Retirement NEE blijft NEE in verhaal", {age:60,goal:"retirement",income:4000,cost:3600,cash:10000,investments:60000,retireAge:60,aow:1400,aowStartAge:67,pension:200,pensionStartAge:67}, x=>x.n.facts.verdict==="NEE"&&inc(x.n.headline,"Nee, stoppen"),"Negatieve uitkomst mag niet verzacht worden.");
+add("20. Review-payload en engine-uitkomst stemmen overeen", {age:55,goal:"health",income:5200,otherIncome:300,cost:3400,cash:45000,investments:175000,debt:10000,retireAge:67,aow:1500,aowStartAge:67,pension:600,pensionStartAge:67}, x=>x.p.income===5200&&x.p.otherIncome===300&&x.p.cost===3400&&x.a.case.otherIncome===300&&x.a.case.monthlySurplus===2100&&x.n.facts.monthlySurplus===2100&&finite(x),"PFD20B bevestigde: monthlyIncome/monthlyCosts bestaan niet als engine.case-contractvelden. We testen daarom de echte UI-payload plus de berekende maandruimte in engine en narrative.");
+
+if(T.length!==20){document.body.innerHTML="<pre>TEST COUNT ERROR "+T.length+"</pre>";return}
+document.getElementById("run").onclick=()=>{
+ let p=0,h="",cats={route:[0,0],result:[0,0]};
+ T.forEach((t,i)=>{let ok=false,err="",x;try{x=run(t.v);ok=!!t.check(x)}catch(e){err=String(e)}
+ let cat=i<12?"route":"result";cats[cat][1]++;if(ok){p++;cats[cat][0]++}
+ if(!ok)h+='<div class="case"><b class="bad">FAIL · '+(i+1)+'. '+t.name+'</b><div class="why">'+t.why+(err?' · '+err:'')+'</div>'+(x?'<div class="story">'+x.n.story+'</div>':'')+'</div>';
+ });
+ let k='<div class="kpis">';Object.entries(cats).forEach(([n,v])=>k+='<div class="kpi"><span>'+n+'</span><br><b class="'+(v[0]===v[1]?'ok':'bad')+'">'+v[0]+'/'+v[1]+'</b></div>');k+='</div>';
+ document.getElementById("sum").innerHTML='<div class="score '+(p===20?'ok':'bad')+'">'+p+' / 20</div><b>'+(p===20?'Echte productflow volledig groen':'Product Flow E2E vond aandachtspunten')+'</b>'+k;
+ document.getElementById("out").innerHTML=h||'<div class="card"><b class="ok">PASS · Alle 20 echte gebruikersroutes groen</b><p>Live UI payload, engine, verdict en persoonlijk verhaal blijven consistent.</p></div>';
+};
+})();</script></body></html>
