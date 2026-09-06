@@ -36,7 +36,8 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   <div class="field"><label>Minimaal over op eindleeftijd</label><input id="endBuffer" type="number" value="50000"></div>
   <div class="field"><label>Inflatie-aanname %</label><input id="inflation" type="number" step="0.1" value="2"></div>
   <div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" value="245000"></div>
-  <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>\n  <div class="field"><label>Hypotheekbetaling p/m</label><input id="mortPayment" type="number" value="1100"></div>
+  <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>
+  <div class="field"><label>Hypotheekbetaling p/m</label><input id="mortPayment" type="number" value="1100"></div>
 </div><button class="primary" onclick="recalc()">Bereken mijn plan</button></div>
 
 <div id="result"></div>
@@ -144,7 +145,8 @@ window.recalc=function(){
   let baseNarrative=null;try{baseNarrative=GeldcheckNarrative.story(engineInput,{})}catch(e){}
   const e0=simulateReal(p,(1+0)/(1+p.inflation)-1);
   const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1);
-  const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);\n  const pathNeeded=simulatePath(p,rr);
+  const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);
+  const pathNeeded=simulatePath(p,rr);
   const earliest3=earliestAtNominal(p,.03);
   const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
   let headline;
@@ -192,7 +194,8 @@ window.recalc=function(){
     '<div class="kpi"><span>Bij 3% rendement</span><b>'+(earliest3!==null?'volledig stoppen rond '+earliest3:'nog niet genoeg')+'</b></div>'+
     '<div class="kpi"><span>Hypotheek nu</span><b>'+euro(p.mortPayment)+'/mnd</b></div>'+\n    '<div class="kpi"><span>Nu: rente / aflossing</span><b>'+euro(mi.interest)+' / '+euro(mi.principal)+'</b></div>'+\n    '<div class="kpi"><span>Hypotheek klaar rond</span><b>'+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace(\'.\',\',\')+\' jaar\':\'loopt niet af\')+'</b></div>'+
   '</div></div>'+
-  '<div class="card"><h2>Verloop van je vermogen</h2><p>Van vandaag tot je '+p.endAge+'e bij het benodigde rendement van '+(isFinite(nominal)?pct(nominal):'—')+'.</p><div class="chartwrap">'+chartSvg(pathNeeded)+'</div><p class="note">De lijn verwerkt werkinkomen, AOW/pensioen, je hypotheek die afloopt en de veranderingen die je toevoegt.</p></div>'+\n  '<div class="card"><h2>Als rendement tegenvalt</h2>'+
+  '<div class="card"><h2>Verloop van je vermogen</h2><p>Van vandaag tot je '+p.endAge+'e bij het benodigde rendement van '+(isFinite(nominal)?pct(nominal):'—')+'.</p><div class="chartwrap">'+chartSvg(pathNeeded)+'</div><p class="note">De lijn verwerkt werkinkomen, AOW/pensioen, je hypotheek die afloopt en de veranderingen die je toevoegt.</p></div>'+
+  '<div class="card"><h2>Als rendement tegenvalt</h2>'+
     '<div class="scenario"><span>0% nominaal</span><span>'+(e0.depletionAge?'geld op rond '+e0.depletionAge:'houdt stand')+'</span><b>'+euro(e0.end)+'</b></div>'+
     '<div class="scenario"><span>3% nominaal</span><span>'+(e3.depletionAge?'geld op rond '+e3.depletionAge:'houdt stand')+'</span><b>'+euro(e3.end)+'</b></div>'+
     '<div class="scenario"><span>5% nominaal</span><span>'+(e5.depletionAge?'geld op rond '+e5.depletionAge:'houdt stand')+'</span><b>'+euro(e5.end)+'</b></div>'+
