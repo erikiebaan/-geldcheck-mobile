@@ -1,0 +1,60 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Geldcheck Red Team 20</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;margin-top:10px;line-height:1.45}
+.tag{display:inline-block;border:1px solid #ddd7ca;border-radius:999px;padding:4px 8px;font-size:12px;margin:0 4px 6px 0}
+</style></head><body><main>
+<div class="card"><h1>Geldcheck Red Team 20</h1>
+<p>Twintig aanvallen die Geldcheck bewust proberen te laten ontsporen. We zoeken geen nette huishoudens, maar tegenstrijdige invoer, extreme waarden, onmogelijke timing, negatief vermogen, nulinkomen en conflicterende toekomstgebeurtenissen.</p>
+<p class="small"><b>Build RT1 · 20 adversarial user cases · crash safety + economic sanity + uncertainty discipline</b></p>
+<button id="run">Run 20 Red Team attacks</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67},o||{});
+const S=(c,f)=>GeldcheckNarrative.story(c,f||{});
+const finite=o=>{const j=JSON.stringify(o);return !j.includes("NaN")&&!j.includes("Infinity")&&!j.includes("-Infinity")};
+const rank=x=>({NEE:0,MOGELIJK:1,JA:2,KWETSBAAR:0,REDELIJK:1,STERK:2}[x]??-1);
+const inc=(s,x)=>String(s).toLowerCase().includes(String(x).toLowerCase());
+let T=[];const add=(name,c,f,check,why,kind)=>T.push({name,c,f,check,why,kind});
+
+add("1. Pensioenleeftijd vóór huidige leeftijd",B({age:66,retireAge:60}),{},x=>finite(x)&&x.facts.targetAge>=66,"Target mag niet terug in de tijd.","timing");
+add("2. AOW-start vóór huidige leeftijd",B({age:68,retireAge:68,aowStartAge:67}),{},x=>finite(x)&&x.facts.bridgeYears===0,"Geen negatieve bridge.","timing");
+add("3. Pension start pas op 90",B({retireAge:62,pensionStartAge:90,pension:2000}),{},x=>finite(x)&&x.story.length>0,"Extreme late pension timing mag niet crashen.","timing");
+add("4. Gift beschikbaar op leeftijd 40 voor gebruiker 60",B({age:60,retireAge:62}),{events:[{id:"oldgift",type:"future_lump_sum",amount:100000,availableFromAge:40,certainty:"certain",liquidity:"immediate"}]},x=>finite(x)&&x.story.length>0,"Event in verleden moet veilig verwerkt worden.","timing");
+add("5. Twee gifts zelfde jaar",B({retireAge:62,cash:20000,investments:100000}),{events:[{id:"g1",type:"future_lump_sum",amount:100000,availableFromAge:66,certainty:"certain",liquidity:"immediate"},{id:"g2",type:"future_lump_sum",amount:200000,availableFromAge:66,certainty:"certain",liquidity:"immediate"}]},x=>finite(x)&&x.facts.future.certain.length>=2,"Geen dubbele/verdwenen gebeurtenis.","events");
+
+add("6. Nul inkomen en hoge kosten",B({goal:"health",income:0,cost:5000,cash:10000,investments:0}),{},x=>finite(x)&&x.facts.monthlySurplus===-5000,"Negatieve cashflow exact zichtbaar.","cashflow");
+add("7. Negatief cashsaldo",B({goal:"health",cash:-25000,investments:50000,debt:0}),{},x=>finite(x)&&x.story.length>0,"Negatief liquide saldo mag pipeline niet breken.","cashflow");
+add("8. Negatieve beleggingen-input",B({goal:"health",investments:-100000}),{},x=>finite(x)&&x.story.length>0,"Ongeldige/extreme invoer mag niet tot NaN leiden.","cashflow");
+add("9. Schuld groter dan totaalvermogen",B({goal:"health",cash:10000,investments:20000,debt:1000000}),{},x=>finite(x)&&x.story.length>0,"Fors negatief netto vermogen stabiel verwerken.","cashflow");
+add("10. Kosten €1 miljoen per maand",B({goal:"health",income:5000,cost:1000000,cash:100000,investments:1000000}),{},x=>finite(x)&&x.facts.monthlySurplus<0,"Geen overflow of bizarre positieve conclusie.","cashflow");
+
+add("11. Onzekere erfenis groter dan €100 miljoen",B({retireAge:60,cash:10000,investments:10000,cost:4000,aow:1000,pension:0}),{events:[{id:"u",type:"uncertain_asset",amount:100000000,availableFromAge:66,certainty:"uncertain",liquidity:"immediate"}]},x=>finite(x)&&rank(x.facts.verdict)<=1&&inc(x.story,"niet als zeker"),"Enorm onzeker geld mag hard verdict niet redden.","uncertainty");
+add("12. Restricted asset direct beschikbaar maar restricted",B({retireAge:60,cash:5000,investments:10000,cost:3500}),{assets:[{id:"r",type:"blocked_asset",currentValue:900000,availableFromAge:60,certainty:"contractual",liquidity:"restricted",restricted:true}]},x=>finite(x)&&inc(x.story,"niet als vrij besteedbaar"),"Restricted is restricted, ook als leeftijdsgrens bereikt is.","uncertainty");
+add("13. Illiquide woning + nul cash",B({retireAge:60,cash:0,investments:0,cost:3000}),{assets:[{id:"home",type:"illiquid_property",currentValue:1500000,certainty:"certain",liquidity:"illiquid"}]},x=>finite(x)&&inc(x.story,"niet als vrij besteedbaar"),"Woningrijk mag niet als cashrijk worden behandeld.","uncertainty");
+add("14. Certain + uncertain event zelfde leeftijd",B({retireAge:62,cash:20000,investments:100000}),{events:[{id:"c",type:"future_lump_sum",amount:100000,availableFromAge:66,certainty:"certain",liquidity:"immediate"},{id:"u",type:"uncertain_asset",amount:100000,availableFromAge:66,certainty:"uncertain",liquidity:"immediate"}]},x=>finite(x)&&x.facts.future.certain.includes("c")&&x.facts.future.uncertain.includes("u"),"Zeker en onzeker mogen niet mengen.","uncertainty");
+add("15. Tegelijk gift en zorgkosten op zelfde leeftijd",B({retireAge:62,cash:20000,investments:100000,cost:3300}),{events:[{id:"gift",type:"future_lump_sum",amount:200000,availableFromAge:70,certainty:"certain",liquidity:"immediate"},{id:"zorg",type:"future_expense",monthlyAmount:2000,availableFromAge:70,endAge:90,certainty:"certain"}]},x=>finite(x)&&x.story.length>0,"Tegengestelde gebeurtenissen zelfde jaar coherent verwerken.","events");
+
+add("16. Alles nul",B({goal:"health",income:0,otherIncome:0,cost:0,cash:0,investments:0,debt:0,aow:0,pension:0}),{},x=>finite(x)&&x.story.length>0,"Volledige nulcase mag niet crashen.","robustness");
+add("17. Essentiële velden null",B({age:null,income:null,cost:null,cash:null,investments:null,retireAge:null,aow:null,pension:null}),{},x=>finite(x)&&inc(x.headline,"mis nog informatie"),"Geen hard advies uit gatenkaas.","robustness");
+add("18. Extreem hoge waarden overal",B({income:1000000,otherIncome:500000,cost:900000,cash:50000000,investments:500000000,debt:100000000,retireAge:61,aow:100000,pension:100000}),{},x=>finite(x)&&x.story.length>0,"Numerieke stabiliteit onder grote getallen.","robustness");
+add("19. Hogere kosten mogen nooit verdict verbeteren",B({retireAge:62,cash:100000,investments:600000,cost:3000}),{},x=>{const y=S(B({retireAge:62,cash:100000,investments:600000,cost:6000}),{});return finite(y)&&rank(y.facts.verdict)<=rank(x.facts.verdict)},"Monotoniciteit onder adversarial wijziging.","sanity");
+add("20. Minder vermogen mag nooit verdict verbeteren",B({retireAge:62,cash:100000,investments:700000,cost:3200}),{},x=>{const y=S(B({retireAge:62,cash:10000,investments:100000,cost:3200}),{});return finite(y)&&rank(y.facts.verdict)<=rank(x.facts.verdict)},"Economische richting onder adversarial wijziging.","sanity");
+
+document.getElementById("run").onclick=()=>{
+ let p=0,h="",cats={timing:[0,0],cashflow:[0,0],uncertainty:[0,0],events:[0,0],robustness:[0,0],sanity:[0,0]};
+ T.forEach((t,i)=>{let ok=false,err="",x;try{x=S(t.c,t.f);ok=!!t.check(x)}catch(e){err=String(e)}
+ cats[t.kind][1]++;if(ok){p++;cats[t.kind][0]++}
+ if(!ok)h+='<div class="case"><b class="bad">FAIL · '+(i+1)+'. '+t.name+'</b><div class="why">'+t.why+(err?' · '+err:'')+'</div>'+(x?'<div class="story">'+x.story+'</div>':'')+'</div>';
+ });
+ let k='<div class="kpis">';Object.entries(cats).forEach(([n,v])=>k+='<div class="kpi"><span>'+n+'</span><br><b class="'+(v[0]===v[1]?'ok':'bad')+'">'+v[0]+'/'+v[1]+'</b></div>');k+='</div>';
+ document.getElementById("sum").innerHTML='<div class="score '+(p===20?'ok':'bad')+'">'+p+' / 20</div><b>'+(p===20?'Red Team vond geen doorbraak':'Red Team vond interessante breekpunten')+'</b>'+k;
+ document.getElementById("out").innerHTML=h||'<div class="card"><b class="ok">PASS · Alle 20 adversarial attacks zijn veilig afgehandeld</b><p>Geen crash, geen NaN/Infinity, geen timingbreuk en geen evidente economische omkering gevonden.</p></div>';
+};
+})();</script></body></html>
