@@ -1,0 +1,68 @@
+<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Human Input Stress 30</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f4f1e9;color:#111;margin:0;padding:22px}
+main{max-width:900px;margin:auto}.card,.case{background:#fff;border:1px solid #ddd7ca;border-radius:26px;padding:24px;margin-bottom:14px}
+h1{font-size:42px;line-height:1.02;margin:0 0 12px}p,.why{color:#777;line-height:1.45}.small,.why{font-size:13px}
+button{width:100%;border:0;border-radius:18px;padding:18px;background:#19765f;color:#fff;font-size:19px;font-weight:850}
+.score{font-size:56px;font-weight:900;margin:18px 0 2px}.ok{color:#19765f}.bad{color:#b43131}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid #e0dbcf;border-radius:18px;padding:14px}.kpi b{font-size:24px}
+.story{white-space:pre-wrap;background:#faf8f3;border-radius:16px;padding:14px;margin-top:10px;line-height:1.45}
+</style></head><body><main>
+<div class="card"><h1>Human Input Stress 30</h1>
+<p>Dertig menselijke invoersituaties: vergeten velden, nullen, extreme maar geldige bedragen, onverwachte combinaties en tegenstrijdige keuzes. Doel: Geldcheck moet niet crashen, geen NaN/Infinity geven en bij onvoldoende informatie geen schijnzekerheid produceren.</p>
+<p class="small"><b>Build HIS1 · 24 messy-input routes + 6 input-consistency tests · volledige Geldcheck-keten</b></p>
+<button id="run">Run 30 Human Input Stress tests</button><div id="sum"></div></div><div id="out"></div></main>
+<script src="../engine.js?v=1.2"></script><script src="../future_layer.js?v=0.1"></script><script src="../future_bridge_v041.js?v=0.41"></script><script src="../answer_engine.js?v=0.1"></script><script src="../narrative_engine.js?v=0.1"></script>
+<script>
+(function(){"use strict";
+const B=o=>Object.assign({age:60,household:"Alleen",kids:0,goal:"early",income:5000,otherIncome:0,cost:3000,cash:80000,investments:500000,debt:0,housing:"rent",rent:1200,retireAge:62,aow:1500,aowStartAge:67,pension:700,pensionStartAge:67},o||{});
+const S=(c,f)=>GeldcheckNarrative.story(c,f||{});
+const finiteObj=o=>!JSON.stringify(o).includes("NaN")&&!JSON.stringify(o).includes("Infinity");
+const hard=s=>/\b(JA|NEE|MOGELIJK)\b/.test(String(s||""));
+const rank=x=>({NEE:0,MOGELIJK:1,JA:2,KWETSBAAR:0,REDELIJK:1,STERK:2}[x]??-1);
+let T=[];const add=(name,c,check,why,kind="messy")=>T.push({name,c,check,why,kind});
+
+add("1. Leeftijd ontbreekt",B({age:null}),x=>finiteObj(x)&&x.story.length>0,"Geen crash of numerieke rommel.");
+add("2. Pensioenleeftijd ontbreekt",B({retireAge:null}),x=>finiteObj(x)&&x.facts.liveMissing.length>0&&!hard(x.headline),"Geen hard pensioenadvies zonder target.");
+add("3. Inkomen ontbreekt bij health",B({goal:"health",income:null}),x=>finiteObj(x)&&x.story.length>0,"Missing income moet veilig landen.");
+add("4. Kosten ontbreken bij health",B({goal:"health",cost:null}),x=>finiteObj(x)&&x.story.length>0,"Missing costs moet veilig landen.");
+add("5. Cash nul",B({cash:0}),x=>finiteObj(x)&&x.story.length>0,"Nul cash is geldige invoer.");
+add("6. Beleggingen nul",B({investments:0}),x=>finiteObj(x)&&x.story.length>0,"Nul beleggingen is geldige invoer.");
+add("7. Inkomen nul",B({income:0}),x=>finiteObj(x)&&x.story.length>0,"Nul inkomen mag pipeline niet breken.");
+add("8. Kosten nul",B({cost:0}),x=>finiteObj(x)&&x.story.length>0,"Nul kosten is extreem maar technisch geldig.");
+add("9. AOW nul",B({aow:0}),x=>finiteObj(x)&&x.facts.monthlyAow===0,"Geen verborgen AOW verzinnen.");
+add("10. Pensioen nul",B({pension:0}),x=>finiteObj(x)&&x.facts.monthlyPension===0,"Geen verborgen pensioen verzinnen.");
+add("11. Zeer hoog vermogen",B({cash:5000000,investments:20000000}),x=>finiteObj(x)&&x.story.length>0,"Grote getallen zonder overflow.");
+add("12. Zeer hoge maandkosten",B({cost:50000}),x=>finiteObj(x)&&rank(x.facts.verdict)<=1,"Extreme lasten mogen niet positief eindigen.");
+add("13. Zeer hoog inkomen health",B({goal:"health",income:100000,cost:3000}),x=>finiteObj(x)&&x.facts.monthlySurplus>0,"Grote cashflow zonder overflow.");
+add("14. Alleen cash, geen beleggingen",B({cash:600000,investments:0}),x=>finiteObj(x)&&x.story.length>0,"All-cash huishouden.");
+add("15. Alleen beleggingen, geen cash",B({cash:0,investments:900000}),x=>finiteObj(x)&&x.story.length>0,"All-invested huishouden.");
+add("16. Hoge schuld bij health",B({goal:"health",debt:1000000,cash:10000,investments:20000}),x=>finiteObj(x)&&x.story.length>0,"Schuld mag route niet breken.");
+add("17. Samen zonder kinderen",B({household:"Samen",kids:0}),x=>finiteObj(x)&&x.story.length>0,"Huishoudtype stabiel.");
+add("18. Samen met vier kinderen",B({household:"Samen",kids:4,cost:6000}),x=>finiteObj(x)&&x.story.length>0,"Groter huishouden stabiel.");
+add("19. Pensioenleeftijd gelijk huidige leeftijd",B({age:62,retireAge:62}),x=>finiteObj(x)&&x.facts.targetAge===62,"Exact startpunt.");
+add("20. Pensioenleeftijd vóór huidige leeftijd",B({age:65,retireAge:62}),x=>finiteObj(x)&&x.facts.targetAge===65,"Geen tijdreizen; target wordt minimaal huidige leeftijd.");
+add("21. AOW start vóór target pensioen",B({retireAge:68,aowStartAge:67}),x=>finiteObj(x)&&x.facts.bridgeYears===0,"Negatieve bridge mag niet ontstaan.");
+add("22. Purchase bedrag nul",Object.assign(B({goal:"purchase"}),{purchaseAmount:0,purchaseMonths:12}),x=>finiteObj(x)&&x.story.length>0,"Nul-aankoop mag geen crash geven.");
+add("23. Purchase termijn 1 maand",Object.assign(B({goal:"purchase"}),{purchaseAmount:12000,purchaseMonths:1}),x=>finiteObj(x)&&x.story.length>0,"Korte termijn blijft numeriek stabiel.");
+add("24. Purchase ontbrekend bedrag",Object.assign(B({goal:"purchase"}),{purchaseAmount:null,purchaseMonths:24}),x=>finiteObj(x)&&x.story.length>0,"Incomplete aankooproute veilig afhandelen.");
+
+add("25. +cash verandert verhaal niet slechter",B({cash:10000,investments:100000,cost:3200}),x=>{const y=S(B({cash:110000,investments:100000,cost:3200}),{});return finiteObj(y)&&rank(y.facts.verdict)>=rank(x.facts.verdict);},"Extra cash mag niet verslechteren.","consistency");
+add("26. +kosten verandert verhaal niet beter",B({cost:2800}),x=>{const y=S(B({cost:3800}),{});return finiteObj(y)&&rank(y.facts.verdict)<=rank(x.facts.verdict);},"Hogere lasten mogen niet verbeteren.","consistency");
+add("27. +inkomen health verhoogt maandruimte",B({goal:"health",income:4000,cost:3500}),x=>{const y=S(B({goal:"health",income:5000,cost:3500}),{});return y.facts.monthlySurplus>x.facts.monthlySurplus;},"Cashflowrichting moet kloppen.","consistency");
+add("28. Later AOW verhoogt bridge of houdt gelijk",B({retireAge:62,aowStartAge:67}),x=>{const y=S(B({retireAge:62,aowStartAge:68}),{});return y.facts.bridgeYears>=x.facts.bridgeYears;},"Timingrichting moet logisch zijn.","consistency");
+add("29. Later stoppen verkort bridge",B({retireAge:62,aowStartAge:67}),x=>{const y=S(B({retireAge:64,aowStartAge:67}),{});return y.facts.bridgeYears<=x.facts.bridgeYears;},"Later stoppen verkort overbrugging.","consistency");
+add("30. Nul onzeker vermogen verandert hard verdict niet",B({retireAge:61,cash:20000,investments:120000,cost:3300,aow:1400,pension:500}),x=>{const y=S(B({retireAge:61,cash:20000,investments:120000,cost:3300,aow:1400,pension:500}),{events:[{id:"u0",type:"uncertain_asset",amount:0,availableFromAge:66,certainty:"uncertain",liquidity:"immediate"}]});return y.facts.verdict===x.facts.verdict;},"Nul onzeker item mag niets veranderen.","consistency");
+
+if(T.length!==30){document.body.innerHTML="<pre>TEST COUNT ERROR "+T.length+"</pre>";return}
+document.getElementById("run").onclick=()=>{
+ let p=0,h="",cats={messy:[0,0],consistency:[0,0]};
+ T.forEach((t,i)=>{let ok=false,err="",x;try{x=S(t.c,{});ok=!!t.check(x)}catch(e){err=String(e)}
+ cats[t.kind][1]++;if(ok){p++;cats[t.kind][0]++}
+ if(!ok)h+='<div class="case"><b class="bad">FAIL · '+(i+1)+'. '+t.name+'</b><div class="why">'+t.why+(err?' · '+err:'')+'</div>'+(x?'<div class="story">'+x.story+'</div>':'')+'</div>';
+ });
+ let k='<div class="kpis">';Object.entries(cats).forEach(([n,v])=>k+='<div class="kpi"><span>'+n+'</span><br><b class="'+(v[0]===v[1]?'ok':'bad')+'">'+v[0]+'/'+v[1]+'</b></div>');k+='</div>';
+ document.getElementById("sum").innerHTML='<div class="score '+(p===30?'ok':'bad')+'">'+p+' / 30</div><b>'+(p===30?'Menselijke invoerlaag volledig groen':'Human Input Stress vond aandachtspunten')+'</b>'+k;
+ document.getElementById("out").innerHTML=h||'<div class="card"><b class="ok">PASS · Alle menselijke invoerroutes veilig</b><p>Geen crashes, geen NaN/Infinity en geen onlogische richting in de geteste invoervarianten.</p></div>';
+};
+})();</script></body></html>
