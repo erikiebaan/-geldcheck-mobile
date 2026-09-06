@@ -1,14 +1,13 @@
-/* Geldcheck Future Retirement Bridge v0.1
+/* Geldcheck Future Retirement Bridge v0.2
    Test-only integration. Does not alter validated engine.js.
-   Adds future assets/events to retirement cashflow only when they are available and usable.
+   Future assets/events affect retirement cashflow only when available, usable and certain enough.
 */
 (function(global){
 "use strict";
 const finite=v=>typeof v==="number"&&Number.isFinite(v);
 
 function certaintyAllowed(x,mode){
-  if(mode==="conservative") return x.certainty==="certain"||x.certainty==="contractual";
-  if(mode==="base") return x.certainty==="certain"||x.certainty==="contractual";
+  if(mode==="conservative"||mode==="base") return x.certainty==="certain"||x.certainty==="contractual";
   return x.certainty!=="uncertain";
 }
 function canUseCapital(x,age,mode){
@@ -34,7 +33,7 @@ function annualExpense(x,age,mode){
   if(finite(x.monthlyAmount))return x.monthlyAmount*12;
   return finite(x.netAmount)?x.netAmount:0;
 }
-function simulate(raw, futureRaw, opts){
+function simulate(raw,futureRaw,opts){
   opts=opts||{};
   const base=GeldcheckEngine.normalize(raw||{});
   const fm=GeldcheckFutureLayer.normalize(Object.assign({currentAge:base.age},futureRaw||{}));
@@ -52,13 +51,12 @@ function simulate(raw, futureRaw, opts){
     invested=invested*(1+realReturn)+annualSave;
     age++;
   }
-  if(opts.crashAtRetirement!==false && mode==="conservative") invested*=.70;
+  if(opts.crashAtRetirement!==false&&mode==="conservative")invested*=.70;
 
   let failedAge=null;
   while(age<endAge){
     const all=fm.assets.concat(fm.events);
     let injected=0,extraIncome=0,extraExpense=0;
-
     all.forEach(x=>{
       if(!consumed.has(x.id)&&canUseCapital(x,age,mode)){
         const amt=finite(x.netAmount)?x.netAmount:x.netCurrentValue;
@@ -71,13 +69,13 @@ function simulate(raw, futureRaw, opts){
     const aow=(finite(base.aowStartAge)&&age>=base.aowStartAge)?base.aow*12:0;
     const pension=(finite(base.pensionStartAge)&&age>=base.pensionStartAge)?base.pension*12:0;
     const need=Math.max(0,base.cost*12+extraExpense-aow-pension-extraIncome);
-
     const useCash=Math.min(cash,need);cash-=useCash;
     const rem=need-useCash;
     invested=invested*(1+realReturn)-rem;
     if(invested<0){failedAge=age;invested=0;}
     ledger.push({age,cash,invested,injected,extraIncome,extraExpense,need});
-    if(failedAge!==null)break;
+    /* Keep projecting after depletion. This is essential: future income/assets/costs
+       must remain observable even when the household fails before their start age. */
     age++;
   }
   return {mode,retireAge,success:failedAge===null,failedAge,endCapital:cash+invested,cash,invested,ledger,consumed:[...consumed]};
