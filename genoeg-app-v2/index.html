@@ -111,7 +111,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
     <div class="field"><label>Omschrijving <span class="note">(optioneel)</span></label><input id="changeLabel" value="" placeholder="erfenis, auto, lijfrente…"></div>
     <div class="field" id="changeCertaintyField"><label>Hoe zeker is deze ontvangst?</label><select id="changeCertainty"><option value="uncertain">Nog onzeker</option><option value="certain">Zeker / toegezegd</option></select><div class="note">Een onzekere ontvangst verschijnt alleen in het paarse scenario en verlaagt je hoofdantwoord niet.</div></div>
   </div>
-  <button type="button" class="tinybtn" style="margin-top:10px" onclick="addFinancialChange()">+ Verandering toevoegen</button>
+  <button type="button" id="addChangeBtn" class="tinybtn" style="margin-top:10px" onclick="addFinancialChange()">+ Verandering toevoegen</button>
   <div id="changesList" style="margin-top:10px"></div>
 </div>
 
@@ -168,7 +168,8 @@ function loadFinancialChanges(){
   try{
     const stored=history.state?.geldcheckFinancialChanges||[];
     if(!Array.isArray(stored))return [];
-    return stored.filter(e=>e&&['oneoff','income','expense'].includes(e.kind));
+    const valid=stored.filter(e=>e&&['oneoff','income','expense'].includes(e.kind));
+    return valid.filter((e,i)=>valid.findIndex(x=>JSON.stringify(x)===JSON.stringify(e))===i);
   }catch(_){return [];}
 }
 function saveFinancialChanges(){
@@ -669,24 +670,32 @@ window.addFinancialChange=function(){
   const end=endRaw?normalizeAge(endRaw,p.age):null;
   const label=s('changeLabel').trim();
   const dir=s('changeDirection')==='minus'?-1:1;
-  if(amount<=0||start<p.age||start>=p.endAge){
+  if(amount<=0)return false;
+  if(start<p.age||start>=p.endAge){
     const el=document.getElementById('changesList');
     if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> vul een bedrag in en kies een moment tussen je huidige leeftijd en je eindleeftijd.</div>';
-    return;
+    return false;
   }
   if((type==='income'||type==='expense')&&end!==null&&end<=start){
     const el=document.getElementById('changesList');
     if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> “tot” moet later zijn dan “vanaf”.</div>';
-    return;
+    return false;
   }
-  if(type==='receive') changes.push({kind:'oneoff',label:label||'eenmalige ontvangst',amount:-amount,age:start,certainty:s('changeCertainty')==='certain'?'certain':'uncertain'});
-  else if(type==='pay') changes.push({kind:'oneoff',label:label||'eenmalige uitgave',amount:amount,age:start});
-  else if(type==='income') changes.push({kind:'income',label:label||'inkomensverandering',monthly:dir*amount,startAge:start,endAge:end});
-  else changes.push({kind:'expense',label:label||'lastenverandering',monthly:dir*amount,startAge:start,endAge:end});
+  let candidate;
+  if(type==='receive') candidate={kind:'oneoff',label:label||'eenmalige ontvangst',amount:-amount,age:start,certainty:s('changeCertainty')==='certain'?'certain':'uncertain'};
+  else if(type==='pay') candidate={kind:'oneoff',label:label||'eenmalige uitgave',amount:amount,age:start};
+  else if(type==='income') candidate={kind:'income',label:label||'inkomensverandering',monthly:dir*amount,startAge:start,endAge:end};
+  else candidate={kind:'expense',label:label||'lastenverandering',monthly:dir*amount,startAge:start,endAge:end};
+  const duplicate=changes.some(e=>e.kind===candidate.kind&&e.label===candidate.label&&
+    (candidate.kind==='oneoff'
+      ? e.amount===candidate.amount&&e.age===candidate.age&&e.certainty===candidate.certainty
+      : e.monthly===candidate.monthly&&e.startAge===candidate.startAge&&e.endAge===candidate.endAge));
+  if(!duplicate)changes.push(candidate);
   saveFinancialChanges();
   document.getElementById('changeAmount').value=0;
   document.getElementById('changeLabel').value='';
   renderChangesList();recalc();
+  return !duplicate;
 }
 window.finishDetails=function(){
   if(Math.max(0,n('changeAmount'))>0){
