@@ -89,6 +89,32 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 </div>
 
 <div class="group">
+  <div class="grouphead"><div class="groupicon">±</div><div><h3>Veranderingen</h3><p>Geld dat later binnenkomt, eruit gaat of maandelijks verandert.</p></div></div>
+  <div class="grid">
+    <div class="field"><label>Wat verandert?</label>
+      <select id="changeType">
+        <option value="receive">Eenmalig geld binnen</option>
+        <option value="pay">Eenmalig geld eruit</option>
+        <option value="income">Maandinkomen verandert</option>
+        <option value="expense">Maandlast verandert</option>
+      </select>
+    </div>
+    <div class="field"><label>Bedrag</label><input id="changeAmount" type="number" min="0" value="0" placeholder="bijv. 100000"></div>
+    <div class="field"><label>Vanaf / op leeftijd óf jaar</label><input id="changeStart" type="number" value="0" placeholder="bijv. 59 of 2036"></div>
+    <div class="field" id="changeEndField"><label>Tot leeftijd óf jaar <span class="note">(optioneel)</span></label><input id="changeEnd" type="number" value="0" placeholder="leeg = blijvend"></div>
+    <div class="field"><label>Richting bij maandbedrag</label>
+      <select id="changeDirection">
+        <option value="plus">Meer</option>
+        <option value="minus">Minder</option>
+      </select>
+    </div>
+    <div class="field"><label>Omschrijving <span class="note">(optioneel)</span></label><input id="changeLabel" value="" placeholder="erfenis, auto, lijfrente…"></div>
+  </div>
+  <button type="button" class="tinybtn" style="margin-top:10px" onclick="addFinancialChange()">+ Verandering toevoegen</button>
+  <div id="changesList" style="margin-top:10px"></div>
+</div>
+
+<div class="group">
   <div class="grouphead"><div class="groupicon">✓</div><div><h3>Doel</h3><p>Wanneer is “genoeg” voor jou echt genoeg?</p></div></div>
   <div class="grid">
     <div class="field"><label>Genoeg tot leeftijd</label><input id="endAge" type="number" value="90"></div>
@@ -423,7 +449,14 @@ function simulateShock(p, realReturn, shockAge, shockPct){
     const pa=partnerTimelineAge(p,age);
     if(p.partnerIncome>0&&pa<p.partnerStopAge)annualIncome+=p.partnerIncome*12;
     if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
-    let annualSpend=annualSpendAt(p,age,mi,di),oneOff=0;
+    let annualSpend=annualSpendAt(p,age,mi,di),oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
+    changes.forEach(e=>{
+      if(e.kind==='oneoff'&&e.age===age)oneOff+=e.amount;
+      if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlyIncomeChange+=e.monthly;
+      if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlySpendChange+=e.monthly;
+    });
+    annualIncome+=monthlyIncomeChange*12;
+    annualSpend=Math.max(0,annualSpend+monthlySpendChange*12);
     const eff=effectiveMortgageResidual(p,mi);
     if(isFinite(mi.endAge)&&age===effectiveMortgageCutAge(p,mi)&&eff>0)oneOff+=eff;
     if(isFinite(di.endAge)&&age===debtCutAge(di)&&di.residual>0)oneOff+=di.residual;
@@ -548,6 +581,57 @@ window.toggleAdvanced=function(){
   scheduleRecalc();
 }
 
+function changeLabelText(e){
+  if(e.kind==='oneoff'){
+    return (e.amount<0?'Ontvangst ':'Uitgave ')+euro(Math.abs(e.amount))+' op '+e.age+(e.label?' · '+e.label:'');
+  }
+  const direction=e.monthly>=0?'+':'−';
+  const base=(e.kind==='income'?'Inkomen ':'Lasten ')+direction+euro(Math.abs(e.monthly))+'/mnd vanaf '+e.startAge;
+  return base+(e.endAge!==null?' tot '+e.endAge:'')+(e.label?' · '+e.label:'');
+}
+function renderChangesList(){
+  const el=document.getElementById('changesList'); if(!el)return;
+  if(!changes.length){el.innerHTML='<div class="note">Nog geen extra veranderingen toegevoegd.</div>';return;}
+  el.innerHTML=changes.map((e,i)=>'<div class="kpi" style="margin-bottom:7px"><span>'+changeLabelText(e)+'</span><button type="button" class="tinybtn" style="margin-top:8px" onclick="removeFinancialChange('+i+')">Verwijder</button></div>').join('');
+}
+window.removeFinancialChange=function(i){
+  changes.splice(i,1);renderChangesList();recalc();
+}
+window.addFinancialChange=function(){
+  const p=plan();
+  const type=s('changeType');
+  const amount=Math.max(0,n('changeAmount'));
+  const start=normalizeAge(n('changeStart'),p.age);
+  const endRaw=n('changeEnd');
+  const end=endRaw?normalizeAge(endRaw,p.age):null;
+  const label=s('changeLabel').trim();
+  const dir=s('changeDirection')==='minus'?-1:1;
+  if(amount<=0||start<p.age||start>p.endAge){
+    const el=document.getElementById('changesList');
+    if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> vul een bedrag in en kies een moment tussen je huidige leeftijd en je eindleeftijd.</div>';
+    return;
+  }
+  if((type==='income'||type==='expense')&&end!==null&&end<=start){
+    const el=document.getElementById('changesList');
+    if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> “tot” moet later zijn dan “vanaf”.</div>';
+    return;
+  }
+  if(type==='receive') changes.push({kind:'oneoff',label:label||'eenmalige ontvangst',amount:-amount,age:start});
+  else if(type==='pay') changes.push({kind:'oneoff',label:label||'eenmalige uitgave',amount:amount,age:start});
+  else if(type==='income') changes.push({kind:'income',label:label||'inkomensverandering',monthly:dir*amount,startAge:start,endAge:end});
+  else changes.push({kind:'expense',label:label||'lastenverandering',monthly:dir*amount,startAge:start,endAge:end});
+  document.getElementById('changeAmount').value=0;
+  document.getElementById('changeLabel').value='';
+  renderChangesList();recalc();
+}
+function updateChangeForm(){
+  const type=s('changeType');
+  const recurring=type==='income'||type==='expense';
+  const end=document.getElementById('changeEndField');
+  const direction=document.getElementById('changeDirection')?.closest('.field');
+  if(end)end.style.display=recurring?'block':'none';
+  if(direction)direction.style.display=recurring?'block':'none';
+}
 window.partnerOn=false;
 window.togglePartner=function(){
   window.partnerOn=!window.partnerOn;
@@ -643,7 +727,7 @@ window.recalc=function(){
   else headline='Je plan vraagt een hoog rendement';
 
   let eventsTxt=changes.length?changes.map(e=>{
-    if(e.kind==='oneoff') return e.label+' '+euro(e.amount)+' op '+e.age;
+    if(e.kind==='oneoff') return e.label+' '+(e.amount<0?'+':'−')+euro(Math.abs(e.amount))+' op '+e.age;
     if(e.kind==='income') return e.label+' +'+euro(e.monthly)+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
     return e.label+' '+(e.monthly<0?'-':'')+euro(Math.abs(e.monthly))+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
   }).join(' · '):'geen extra veranderingen';
@@ -689,7 +773,8 @@ window.recalc=function(){
     ...(p.pension>0&&p.pensionAge!==p.aowAge?[{age:p.pensionAge,label:'Pensioen'}]:[]),
     ...(isFinite(mi.endAge)?[{age:effectiveMortgageCutAge(p,mi),label:effectiveMortgageResidual(p,mi)>0?'Hypotheek einde':(p.houseReleaseAge>0?'Woning':'Hypotheek af')}]:[]),
     ...(p.careAge>0?[{age:p.careAge,label:'Zorgkosten'}]:[]),
-    ...(p.otherDebt>0&&isFinite(di.endAge)?[{age:debtCutAge(di),label:di.residual>0?'Schuld einde':'Schuld af'}]:[])
+    ...(p.otherDebt>0&&isFinite(di.endAge)?[{age:debtCutAge(di),label:di.residual>0?'Schuld einde':'Schuld af'}]:[]),
+    ...changes.map(e=>({age:e.kind==='oneoff'?e.age:e.startAge,label:e.label||'Verandering'}))
   ];
   const result=document.getElementById('result');
   const mortgageEnd=isFinite(mi.endAge)?effectiveMortgageCutAge(p,mi).toString():'onbekend';
@@ -891,7 +976,10 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
           : []),
         ...(p.houseReleaseAge>0&&p.houseRelease>0
           ? ['Op '+p.houseReleaseAge+': <b>'+euro(p.houseRelease)+' komt vrij uit de woning</b>.']
-          : [])
+          : []),
+        ...changes.filter(e=>e.kind==='oneoff').map(e=>e.amount<0
+          ? 'Op '+e.age+': <b>'+euro(Math.abs(e.amount))+' komt binnen</b>'+(e.label?' · '+e.label:'')+'.'
+          : 'Op '+e.age+': <b>'+euro(e.amount)+' eenmalig uit vermogen</b>'+(e.label?' · '+e.label:'')+'.')
       ].join('\n\n')}</div>
     </div>`,
 
@@ -972,6 +1060,8 @@ function scheduleRecalc(){
       el.addEventListener('change',scheduleRecalc);
     }
   });
-
+document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
+updateChangeForm();
+renderChangesList();
 recalc();
 })();</script></body></html>
