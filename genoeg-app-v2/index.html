@@ -179,7 +179,7 @@ function simulatePath(p, realReturn){
     if(p.partnerPension>0&&age>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
 
     let annualSpend=p.spend*12;
-    if(age>=mi.endAge)annualSpend-=p.mortPayment*12;
+    if(age>=mortgageCutAge(mi))annualSpend-=p.mortPayment*12;
 
     let oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
     changes.forEach(e=>{
@@ -216,7 +216,7 @@ function simulateReal(p, realReturn){
     if(p.partnerPension>0&&age>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
 
     let annualSpend=p.spend*12;
-    if(age>=mi.endAge)annualSpend-=p.mortPayment*12;
+    if(age>=mortgageCutAge(mi))annualSpend-=p.mortPayment*12;
 
     let oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
     changes.forEach(e=>{
@@ -235,6 +235,78 @@ function simulateReal(p, realReturn){
     if(total<0&&depletionAge===null)depletionAge=age+1;
   }
   return {end:cash+inv,min,depletionAge};
+}
+
+function mortgageCutAge(mi){
+  if(!isFinite(mi.endAge)) return Infinity;
+  return Math.ceil(mi.endAge-1e-9);
+}
+
+function monthlyFlowAt(p, age, mi){
+  const kept=p.income*(1-p.workReduction);
+  let income=0;
+  if(age<p.stopAge) income+=kept;
+  if(age>=p.aowAge) income+=p.aow;
+  if(age>=p.pensionAge) income+=p.pension;
+  if(p.partnerIncome>0&&age<p.partnerStopAge) income+=p.partnerIncome;
+  if(p.partnerPension>0&&age>=p.partnerPensionAge) income+=p.partnerPension;
+
+  let spend=p.spend;
+  if(age>=mortgageCutAge(mi)) spend=Math.max(0,spend-p.mortPayment);
+
+  changes.forEach(e=>{
+    if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) income+=e.monthly;
+    if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) spend+=e.monthly;
+  });
+
+  return {income,spend,net:income-spend};
+}
+
+function flowLabel(p,age,mi){
+  const bits=[];
+  if(age<p.stopAge) bits.push('werk');
+  else bits.push('gestopt');
+  if(age>=p.aowAge) bits.push('AOW');
+  if(p.pension>0&&age>=p.pensionAge) bits.push('pensioen');
+  if(p.partnerIncome>0&&age<p.partnerStopAge) bits.push('partnerinkomen');
+  if(p.partnerPension>0&&age>=p.partnerPensionAge) bits.push('partnerpensioen');
+  if(age>=mortgageCutAge(mi)&&p.mortgage>0&&mi.residual<=0) bits.push('hypotheek af');
+  return bits.join(' + ');
+}
+
+function buildCashflowPhases(p,mi){
+  const cuts=[p.age,p.endAge,p.stopAge,p.aowAge];
+  if(p.pension>0) cuts.push(p.pensionAge);
+  if(p.partnerIncome>0) cuts.push(p.partnerStopAge);
+  if(p.partnerPension>0) cuts.push(p.partnerPensionAge);
+  const mc=mortgageCutAge(mi);
+  if(isFinite(mc)) cuts.push(mc);
+  changes.forEach(e=>{
+    if(e.kind==='income'||e.kind==='expense'){
+      cuts.push(e.startAge);
+      if(e.endAge!==null) cuts.push(e.endAge);
+    }
+    if(e.kind==='oneoff') cuts.push(e.age);
+  });
+  const ages=[...new Set(cuts.filter(a=>isFinite(a)&&a>=p.age&&a<=p.endAge).map(a=>Math.round(a)))].sort((a,b)=>a-b);
+  if(ages[0]!==p.age) ages.unshift(p.age);
+  if(ages[ages.length-1]!==p.endAge) ages.push(p.endAge);
+
+  const out=[];
+  for(let i=0;i<ages.length-1;i++){
+    const start=ages[i], end=ages[i+1];
+    if(end<=start) continue;
+    const flow=monthlyFlowAt(p,start,mi);
+    out.push({
+      start,end,
+      age:start+'–'+end,
+      income:flow.income,
+      spend:flow.spend,
+      net:flow.net,
+      desc:flowLabel(p,start,mi)
+    });
+  }
+  return out;
 }
 
 function requiredReal(p){
@@ -320,45 +392,32 @@ window.recalc=function(){
     if(e.kind==='income') return e.label+' +'+euro(e.monthly)+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
     return e.label+' '+(e.monthly<0?'-':'')+euro(Math.abs(e.monthly))+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
   }).join(' · '):'geen extra veranderingen';
-  let phases=[];
-  const firstEnd=Math.min(p.stopAge,p.aowAge);
-  if(p.age<firstEnd){
-    phases.push('Van '+p.age+' tot '+firstEnd+': werkinkomen '+euro(kept)+'/mnd tegenover '+euro(p.spend)+'/mnd uitgaven. '+(workOnlyNet>=0?'Je houdt '+euro(workOnlyNet)+'/mnd over; er hoeft niets uit vermogen.':'Je onttrekt '+euro(-workOnlyNet)+'/mnd uit vermogen.'));
-  }
-  if(p.aowAge<p.stopAge){
-    phases.push('Van '+p.aowAge+' tot '+p.stopAge+': je werkt nog én ontvangt AOW/pensioen. Inkomen samen '+euro(kept+p.aow+p.pension)+'/mnd tegenover '+euro(p.spend)+'/mnd uitgaven. '+(workPlusAowNet>=0?'Je houdt '+euro(workPlusAowNet)+'/mnd over; er is geen onttrekking uit vermogen.':'Je onttrekt '+euro(-workPlusAowNet)+'/mnd uit vermogen.'));
-  } else if(p.stopAge<p.aowAge){
-    phases.push('Van '+p.stopAge+' tot '+p.aowAge+': je bent gestopt en ontvangt nog geen AOW. Je onttrekt '+euro(p.spend)+'/mnd uit vermogen.');
-  }
-  if(isFinite(mi.endAge)&&mi.endAge>p.age&&mi.endAge<p.endAge){
-    if(mi.residual>0) phases.push('Rond je '+mi.endAge.toFixed(1).replace('.',',')+'e eindigt je hypotheek en staat er nog '+euro(mi.residual)+' open. Die restschuld moet in dit plan worden betaald uit je vrije vermogen, tenzij je later een andere keuze toevoegt.');
-    else phases.push('Rond je '+mi.endAge.toFixed(1).replace('.',',')+'e is je hypotheek afgelost. Vanaf dan dalen je maandlasten automatisch met '+euro(p.mortPayment)+'.');
-  }
-  const lastStart=Math.max(p.stopAge,p.aowAge,p.pension>0?p.pensionAge:0);
-  if(lastStart<p.endAge){
-    phases.push('Vanaf '+lastStart+': werkinkomen valt weg en AOW/pensioen is '+euro(p.aow+p.pension)+'/mnd. '+(stoppedAfterAowNet>=0?'Je houdt '+euro(stoppedAfterAowNet)+'/mnd over.':'Je onttrekt '+euro(-stoppedAfterAowNet)+'/mnd uit vermogen.'));
+  const cashflowPhases=buildCashflowPhases(p,mi);
+  let phases=cashflowPhases.map(x=>{
+    const base='Van '+x.start+' tot '+x.end+': '+x.desc+'. Inkomen '+euro(x.income)+'/mnd tegenover '+euro(x.spend)+'/mnd uitgaven. ';
+    return base+(x.net>=0
+      ? 'Je houdt '+euro(x.net)+'/mnd over; er hoeft niets uit vermogen.'
+      : 'Je onttrekt '+euro(-x.net)+'/mnd uit vermogen.');
+  });
+
+  if(isFinite(mi.endAge)&&mi.endAge>p.age&&mi.endAge<p.endAge&&mi.residual>0){
+    phases.push('Rond je '+mi.endAge.toFixed(1).replace('.',',')+'e eindigt je hypotheek en staat er nog '+euro(mi.residual)+' open. Die restschuld is als eenmalige aflossing in het plan meegenomen.');
   }
 
   const scenarioStatus=s=>s.min>=p.endBuffer?'✓ buffer intact':'! buffer te laag';
-  let phaseCards=[];
-  const preEnd=Math.min(p.stopAge,p.aowAge);
-  if(p.age<preEnd){
-    phaseCards.push({age:p.age+'–'+preEnd,amount:workOnlyNet>=0?('+'+euro(workOnlyNet)+'/mnd'):(euro(-workOnlyNet)+'/mnd uit vermogen'),desc:'werken vóór stoppen/AOW'});
-  }
-  if(p.stopAge<p.aowAge){
-    phaseCards.push({age:p.stopAge+'–'+p.aowAge,amount:euro(p.spend)+'/mnd uit vermogen',desc:'gestopt, nog geen AOW'});
-  } else if(p.aowAge<p.stopAge){
-    phaseCards.push({age:p.aowAge+'–'+p.stopAge,amount:workPlusAowNet>=0?('+'+euro(workPlusAowNet)+'/mnd'):euro(-workPlusAowNet)+'/mnd uit vermogen',desc:'werken + AOW/pensioen'});
-  }
-  phaseCards.push({age:Math.max(p.stopAge,p.aowAge)+'+',amount:stoppedAfterAowNet>=0?('+'+euro(stoppedAfterAowNet)+'/mnd'):euro(-stoppedAfterAowNet)+'/mnd uit vermogen',desc:'na stoppen met AOW/pensioen'});
+  const phaseCards=cashflowPhases.map(x=>({
+    age:x.age,
+    amount:x.net>=0?('+'+euro(x.net)+'/mnd'):euro(-x.net)+'/mnd uit vermogen',
+    desc:x.desc
+  }));
   const markers=[
     {age:p.stopAge,label:'Stoppen'},
     {age:p.aowAge,label:'AOW'},
     ...(p.pension>0&&p.pensionAge!==p.aowAge?[{age:p.pensionAge,label:'Pensioen'}]:[]),
-    ...(isFinite(mi.endAge)?[{age:mi.endAge,label:'Hypotheek af'}]:[])
+    ...(isFinite(mi.endAge)?[{age:mortgageCutAge(mi),label:mi.residual>0?'Hypotheek einde':'Hypotheek af'}]:[])
   ];
   const result=document.getElementById('result');
-  const mortgageEnd=isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'onbekend';
+  const mortgageEnd=isFinite(mi.endAge)?mortgageCutAge(mi).toString():'onbekend';
   const mortgageRisk=isFinite(mi.endAge)
     ? (mi.residual>0
         ? 'Rond leeftijd '+mortgageEnd+' eindigt deze hypotheekfase. Dan staat nog '+euro(mi.residual)+' open; dat bedrag is als toekomstige aflossing meegenomen.'
@@ -407,20 +466,12 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
 
     `<div class="card">
       <h2>Wanneer komt geld uit je vermogen?</h2>
-      <div class="answer">${
-        [
-          p.age<Math.min(p.stopAge,p.aowAge)
-            ? 'Van '+p.age+' tot '+Math.min(p.stopAge,p.aowAge)+': '+(workOnlyNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(workOnlyNet)+'/mnd over':'<b>'+euro(-workOnlyNet)+'/mnd uit vermogen</b>')
-            : '',
-          p.aowAge<p.stopAge
-            ? 'Van '+p.aowAge+' tot '+p.stopAge+': werk + AOW/pensioen. '+(workPlusAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(workPlusAowNet)+'/mnd over':'<b>'+euro(-workPlusAowNet)+'/mnd uit vermogen</b>')
-            : '',
-          p.stopAge<p.aowAge
-            ? 'Van '+p.stopAge+' tot '+p.aowAge+': <b>'+euro(p.spend)+'/mnd uit vermogen</b> · nog geen AOW'
-            : '',
-          'Vanaf '+Math.max(p.stopAge,p.aowAge,p.pension>0?p.pensionAge:0)+': '+(stoppedAfterAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(stoppedAfterAowNet)+'/mnd over':'<b>'+euro(-stoppedAfterAowNet)+'/mnd uit vermogen</b>')
-        ].filter(Boolean).join('\n\n')
-      }</div>
+      <div class="answer">${cashflowPhases.map(x=>{
+        const prefix='Van '+x.start+' tot '+x.end+': ';
+        return x.net>=0
+          ? prefix+'<b>geen onttrekking</b> · je houdt '+euro(x.net)+'/mnd over'
+          : prefix+'<b>'+euro(-x.net)+'/mnd uit vermogen</b>';
+      }).join('\n\n')}</div>
     </div>`,
 
     `<div class="card">
