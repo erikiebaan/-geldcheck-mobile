@@ -176,6 +176,22 @@ function saveFinancialChanges(){
   try{history.replaceState({...history.state,geldcheckFinancialChanges:changes},'');sessionStorage.removeItem(CHANGES_STORAGE_KEY);}catch(_){}
 }
 let changes=loadFinancialChanges();
+const PLAN_FIELD_IDS=['age','stopAge','income','spend','cash','cashRate','capital','assetRisk','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual','endTarget','pensionIndex','aowIndex','wealthTax','investmentCost','careAge','careMonthly','houseReleaseAge','houseRelease'];
+function loadPlanFields(){
+  try{
+    const stored=history.state?.geldcheckPlanFields;
+    if(!stored||typeof stored!=='object')return;
+    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id))el.value=stored[id];});
+  }catch(_){}
+}
+function savePlanFields(){
+  try{
+    const fields={};
+    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el)fields[id]=el.value;});
+    history.replaceState({...history.state,geldcheckPlanFields:fields},'');
+  }catch(_){}
+}
+loadPlanFields();
 
 const n=id=>Number(document.getElementById(id)?.value)||0;
 const s=id=>document.getElementById(id)?.value||'';
@@ -1163,6 +1179,7 @@ window.quick=function(t){document.getElementById('ask').value=t;applyAsk()}
 
 let recalcTimer=null;
 function scheduleRecalc(){
+  savePlanFields();
   clearTimeout(recalcTimer);
   recalcTimer=setTimeout(()=>{
     recalc();
@@ -1170,8 +1187,7 @@ function scheduleRecalc(){
     if(s){s.classList.add('live'); s.querySelector('span:last-child').innerHTML='<b>Automatisch bijgewerkt</b> op basis van je laatste wijziging.';}
   },180);
 }
-['age','stopAge','income','spend','cash','cashRate','capital','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual','endTarget','pensionIndex','aowIndex','wealthTax','investmentCost','careAge','careMonthly','houseReleaseAge','houseRelease']
-  .forEach(id=>{
+PLAN_FIELD_IDS.forEach(id=>{
     const el=document.getElementById(id);
     if(el){
       if(id==='pensionIndex'||id==='aowIndex'){
