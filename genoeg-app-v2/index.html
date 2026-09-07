@@ -192,9 +192,11 @@ function savePlanFields(){
   }catch(_){}
 }
 loadPlanFields();
+window.validationRequested=false;
 
 const n=id=>Number(document.getElementById(id)?.value)||0;
 const s=id=>document.getElementById(id)?.value||'';
+const filled=id=>(document.getElementById(id)?.value??'').toString().trim()!=='';
 const euro=x=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Math.round(x));
 const pct=x=>(x*100).toFixed(1).replace('.',',')+'%';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -714,11 +716,22 @@ window.addFinancialChange=function(){
   return !duplicate;
 }
 window.finishDetails=function(){
+  window.validationRequested=true;
   if(Math.max(0,n('changeAmount'))>0){
     window.addFinancialChange();
     if(Math.max(0,n('changeAmount'))>0)return;
   }else recalc();
   toggleDetails(false);
+}
+function planIssues(p){
+  const missing=[];
+  [['age','leeftijd'],['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['capital','belegd vermogen'],['stopAge','stopmoment'],['aow','AOW-bedrag'],['pension','pensioenbedrag'],['endAge','eindleeftijd'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname']]
+    .forEach(([id,label])=>{if(!filled(id))missing.push(label);});
+  if(filled('aow')&&p.aow>0&&!filled('aowAge'))missing.push('AOW-leeftijd');
+  if(filled('pension')&&p.pension>0&&!filled('pensionAge'))missing.push('pensioenleeftijd');
+  if(filled('stopAge')&&filled('age')&&p.stopAge<p.age)missing.push('stopmoment na je huidige leeftijd');
+  if(filled('endAge')&&filled('age')&&p.endAge<=p.age)missing.push('eindleeftijd na je huidige leeftijd');
+  return missing;
 }
 function updateDynamicQuestions(){const f=document.getElementById('assetRiskField');if(f)f.style.display=n('capital')>0?'block':'none';}
 function updateChangeForm(){
@@ -750,16 +763,19 @@ window.toggleDetails=function(force){
 window.recalc=function(){
   updateDynamicQuestions();
   const p=plan();
+  const issues=planIssues(p);
   const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
   const result=document.getElementById('result');
-  const hasCore=p.age>0&&p.stopAge>=p.age&&p.endAge>p.age&&p.spend>=0&&document.getElementById('spend')?.value!=='';
+  const hasCore=issues.length===0;
   if(!hasCore){
     if(sc)sc.textContent='—';
     if(ss)ss.textContent=p.stopAge>0?Math.round(p.stopAge)+' jaar':'—';
     if(sb)sb.textContent=document.getElementById('endBuffer')?.value!==''?euro(p.endBuffer):'—';
     const breakdown=document.getElementById('sumCapitalBreakdown');
     if(breakdown)breakdown.textContent='';
-    if(result)result.innerHTML='<div class="card mutedcard"><h2>Vul eerst je basisgegevens in</h2><p>Begin met je leeftijd, maandelijkse uitgaven, wanneer je wilt stoppen en tot welke leeftijd je wilt rekenen. Daarna verschijnt je Geldcheck automatisch.</p></div>';
+    if(result)result.innerHTML=window.validationRequested
+      ? '<div class="card"><h2>Nog onvoldoende gegevens</h2><p>Vul nog in: <b>'+issues.map(esc).join(', ')+'</b>. Daarna kan Geldcheck een betrouwbare uitkomst geven.</p><button type="button" class="primary" onclick="toggleDetails(true)">Aanvullen</button></div>'
+      : '<div class="card mutedcard"><h2>Vul eerst je basisgegevens in</h2><p>Je Geldcheck verschijnt zodra de noodzakelijke gegevens compleet zijn.</p></div>';
     return;
   }
   if(sc)sc.textContent=euro(p.capital+p.cash-p.otherDebt); if(ss)ss.textContent=Math.round(p.stopAge)+' jaar'; if(sb)sb.textContent=euro(p.endBuffer);
