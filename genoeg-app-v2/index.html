@@ -139,29 +139,51 @@ function mortgageInfo(p){
   const interest=p.mortgage*r;
   const principal=Math.max(0,pay-interest);
   if(p.mortgage<=0)return {months:0,endAge:p.age,interest:0,principal:0,residual:0};
+
+  // Contractuele einddatum en economische aflossing zijn twee verschillende dingen.
+  // Op een ingevoerde einddatum berekenen we daarom eerst de werkelijk resterende schuld.
+  const contractualEnd=p.mortEndAge>p.age?p.mortEndAge:0;
+  const balanceAfter=(principal0,months,payment)=>{
+    if(principal0<=0)return 0;
+    if(months<=0)return principal0;
+    if(r<=0)return Math.max(0,principal0-payment*months);
+    if(payment<=principal0*r)return principal0*Math.pow(1+r,months)-payment*((Math.pow(1+r,months)-1)/r);
+    const pow=Math.pow(1+r,months);
+    return Math.max(0,principal0*pow-payment*((pow-1)/r));
+  };
+
   if(p.mortType==='interestOnly'){
-    const endAge=p.mortEndAge>p.age?p.mortEndAge:Infinity;
-    return {months:isFinite(endAge)?(endAge-p.age)*12:Infinity,endAge,interest,principal:0,residual:p.mortResidual||p.mortgage};
+    const endAge=contractualEnd||Infinity;
+    const residual=isFinite(endAge)?p.mortgage:p.mortgage;
+    return {months:isFinite(endAge)?Math.max(0,(endAge-p.age)*12):Infinity,endAge,interest,principal:0,residual};
   }
+
   if(p.mortType==='combination'){
-    const residual=Math.max(0,p.mortResidual);
-    const amortizing=Math.max(0,p.mortgage-residual);
-    if(pay<=0||r<=0){
-      const endAge=p.mortEndAge>p.age?p.mortEndAge:(p.age+(amortizing/Math.max(1,pay))/12);
-      return {months:(endAge-p.age)*12,endAge,interest,principal:Math.max(0,pay-interest),residual};
+    const fixedResidual=Math.max(0,Math.min(p.mortgage,p.mortResidual));
+    const amortizing=Math.max(0,p.mortgage-fixedResidual);
+    if(contractualEnd){
+      const months=Math.max(0,Math.round((contractualEnd-p.age)*12));
+      const remainingAmortizing=balanceAfter(amortizing,months,pay);
+      return {months,endAge:contractualEnd,interest,principal,residual:fixedResidual+remainingAmortizing};
     }
-    const months=amortizing>0&&pay>amortizing*r ? -Math.log(1-r*amortizing/pay)/Math.log(1+r) : Infinity;
-    const derived=p.age+months/12;
-    const endAge=p.mortEndAge>p.age?p.mortEndAge:derived;
-    return {months,endAge,interest,principal,residual};
+    if(pay<=0)return {months:Infinity,endAge:Infinity,interest,principal:0,residual:p.mortgage};
+    if(r>0&&pay<=amortizing*r)return {months:Infinity,endAge:Infinity,interest,principal:0,residual:p.mortgage};
+    const months=r<=0?amortizing/pay:-Math.log(1-r*amortizing/pay)/Math.log(1+r);
+    return {months,endAge:p.age+months/12,interest,principal,residual:fixedResidual};
   }
-  if(pay<=0)return {months:Infinity,endAge:Infinity,interest,principal:0,residual:0};
+
+  // Annuïtair/lineair: als de gebruiker een einddatum invult, mag die datum nooit
+  // impliceren dat de schuld daar automatisch nul is.
+  if(contractualEnd){
+    const months=Math.max(0,Math.round((contractualEnd-p.age)*12));
+    const residual=balanceAfter(p.mortgage,months,pay);
+    return {months,endAge:contractualEnd,interest,principal,residual};
+  }
+  if(pay<=0)return {months:Infinity,endAge:Infinity,interest,principal:0,residual:p.mortgage};
   if(r<=0){const months=p.mortgage/pay;return {months,endAge:p.age+months/12,interest:0,principal:pay,residual:0};}
   if(pay<=interest)return {months:Infinity,endAge:Infinity,interest,principal:0,residual:p.mortgage};
   const months=-Math.log(1-r*p.mortgage/pay)/Math.log(1+r);
-  const derived=p.age+months/12;
-  const endAge=p.mortEndAge>p.age?p.mortEndAge:derived;
-  return {months,endAge,interest,principal,residual:0};
+  return {months,endAge:p.age+months/12,interest,principal,residual:0};
 }
 
 function simulatePath(p, realReturn){
