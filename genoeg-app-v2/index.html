@@ -427,11 +427,17 @@ window.recalc=function(){
   }
 
   const scenarioStatus=s=>s.min>=p.endBuffer?'✓ buffer intact':'! buffer te laag';
-  const phaseCards=cashflowPhases.map(x=>({
-    age:x.age,
-    amount:x.net>=0?('+'+euro(x.net)+'/mnd'):euro(-x.net)+'/mnd uit vermogen',
-    desc:x.desc
-  }));
+  const phaseCards=cashflowPhases.map(x=>{
+    const oneOffAtStart=(isFinite(mi.endAge)&&mi.residual>0&&Math.round(x.start)===mortgageCutAge(mi))
+      ? mi.residual
+      : 0;
+    return {
+      age:x.age,
+      amount:x.net>=0?('+'+euro(x.net)+'/mnd'):euro(-x.net)+'/mnd uit vermogen',
+      desc:x.desc,
+      oneOff:oneOffAtStart
+    };
+  });
   const markers=[
     {age:p.stopAge,label:'Stoppen'},
     {age:p.aowAge,label:'AOW'},
@@ -464,7 +470,7 @@ window.recalc=function(){
 
     `<div class="card">
       <h2>Wat gebeurt wanneer?</h2>
-      <div class="phasegrid">${phaseCards.map(x=>`<div class="phase"><div class="age">${x.age}</div><div class="amount">${x.amount}</div><div class="desc">${x.desc}</div></div>`).join('')}</div>
+      <div class="phasegrid">${phaseCards.map(x=>`<div class="phase"><div class="age">${x.age}</div><div class="amount">${x.amount}</div><div class="desc">${x.desc}</div>${x.oneOff>0?`<div class="warningbox" style="margin-top:10px"><b>Op ${x.age.split('–')[0]}:</b> −${euro(x.oneOff)} eenmalige aflossing restschuld</div>`:''}</div>`).join('')}</div>
     </div>`,
 
     `<div class="card">
@@ -488,12 +494,17 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
 
     `<div class="card">
       <h2>Wanneer komt geld uit je vermogen?</h2>
-      <div class="answer">${cashflowPhases.map(x=>{
-        const prefix='Van '+x.start+' tot '+x.end+': ';
-        return x.net>=0
-          ? prefix+'<b>geen onttrekking</b> · je houdt '+euro(x.net)+'/mnd over'
-          : prefix+'<b>'+euro(-x.net)+'/mnd uit vermogen</b>';
-      }).join('\n\n')}</div>
+      <div class="answer">${[
+        ...cashflowPhases.map(x=>{
+          const prefix='Van '+x.start+' tot '+x.end+': ';
+          return x.net>=0
+            ? prefix+'<b>geen onttrekking</b> · je houdt '+euro(x.net)+'/mnd over'
+            : prefix+'<b>'+euro(-x.net)+'/mnd uit vermogen</b>';
+        }),
+        ...(isFinite(mi.endAge)&&mi.residual>0
+          ? ['Op '+mortgageCutAge(mi)+': <b>'+euro(mi.residual)+' eenmalig uit vermogen</b> voor aflossing van de restschuld.']
+          : [])
+      ].join('\n\n')}</div>
     </div>`,
 
     `<div class="card">
