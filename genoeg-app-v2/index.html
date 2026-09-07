@@ -357,38 +357,95 @@ window.recalc=function(){
     ...(p.pension>0&&p.pensionAge!==p.aowAge?[{age:p.pensionAge,label:'Pensioen'}]:[]),
     ...(isFinite(mi.endAge)?[{age:mi.endAge,label:'Hypotheek af'}]:[])
   ];
-  document.getElementById('result').innerHTML=
-  '<div class="card hero"><div class="sub">'+headline+'</div><div class="big">'+(isFinite(nominal)?pct(Math.max(0,nominal)):'—')+'</div><p>'+(isFinite(nominal)&&nominal<=0.00001?'Zelfs zonder beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e.':'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en onderweg minimaal '+euro(p.endBuffer)+' buffer te houden.')+'</p></div>'+
-  '<div class="card"><h2>Verloop van je vermogen</h2><p class="sectionhint">De lijn laat zien hoe je vermogen zich ontwikkelt bij het benodigde rendement.</p><div class="chartwrap">'+chartSvg(pathNeeded,markers)+'</div><p class="note">STOPPEN · AOW · PENSIOEN · HYPOTHEEK zijn gemarkeerd. Je buffer mag nergens onder '+euro(p.endBuffer)+' komen.</p></div>'+
-  '<div class="card"><h2>Wat gebeurt wanneer?</h2><div class="phasegrid">'+phaseCards.map(x=>'<div class="phase"><div class="age">'+x.age+'</div><div class="amount">'+x.amount+'</div><div class="desc">'+x.desc+'</div></div>').join('')+'</div></div>'+
-  '<div class="card"><h2>Als rendement tegenvalt</h2>'+
-    '<div class="scenario"><span>0%</span><span>'+scenarioStatus(e0)+'</span><b>laagste '+euro(e0.min)+'</b></div>'+
-    '<div class="scenario"><span>3%</span><span>'+scenarioStatus(e3)+'</span><b>laagste '+euro(e3.min)+'</b></div>'+
-    '<div class="scenario"><span>5%</span><span>'+scenarioStatus(e5)+'</span><b>laagste '+euro(e5.min)+'</b></div>'+
-    '<p class="note">Hier telt niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.</p></div>'+
-  '<div class="card"><h2>Wat betekent dit voor jou?</h2><div class="answer leadanswer"><b>'+(isFinite(nominal)?'Met '+pct(Math.max(0,nominal))+' gemiddeld rendement blijft je minimale buffer van '+euro(p.endBuffer)+' intact.':'Met deze invoer is je bufferdoel niet haalbaar binnen de geteste rendementen.')+'</b>\n\n'+phases.join('\n\n')+'\n\nVeranderingen die zijn meegenomen: '+eventsTxt+'.</div></div>'+
-  '<div class="card"><h2>Wanneer komt geld uit je vermogen?</h2><div class="answer">'+
-    (p.age<Math.min(p.stopAge,p.aowAge)
-      ?('Van '+p.age+' tot '+Math.min(p.stopAge,p.aowAge)+': '+(workOnlyNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(workOnlyNet)+'/mnd over':'<b>'+euro(-workOnlyNet)+'/mnd uit vermogen</b>'))
-      :'')+
-    (p.aowAge<p.stopAge
-      ?('\n\nVan '+p.aowAge+' tot '+p.stopAge+': werk + AOW/pensioen samen '+euro(kept+p.aow+p.pension)+'/mnd. '+(workPlusAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(workPlusAowNet)+'/mnd over':'<b>'+euro(-workPlusAowNet)+'/mnd uit vermogen</b>'))
-      :'')+
-    (p.stopAge<p.aowAge
-      ?('\n\nVan '+p.stopAge+' tot '+p.aowAge+': <b>'+euro(p.spend)+'/mnd uit vermogen</b> · nog geen AOW/pensioen')
-      :'')+
-    ('\n\nVanaf '+Math.max(p.stopAge,p.aowAge)+': '+(stoppedAfterAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(stoppedAfterAowNet)+'/mnd over':'<b>'+euro(-stoppedAfterAowNet)+'/mnd uit vermogen</b>'))+
-  '</div></div>'+
-  '<div class="card"><h2>Waar ligt je speelruimte?</h2><div class="kpis">'+
-    '<div class="kpi"><span>Bij 3% rendement</span><b>'+(currentPlanAt3?('je huidige stop op '+Math.round(p.stopAge)+' werkt'):(earliest3!==null?'stoppen rond '+earliest3:'nog niet genoeg'))+'</b></div>'+
-    '<div class="kpi"><span>Hypotheek nu</span><b>'+euro(p.mortPayment)+'/mnd</b></div>'+
-    '<div class="kpi"><span>Nu: rente / aflossing</span><b>'+euro(mi.interest)+' / '+euro(mi.principal)+'</b></div>'+
-    '<div class="kpi"><span>Hypotheek eindigt rond</span><b>'+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',',')+' jaar':'onbekend')+'</b></div>'+
-    '<div class="kpi"><span>Restschuld einddatum</span><b>'+euro(mi.residual)+'</b></div>'+
-  '</div></div>'+
+  const result=document.getElementById('result');
+  const mortgageEnd=isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'onbekend';
+  const mortgageRisk=isFinite(mi.endAge)
+    ? (mi.residual>0
+        ? 'Rond leeftijd '+mortgageEnd+' eindigt deze hypotheekfase. Dan staat nog '+euro(mi.residual)+' open; dat bedrag is als toekomstige aflossing meegenomen.'
+        : 'Rond leeftijd '+mortgageEnd+' is de hypotheek volgens deze invoer afgelost. Daarna valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.')
+    : 'Er is nog geen bruikbare hypotheek-einddatum ingevuld.';
 
-  '<div class="card"><h2>Belangrijkste risico’s</h2><div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.\n\n2. Je hypotheek van '+euro(p.mortgage)+' tegen '+pct(p.mortRate)+' kost nu '+euro(p.mortPayment)+'/mnd. Daarvan is nu ongeveer '+euro(mi.interest)+' rente en '+euro(mi.principal)+' aflossing. '+(isFinite(mi.endAge)?('Rond leeftijd '+mi.endAge.toFixed(1).replace('.',',')+' eindigt deze hypotheekfase.'+(mi.residual>0?' Dan staat nog '+euro(mi.residual)+' open en dat bedrag is als aflossing meegenomen.':' Daarna valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.')):'Er is nog geen bruikbare einddatum ingevuld.')\n\n3. AOW en pensioen bepalen hoeveel je portefeuille na '+p.aowAge+' nog hoeft te dragen.\n\n4. Je hoeft je vermogen niet per se te laten groeien. Je vermogen mag gecontroleerd dalen, maar in deze berekening nooit onder je minimale buffer van '+euro(p.endBuffer)+'.</div></div>'+
-  '';
+  result.innerHTML = [
+    `<div class="card hero">
+      <div class="sub">${headline}</div>
+      <div class="big">${isFinite(nominal)?pct(Math.max(0,nominal)):'—'}</div>
+      <p>${isFinite(nominal)&&nominal<=0.00001
+        ? 'Zelfs zonder beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e.'
+        : 'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en onderweg minimaal '+euro(p.endBuffer)+' buffer te houden.'}</p>
+    </div>`,
+
+    `<div class="card">
+      <h2>Verloop van je vermogen</h2>
+      <p class="sectionhint">De lijn laat zien hoe je vermogen zich ontwikkelt bij het benodigde rendement.</p>
+      <div class="chartwrap">${chartSvg(pathNeeded,markers)}</div>
+      <p class="note">STOPPEN · AOW · PENSIOEN · HYPOTHEEK zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
+    </div>`,
+
+    `<div class="card">
+      <h2>Wat gebeurt wanneer?</h2>
+      <div class="phasegrid">${phaseCards.map(x=>`<div class="phase"><div class="age">${x.age}</div><div class="amount">${x.amount}</div><div class="desc">${x.desc}</div></div>`).join('')}</div>
+    </div>`,
+
+    `<div class="card">
+      <h2>Als rendement tegenvalt</h2>
+      <div class="scenario"><span>0%</span><span>${scenarioStatus(e0)}</span><b>laagste ${euro(e0.min)}</b></div>
+      <div class="scenario"><span>3%</span><span>${scenarioStatus(e3)}</span><b>laagste ${euro(e3.min)}</b></div>
+      <div class="scenario"><span>5%</span><span>${scenarioStatus(e5)}</span><b>laagste ${euro(e5.min)}</b></div>
+      <p class="note">Hier telt niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.</p>
+    </div>`,
+
+    `<div class="card">
+      <h2>Wat betekent dit voor jou?</h2>
+      <div class="answer leadanswer"><b>${isFinite(nominal)
+        ? 'Met '+pct(Math.max(0,nominal))+' gemiddeld rendement blijft je minimale buffer van '+euro(p.endBuffer)+' intact.'
+        : 'Met deze invoer is je bufferdoel niet haalbaar binnen de geteste rendementen.'}</b>
+
+${phases.join('\n\n')}
+
+Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
+    </div>`,
+
+    `<div class="card">
+      <h2>Wanneer komt geld uit je vermogen?</h2>
+      <div class="answer">${
+        [
+          p.age<Math.min(p.stopAge,p.aowAge)
+            ? 'Van '+p.age+' tot '+Math.min(p.stopAge,p.aowAge)+': '+(workOnlyNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(workOnlyNet)+'/mnd over':'<b>'+euro(-workOnlyNet)+'/mnd uit vermogen</b>')
+            : '',
+          p.aowAge<p.stopAge
+            ? 'Van '+p.aowAge+' tot '+p.stopAge+': werk + AOW/pensioen. '+(workPlusAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(workPlusAowNet)+'/mnd over':'<b>'+euro(-workPlusAowNet)+'/mnd uit vermogen</b>')
+            : '',
+          p.stopAge<p.aowAge
+            ? 'Van '+p.stopAge+' tot '+p.aowAge+': <b>'+euro(p.spend)+'/mnd uit vermogen</b> · nog geen AOW'
+            : '',
+          'Vanaf '+Math.max(p.stopAge,p.aowAge,p.pension>0?p.pensionAge:0)+': '+(stoppedAfterAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(stoppedAfterAowNet)+'/mnd over':'<b>'+euro(-stoppedAfterAowNet)+'/mnd uit vermogen</b>')
+        ].filter(Boolean).join('\n\n')
+      }</div>
+    </div>`,
+
+    `<div class="card">
+      <h2>Waar ligt je speelruimte?</h2>
+      <div class="kpis">
+        <div class="kpi"><span>Bij 3% rendement</span><b>${currentPlanAt3?('je huidige stop op '+Math.round(p.stopAge)+' werkt'):(earliest3!==null?'stoppen rond '+earliest3:'nog niet genoeg')}</b></div>
+        <div class="kpi"><span>Hypotheek nu</span><b>${euro(p.mortPayment)}/mnd</b></div>
+        <div class="kpi"><span>Nu: rente / aflossing</span><b>${euro(mi.interest)} / ${euro(mi.principal)}</b></div>
+        <div class="kpi"><span>Hypotheek eindigt rond</span><b>${mortgageEnd}</b></div>
+        <div class="kpi"><span>Restschuld einddatum</span><b>${euro(mi.residual)}</b></div>
+      </div>
+    </div>`,
+
+    `<div class="card">
+      <h2>Belangrijkste risico’s</h2>
+      <div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.
+
+2. Je hypotheek van ${euro(p.mortgage)} tegen ${pct(p.mortRate)} kost nu ${euro(p.mortPayment)}/mnd. Daarvan is ongeveer ${euro(mi.interest)} rente en ${euro(mi.principal)} aflossing. ${mortgageRisk}
+
+3. AOW en pensioen hebben ieder hun eigen startleeftijd en bepalen hoeveel je portefeuille later nog moet dragen.
+
+4. Je vermogen mag gecontroleerd dalen, maar in deze berekening nooit onder je minimale buffer van ${euro(p.endBuffer)}.</div>
+    </div>`
+  ].join('');
+
 };
 
 function setField(id,val){document.getElementById(id).value=val}
