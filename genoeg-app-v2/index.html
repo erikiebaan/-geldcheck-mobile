@@ -130,8 +130,8 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   </div>
   <div id="advancedFields" class="grid optional">
     <div class="field"><label>Gewenst eindvermogen / nalatenschap</label><input id="endTarget" type="number" value="" placeholder="€"></div>
-    <div class="field"><label>Pensioen indexatie % p/j</label><input id="pensionIndex" type="number" step="0.1" value="" placeholder="leeg = inflatie"></div>
-    <div class="field"><label>AOW indexatie % p/j</label><input id="aowIndex" type="number" step="0.1" value="" placeholder="leeg = inflatie"></div>
+    <div class="field"><label>Pensioen indexatie % p/j</label><input id="pensionIndex" type="number" step="0.1" value="" autocomplete="off" placeholder="leeg = inflatie"><div class="note">Leeg = groeit mee met inflatie. Vul 0 in als je bewust géén indexatie wilt.</div></div>
+    <div class="field"><label>AOW indexatie % p/j</label><input id="aowIndex" type="number" step="0.1" value="" autocomplete="off" placeholder="leeg = inflatie"><div class="note">Leeg = groeit mee met inflatie. Vul 0 in als je bewust géén indexatie wilt.</div></div>
     <div class="field"><label>Vermogensheffing % p/j</label><input id="wealthTax" type="number" step="0.1" value="" placeholder="%"></div>
     <div class="field"><label>Beleggingskosten % p/j</label><input id="investmentCost" type="number" step="0.1" value="" placeholder="%"></div>
     <div class="field"><label>Extra zorgkosten vanaf leeftijd</label><input id="careAge" type="number" value="" placeholder="bijv. 80"></div>
@@ -168,6 +168,13 @@ const n=id=>Number(document.getElementById(id)?.value)||0;
 const s=id=>document.getElementById(id)?.value||'';
 const euro=x=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Math.round(x));
 const pct=x=>(x*100).toFixed(1).replace('.',',')+'%';
+function optionalRate(id,fallback){
+  const el=document.getElementById(id);
+  if(!el)return fallback;
+  const raw=(el.value||'').trim();
+  if(el.dataset.touched!=='1'&&(raw===''||raw==='0'||raw==='0.0'||raw==='0,0')) return fallback;
+  return raw===''?fallback:(Number(raw.replace(',','.'))||0)/100;
+}
 
 function normalizeAge(v,currentAge){
   if(!v)return 0;
@@ -194,8 +201,8 @@ function plan(){
     partnerPensionAge:n('partnerPensionAge'),partnerPension:Math.max(0,n('partnerPension')),
     endAge:n('endAge'),endBuffer:Math.max(0,n('endBuffer')),endTarget:Math.max(0,n('endTarget')),
     inflation:Math.max(0,n('inflation')/100),
-    pensionIndex:(document.getElementById('pensionIndex')?.value.trim()===''?Math.max(0,n('inflation')/100):n('pensionIndex')/100),
-    aowIndex:(document.getElementById('aowIndex')?.value.trim()===''?Math.max(0,n('inflation')/100):n('aowIndex')/100),
+    pensionIndex:optionalRate('pensionIndex',Math.max(0,n('inflation')/100)),
+    aowIndex:optionalRate('aowIndex',Math.max(0,n('inflation')/100)),
     wealthTax:Math.max(0,n('wealthTax')/100),investmentCost:Math.max(0,n('investmentCost')/100),
     careAge:n('careAge'),careMonthly:Math.max(0,n('careMonthly')),
     houseReleaseAge:n('houseReleaseAge'),houseRelease:Math.max(0,n('houseRelease')),
@@ -1113,8 +1120,13 @@ function scheduleRecalc(){
   .forEach(id=>{
     const el=document.getElementById(id);
     if(el){
-      el.addEventListener('input',scheduleRecalc);
-      el.addEventListener('change',scheduleRecalc);
+      if(id==='pensionIndex'||id==='aowIndex'){
+        el.addEventListener('input',()=>{el.dataset.touched='1';scheduleRecalc();});
+        el.addEventListener('change',()=>{el.dataset.touched='1';scheduleRecalc();});
+      } else {
+        el.addEventListener('input',scheduleRecalc);
+        el.addEventListener('change',scheduleRecalc);
+      }
     }
   });
 document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
