@@ -13,7 +13,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{background:#fff8dc;border:1px solid var(--line);border-radius:999px;padding:9px 11px;font-size:13px;font-weight:800}
 .answer{white-space:pre-line;line-height:1.58}.good{color:var(--g)}.warn{color:#a86600}.bad{color:var(--danger)}.leadanswer{font-size:18px;line-height:1.55}.mutedcard{background:var(--soft2)}
 .scenario{display:grid;grid-template-columns:.55fr 1fr 1fr;gap:8px;padding:13px 0;border-bottom:1px solid #eee}.scenario:last-child{border:0}.scenario b{text-align:right}.scenario span:nth-child(2){font-weight:800}
-.note{font-size:12px;color:var(--muted)} .chartwrap{height:360px;margin-top:8px}.chartwrap svg{width:100%;height:100%;overflow:visible}.chartgrid{stroke:#ebe7df;stroke-width:1}.chartline{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.chartline.base{stroke:var(--blue)}.chartline.changed{stroke:#8f2de2}.chartfill{fill:#eef4ff}.chartfill.changed{fill:rgba(143,45,226,.08)}.chartlegend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;font-weight:800}.chartlegend span{display:flex;align-items:center;gap:6px}.legendline{display:inline-block;width:24px;height:4px;border-radius:999px}.legendline.base{background:var(--blue)}.legendline.changed{background:#8f2de2}.changemark{stroke:#8f2de2;stroke-width:1.2;stroke-dasharray:4 4}.changemarktext{font-size:10px;fill:#6e1ab0;font-weight:800}.chartaxis{font-size:11px;fill:#777}.chartdot{fill:#19765f}.chartzero{stroke:#b43131;stroke-dasharray:5 5;stroke-width:1.5}.chartmark{stroke:#d3ad31;stroke-width:1;stroke-dasharray:3 4}.chartmarktext{font-size:10px;fill:#8a6b00;font-weight:700}
+.note{font-size:12px;color:var(--muted)} .chartwrap{height:360px;margin-top:8px}.chartwrap svg{width:100%;height:100%;overflow:visible}.chartgrid{stroke:#ebe7df;stroke-width:1}.chartline{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.chartline.base{stroke:var(--blue)}.chartline.changed{stroke:#8f2de2}.chartline.rescue{stroke:#1d9b68}.chartfill{fill:#eef4ff}.chartfill.changed{fill:rgba(143,45,226,.08)}.chartlegend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;font-weight:800}.chartlegend span{display:flex;align-items:center;gap:6px}.legendline{display:inline-block;width:24px;height:4px;border-radius:999px}.legendline.base{background:var(--blue)}.legendline.changed{background:#8f2de2}.legendline.rescue{background:#1d9b68}.rescuebox{background:#f0faf6;border:1px solid #bfe6d5;border-radius:20px;padding:16px;margin-top:12px}.rescuegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rescuegrid .wide{grid-column:1/-1}@media(max-width:560px){.rescuegrid{grid-template-columns:1fr}}.changemark{stroke:#8f2de2;stroke-width:1.2;stroke-dasharray:4 4}.changemarktext{font-size:10px;fill:#6e1ab0;font-weight:800}.chartaxis{font-size:11px;fill:#777}.chartdot{fill:#19765f}.chartzero{stroke:#b43131;stroke-dasharray:5 5;stroke-width:1.5}.chartmark{stroke:#d3ad31;stroke-width:1;stroke-dasharray:3 4}.chartmarktext{font-size:10px;fill:#8a6b00;font-weight:700}
 .phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
 .topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}.statusline.live .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(57,120,212,.14)}
 @media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}h1{font-size:44px}}
@@ -176,6 +176,7 @@ function saveFinancialChanges(){
   try{history.replaceState({...history.state,geldcheckFinancialChanges:changes},'');sessionStorage.removeItem(CHANGES_STORAGE_KEY);}catch(_){}
 }
 let changes=loadFinancialChanges();
+let rescue=history.state?.geldcheckRescue||null;
 const PLAN_FIELD_IDS=['age','stopAge','income','spend','cash','cashRate','capital','assetRisk','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual','endTarget','pensionIndex','aowIndex','wealthTax','investmentCost','careAge','careMonthly','houseReleaseAge','houseRelease'];
 function loadPlanFields(){
   try{
@@ -191,6 +192,7 @@ function savePlanFields(){
     history.replaceState({...history.state,geldcheckPlanFields:fields},'');
   }catch(_){}
 }
+function saveRescue(){try{history.replaceState({...history.state,geldcheckRescue:rescue},'');}catch(_){}}
 loadPlanFields();
 window.validationRequested=false;
 
@@ -449,16 +451,16 @@ function simulatePath(p, realReturn, includeChanges=true){
   }
   return out;
 }
-function chartSvg(basePath,changedPath,markers=[],changeMarkers=[]){
+function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null){
   const w=760,h=300,padL=56,padR=18,padT=18,padB=34;
   const xs=basePath.map(d=>d.age);
-  const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[])];
+  const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[]),...(rescuePath?rescuePath.map(d=>d.capital):[])];
   let ymin=Math.min(0,...allYs),ymax=Math.max(1,...allYs);
   const range=Math.max(1,ymax-ymin);ymin-=range*.08;ymax+=range*.08;
   const x=a=>padL+(a-xs[0])/(xs[xs.length-1]-xs[0])*(w-padL-padR);
   const y=v=>padT+(ymax-v)/(ymax-ymin)*(h-padT-padB);
   const pts=path=>path.map(d=>x(d.age).toFixed(1)+','+y(d.capital).toFixed(1)).join(' ');
-  const basePts=pts(basePath),changedPts=changedPath?pts(changedPath):'';
+  const basePts=pts(basePath),changedPts=changedPath?pts(changedPath):'',rescuePts=rescuePath?pts(rescuePath):'';
   const baseArea=padL+','+y(0)+' '+basePts+' '+x(xs[xs.length-1])+','+y(0);
   const changedArea=changedPath?padL+','+y(0)+' '+changedPts+' '+x(xs[xs.length-1])+','+y(0):'';
   let grid='';
@@ -470,7 +472,7 @@ function chartSvg(basePath,changedPath,markers=[],changeMarkers=[]){
   markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;marks+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+m.label+' '+Math.round(m.age)+'</text>';});
   let cmarks='';
   changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+54+(j%3)*16;cmarks+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});
-  return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+marks+cmarks+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+labels+'</svg>';
+  return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+marks+cmarks+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+(rescuePath?'<polyline class="chartline rescue" points="'+rescuePts+'"/>':'')+labels+'</svg>';
 }
 
 function simulateReal(p, realReturn, mode='all'){
@@ -733,6 +735,44 @@ function planIssues(p){
   if(filled('endAge')&&filled('age')&&p.endAge<=p.age)missing.push('eindleeftijd na je huidige leeftijd');
   return missing;
 }
+function rescueScenario(p){
+  if(!rescue)return null;
+  const q={...p}, extra=[];
+  const age=Math.max(p.age,Math.min(p.endAge-1,Number(rescue.age)||p.stopAge));
+  const amount=Math.max(0,Number(rescue.amount)||0);
+  if(rescue.type==='income')extra.push({kind:'income',label:'mogelijk bijverdienen',monthly:amount,startAge:age,endAge:null});
+  else if(rescue.type==='expense')extra.push({kind:'expense',label:'mogelijk lagere uitgaven',monthly:-amount,startAge:age,endAge:null});
+  else if(rescue.type==='later')q.stopAge=Math.max(p.stopAge,age);
+  else if(rescue.type==='housing'){
+    q.houseReleaseAge=age;q.houseRelease=amount;
+    extra.push({kind:'expense',label:'nieuwe woonlast',monthly:Math.max(0,Number(rescue.monthly)||0),startAge:age,endAge:null});
+  }
+  const labels={income:euro(amount)+'/mnd bijverdienen vanaf '+age,expense:euro(amount)+'/mnd minder uitgeven vanaf '+age,later:'stoppen op '+Math.round(q.stopAge),housing:'goedkoper wonen vanaf '+age};
+  return {plan:q,extra,label:labels[rescue.type]||'mogelijke aanpassing'};
+}
+function withExtraChanges(extra,fn){
+  const original=changes;
+  try{changes=[...changes,...extra];return fn();}finally{changes=original;}
+}
+window.applyRescue=function(){
+  const type=s('rescueType');
+  rescue={type,age:n('rescueAge'),amount:n('rescueAmount'),monthly:n('rescueMonthly')};
+  saveRescue();recalc();
+}
+window.setRescueType=function(type){
+  const p=plan(),age=Math.max(p.stopAge,70);
+  rescue={type,age,amount:type==='expense'?300:type==='housing'?100000:500,monthly:type==='housing'?1000:0};
+  saveRescue();recalc();
+}
+window.clearRescue=function(){rescue=null;saveRescue();recalc();}
+function rescueControls(p){
+  const type=rescue?.type||'income',age=rescue?.age||Math.max(p.stopAge,70),amount=rescue?.amount||(type==='expense'?300:type==='housing'?100000:500),monthly=rescue?.monthly||1000;
+  const isLater=type==='later',isHousing=type==='housing';
+  const fields=isLater
+    ? '<input id="rescueAmount" type="hidden" value="0"><div class="field wide"><label>Nieuwe stopleeftijd</label><input id="rescueAge" type="number" value="'+age+'"></div><input id="rescueMonthly" type="hidden" value="0">'
+    : '<div class="field"><label>'+(isHousing?'Netto vermogen dat vrijkomt':'Bedrag per maand')+'</label><input id="rescueAmount" type="number" min="0" value="'+amount+'"></div><div class="field"><label>Vanaf leeftijd</label><input id="rescueAge" type="number" value="'+age+'"></div>'+(isHousing?'<div class="field wide"><label>Nieuwe woonlast per maand</label><input id="rescueMonthly" type="number" min="0" value="'+monthly+'"></div>':'<input id="rescueMonthly" type="hidden" value="0">');
+  return '<div class="rescuebox"><div class="rescuegrid"><div class="field wide"><label>Welke mogelijkheid wil je bekijken?</label><select id="rescueType" onchange="setRescueType(this.value)"><option value="income" '+(type==='income'?'selected':'')+'>Iets blijven verdienen</option><option value="expense" '+(type==='expense'?'selected':'')+'>Minder uitgeven</option><option value="later" '+(type==='later'?'selected':'')+'>Later stoppen</option><option value="housing" '+(type==='housing'?'selected':'')+'>Goedkoper wonen</option></select></div>'+fields+'<div class="wide"><button type="button" class="primary" onclick="applyRescue()">Vergelijk met mijn plan</button>'+(rescue?' <button type="button" class="tinybtn" onclick="clearRescue()">Wis vergelijking</button>':'')+'</div></div></div>';
+}
 function updateDynamicQuestions(){const f=document.getElementById('assetRiskField');if(f)f.style.display=n('capital')>0?'block':'none';}
 function updateChangeForm(){
   const type=s('changeType');
@@ -833,13 +873,19 @@ window.recalc=function(){
   const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1,'main');
   const e30=simulateReal(p,(1+.30)/(1+p.inflation)-1,'main');
   const shock3=simulateShock(p,(1+.03)/(1+p.inflation)-1,p.stopAge,assetShockPct());
-  const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
+  const real3=(1+.03)/(1+p.inflation)-1;
+  const rescueCase=rescueScenario(p);
+  const rescueAt3=rescueCase?withExtraChanges(rescueCase.extra,()=>simulateReal(rescueCase.plan,real3,'main')):null;
+  const chartReal=rescueCase?real3:Math.max(rr,(1/(1+p.inflation))-1);
   const pathBase=simulatePath(p,chartReal,false);
   const pathNeeded=simulatePath(p,chartReal,true);
+  const pathRescue=rescueCase?withExtraChanges(rescueCase.extra,()=>simulatePath(rescueCase.plan,chartReal,'main')):null;
   const earliest3=earliestAtNominal(p,.03);
-  const real3=(1+.03)/(1+p.inflation)-1;
   const currentAt3=simulateReal(p,real3,'main');
   const currentPlanAt3=currentAt3.min>=p.endBuffer&&currentAt3.end>=Math.max(p.endBuffer,p.endTarget);
+  const gapAt3=Math.max(0,p.endBuffer-e3.min,Math.max(p.endBuffer,p.endTarget)-e3.end);
+  const rescueWorks=!!(rescueAt3&&rescueAt3.min>=p.endBuffer&&rescueAt3.end>=Math.max(p.endBuffer,p.endTarget));
+  const rescueImprovement=rescueAt3?Math.max(0,rescueAt3.min-e3.min):0;
   const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
   const targetEnd=Math.max(p.endBuffer,p.endTarget);
   const highReturnEndsEnough=e30.end>=targetEnd;
@@ -1067,10 +1113,17 @@ window.recalc=function(){
     `<div class="card">
       <h2>Verloop van je vermogen</h2>
       <p class="sectionhint">Vergelijk je basisplan met het plan inclusief wat je later toevoegt.</p>
-      <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}</div>
-      <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers)}</div>
-      <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
+      <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}${rescueCase?'<span><i class="legendline rescue"></i>Mogelijke aanpassing</span>':''}</div>
+      <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers,pathRescue)}</div>
+      <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = mogelijke aanpassing bij 3% rendement':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
     </div>`,
+
+    (!currentPlanAt3||rescueCase)?`<div class="card">
+      <h2>Je hebt mogelijkheden</h2>
+      <p>${gapAt3>0?'Bij 3% rendement komt je plan op het kwetsbaarste moment nog ongeveer <b>'+euro(gapAt3)+'</b> tekort. Dat betekent niet dat je geen opties hebt. Een kleine, realistische aanpassing kan al veel verschil maken.':'Je gekozen aanpassing brengt je plan bij 3% binnen de gewenste buffer.'}</p>
+      ${rescueCase?'<div class="answer"><b>'+(rescueWorks?'Met '+esc(rescueCase.label)+' blijft je buffer bij 3% intact.':'Met '+esc(rescueCase.label)+' verbetert je laagste vermogen met ongeveer '+euro(rescueImprovement)+'. Dit helpt, maar is nog niet helemaal voldoende.')+'</b></div>':''}
+      ${rescueControls(p)}
+    </div>`:'',
 
     `<div class="card">
       <h2>Wat gebeurt wanneer?</h2>
