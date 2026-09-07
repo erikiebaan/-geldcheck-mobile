@@ -1,4 +1,4 @@
-// regression: dual-line base-vs-changes chart
+// regression: empty-start and lowest-wealth labels
 "use strict";
 
 let seed=20260907;
