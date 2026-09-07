@@ -435,7 +435,7 @@ window.recalc=function(){
   const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
   let headline;
   if(!isFinite(nominal))headline='Dit plan redt het zelfs niet met 30% rendement';
-  else if(nominal<=0.00001)headline='Je hebt geen rendement nodig';
+  else if(nominal<=0.00001)headline='Je plan blijft overeind bij 0% rendement';
   else if(nominal<=.03)headline='Je plan vraagt weinig rendement';
   else if(nominal<=.05)headline='Je plan lijkt haalbaar, maar rendement telt mee';
   else headline='Je plan vraagt een hoog rendement';
@@ -483,12 +483,88 @@ window.recalc=function(){
         : 'Rond leeftijd '+mortgageEnd+' is de hypotheek volgens deze invoer afgelost. Daarna valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.')
     : 'Er is nog geen bruikbare hypotheek-einddatum ingevuld.';
 
+  const riskCandidates=[];
+  const startNet=Math.max(1,p.cash+p.capital-p.otherDebt);
+  const worstMonthlyDraw=Math.max(0,...cashflowPhases.map(x=>-x.net));
+
+  if(mi.residual>0&&isFinite(mi.endAge)){
+    riskCandidates.push({
+      score: 100 + Math.min(40,mi.residual/startNet*100),
+      text:'Op je '+mortgageEnd+'e moet ongeveer '+euro(mi.residual)+' restschuld in één keer worden opgevangen. Dat is in jouw huidige plan een belangrijker risico dan normale maandelijkse schommelingen.'
+    });
+  }
+
+  if(worstMonthlyDraw>0){
+    const drawPhase=cashflowPhases.filter(x=>x.net<0).sort((a,b)=>a.net-b.net)[0];
+    riskCandidates.push({
+      score: 55 + Math.min(30,worstMonthlyDraw/Math.max(1,p.spend)*20),
+      text:'Je zwaarste structurele onttrekkingsfase is '+drawPhase.start+'–'+drawPhase.end+': ongeveer '+euro(-drawPhase.net)+'/mnd uit vermogen. Juist daar is je plan het gevoeligst voor tegenvallers.'
+    });
+  }
+
+  if(nominal>.045){
+    riskCandidates.push({
+      score: 90 + nominal*100,
+      text:'Je plan vraagt ongeveer '+pct(nominal)+' gemiddeld nominaal rendement. Dat maakt de uitkomst gevoelig voor lagere rendementen en slechte beursjaren.'
+    });
+  } else if(nominal>.00001){
+    riskCandidates.push({
+      score: 50 + nominal*100,
+      text:'Je plan leunt deels op beleggingsrendement: ongeveer '+pct(nominal)+' gemiddeld nominaal per jaar is nodig om de gekozen buffer intact te houden.'
+    });
+  }
+
+  if(e0.min<p.endBuffer){
+    riskCandidates.push({
+      score: 75 + Math.min(25,(p.endBuffer-e0.min)/Math.max(1,p.endBuffer)*10),
+      text:'Bij 0% rendement zakt je vermogen tot '+euro(e0.min)+'. Dat is onder je gekozen buffer van '+euro(p.endBuffer)+'.'
+    });
+  }
+
+  if(e3.min<p.endBuffer){
+    riskCandidates.push({
+      score: 70,
+      text:'Zelfs bij 3% gemiddeld rendement komt je vermogen onderweg tot '+euro(e3.min)+'. Je gekozen buffer van '+euro(p.endBuffer)+' wordt dan niet gehaald.'
+    });
+  }
+
+  if(p.otherDebt>0){
+    riskCandidates.push({
+      score: 65 + Math.min(20,p.otherDebt/startNet*100),
+      text:'Naast je hypotheek heb je '+euro(p.otherDebt)+' overige schuld. Die verlaagt direct je vrije financiële buffer.'
+    });
+  }
+
+  if(p.aow+p.pension>0&&p.stopAge<=Math.max(p.aowAge,p.pensionAge)){
+    riskCandidates.push({
+      score: 40,
+      text:'Je plan is afhankelijk van de ingevoerde AOW- en pensioenbedragen. Een lager netto bedrag of latere startdatum verandert de uitkomst direct.'
+    });
+  }
+
+  if(p.homeValue>0){
+    riskCandidates.push({
+      score: 20,
+      text:'Je woningwaarde van '+euro(p.homeValue)+' is niet als vrij besteedbaar vermogen meegerekend. Dat is bewust conservatief; verkoop of kleiner wonen kan later wel extra speelruimte geven.'
+    });
+  }
+
+  if(riskCandidates.length===0){
+    riskCandidates.push({
+      score:10,
+      text:'Op basis van deze invoer is er geen dominante financiële kwetsbaarheid. De belangrijkste onzekerheid blijft dat rendement, inflatie en toekomstige inkomsten in werkelijkheid anders kunnen uitpakken.'
+    });
+  }
+
+  const topRisks=riskCandidates.sort((a,b)=>b.score-a.score).slice(0,4);
+  const risksHtml=topRisks.map((r,i)=>(i+1)+'. '+r.text).join('\n\n');
+
   result.innerHTML = [
     `<div class="card hero">
       <div class="sub">${headline}</div>
       <div class="big">${isFinite(nominal)?pct(Math.max(0,nominal)):'—'}</div>
       <p>${isFinite(nominal)&&nominal<=0.00001
-        ? 'Zelfs zonder beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e.'
+        ? 'Bij 0% nominaal beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e. Inflatie blijft wel invloed houden op je koopkracht.'
         : 'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en onderweg minimaal '+euro(p.endBuffer)+' buffer te houden.'}</p>
     </div>`,
 
@@ -551,13 +627,8 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
 
     `<div class="card">
       <h2>Belangrijkste risico’s</h2>
-      <div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.
-
-2. Je hypotheek van ${euro(p.mortgage)} tegen ${pct(p.mortRate)} kost nu ${euro(p.mortPayment)}/mnd. Daarvan is ongeveer ${euro(mi.interest)} rente en ${euro(mi.principal)} aflossing. ${mortgageRisk}
-
-3. AOW en pensioen hebben ieder hun eigen startleeftijd en bepalen hoeveel je portefeuille later nog moet dragen.
-
-4. Je vermogen mag gecontroleerd dalen, maar in deze berekening nooit onder je minimale buffer van ${euro(p.endBuffer)}.</div>
+      <p class="sectionhint">Gerangschikt op wat in jouw huidige plan de meeste impact heeft.</p>
+      <div class="answer">${risksHtml}</div>
     </div>`
   ].join('');
 
