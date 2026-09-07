@@ -24,7 +24,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 </div>
 
 <div class="card mutedcard" id="gegevens"><h2>Mijn situatie</h2><div class="summaryrow">
-<div class="summarypill"><span>Vrij vermogen</span><b id="sumCapital">€250.000</b></div>
+<div class="summarypill"><span>Cash + beleggingen</span><b id="sumCapital">€250.000</b></div>
 <div class="summarypill"><span>Stoppen</span><b id="sumStop">60 jaar</b></div>
 <div class="summarypill"><span>Buffer</span><b id="sumBuffer">€50.000</b></div>
 </div><div class="statusline"><span class="dot"></span><span>Tik op <b>Mijn gegevens</b> om je plan aan te passen.</span></div><div class="details" id="details">
@@ -55,7 +55,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
         <option value="combination">Combinatie</option>
       </select>
     </div>
-    <div class="field"><label>Einddatum hypotheek: leeftijd</label><input id="mortEndAge" type="number" value="0" placeholder="bijv. 75"></div>
+    <div class="field"><label>Hypotheek eindigt: leeftijd óf jaar</label><input id="mortEndAge" type="number" value="0" placeholder="bijv. 75 of 2046"></div>
     <div class="field"><label>Restschuld op einddatum</label><input id="mortResidual" type="number" value="0"></div>
   </div>
   <div id="mortWarning" class="warningbox" style="display:none"></div>
@@ -111,6 +111,15 @@ const s=id=>document.getElementById(id)?.value||'';
 const euro=x=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Math.round(x));
 const pct=x=>(x*100).toFixed(1).replace('.',',')+'%';
 
+function normalizeAge(v,currentAge){
+  if(!v)return 0;
+  if(v>1900){
+    const currentYear=new Date().getFullYear();
+    return currentAge+(v-currentYear);
+  }
+  return v;
+}
+
 function plan(){
   return {
     age:n('age'),stopAge:n('stopAge'),income:n('income'),spend:n('spend'),
@@ -121,7 +130,7 @@ function plan(){
     partnerPensionAge:n('partnerPensionAge'),partnerPension:n('partnerPension'),
     endAge:n('endAge'),endBuffer:n('endBuffer'),inflation:n('inflation')/100,
     homeValue:n('homeValue'),mortgage:n('mortgage'),mortRate:n('mortRate')/100,mortPayment:n('mortPayment'),
-    mortType:s('mortType'),mortEndAge:n('mortEndAge'),mortResidual:n('mortResidual')
+    mortType:s('mortType'),mortEndAge:normalizeAge(n('mortEndAge'),n('age')),mortResidual:n('mortResidual')
   };
 }
 
@@ -269,7 +278,7 @@ window.toggleDetails=function(force){
 window.recalc=function(){
   const p=plan();
   const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
-  if(sc)sc.textContent=euro(p.capital+p.cash-p.otherDebt); if(ss)ss.textContent=Math.round(p.stopAge)+' jaar'; if(sb)sb.textContent=euro(p.endBuffer);
+  if(sc)sc.textContent=euro(p.capital+p.cash); if(ss)ss.textContent=Math.round(p.stopAge)+' jaar'; if(sb)sb.textContent=euro(p.endBuffer);
   const mi=mortgageInfo(p);
   const mw=document.getElementById('mortWarning');
   if(mw){
@@ -289,14 +298,15 @@ window.recalc=function(){
   const stoppedAfterAowNet=laterIncome-p.spend;
   const beforeGap=Math.max(0,-workOnlyNet);
   const afterAowGap=Math.max(0,-stoppedAfterAowNet);
-  const engineInput={age:p.age,goal:'early',income:p.income,cost:p.spend,cash:p.cash,investments:p.capital,debt:p.otherDebt,retireAge:p.stopAge,aow:p.aow,aowStartAge:p.aowAge,pension:p.pension,pensionStartAge:p.pensionAge};
-  let baseNarrative=null;try{baseNarrative=GeldcheckNarrative.story(engineInput,{})}catch(e){}
   const e0=simulateReal(p,(1+0)/(1+p.inflation)-1);
   const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1);
   const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);
   const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
   const pathNeeded=simulatePath(p,chartReal);
   const earliest3=earliestAtNominal(p,.03);
+  const real3=(1+.03)/(1+p.inflation)-1;
+  const currentAt3=simulateReal(p,real3);
+  const currentPlanAt3=currentAt3.min>=p.endBuffer&&currentAt3.end>=p.endBuffer;
   const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
   let headline;
   if(!isFinite(nominal))headline='Dit plan redt het zelfs niet met 30% rendement';
@@ -324,7 +334,7 @@ window.recalc=function(){
     if(mi.residual>0) phases.push('Rond je '+mi.endAge.toFixed(1).replace('.',',')+'e eindigt je hypotheek en staat er nog '+euro(mi.residual)+' open. Die restschuld moet in dit plan worden betaald uit je vrije vermogen, tenzij je later een andere keuze toevoegt.');
     else phases.push('Rond je '+mi.endAge.toFixed(1).replace('.',',')+'e is je hypotheek afgelost. Vanaf dan dalen je maandlasten automatisch met '+euro(p.mortPayment)+'.');
   }
-  const lastStart=Math.max(p.stopAge,p.aowAge);
+  const lastStart=Math.max(p.stopAge,p.aowAge,p.pension>0?p.pensionAge:0);
   if(lastStart<p.endAge){
     phases.push('Vanaf '+lastStart+': werkinkomen valt weg en AOW/pensioen is '+euro(p.aow+p.pension)+'/mnd. '+(stoppedAfterAowNet>=0?'Je houdt '+euro(stoppedAfterAowNet)+'/mnd over.':'Je onttrekt '+euro(-stoppedAfterAowNet)+'/mnd uit vermogen.'));
   }
@@ -349,7 +359,7 @@ window.recalc=function(){
   ];
   document.getElementById('result').innerHTML=
   '<div class="card hero"><div class="sub">'+headline+'</div><div class="big">'+(isFinite(nominal)?pct(Math.max(0,nominal)):'—')+'</div><p>'+(isFinite(nominal)&&nominal<=0.00001?'Zelfs zonder beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e.':'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en onderweg minimaal '+euro(p.endBuffer)+' buffer te houden.')+'</p></div>'+
-  '<div class="card"><h2>Verloop van je vermogen</h2><p class="sectionhint">De lijn laat zien hoe je vermogen zich ontwikkelt bij het benodigde rendement.</p><div class="chartwrap">'+chartSvg(pathNeeded,markers)+'</div><p class="note">STOPPEN · AOW/PENSIOEN · HYPOTHEEK AF zijn gemarkeerd. Je buffer mag nergens onder '+euro(p.endBuffer)+' komen.</p></div>'+
+  '<div class="card"><h2>Verloop van je vermogen</h2><p class="sectionhint">De lijn laat zien hoe je vermogen zich ontwikkelt bij het benodigde rendement.</p><div class="chartwrap">'+chartSvg(pathNeeded,markers)+'</div><p class="note">STOPPEN · AOW · PENSIOEN · HYPOTHEEK zijn gemarkeerd. Je buffer mag nergens onder '+euro(p.endBuffer)+' komen.</p></div>'+
   '<div class="card"><h2>Wat gebeurt wanneer?</h2><div class="phasegrid">'+phaseCards.map(x=>'<div class="phase"><div class="age">'+x.age+'</div><div class="amount">'+x.amount+'</div><div class="desc">'+x.desc+'</div></div>').join('')+'</div></div>'+
   '<div class="card"><h2>Als rendement tegenvalt</h2>'+
     '<div class="scenario"><span>0%</span><span>'+scenarioStatus(e0)+'</span><b>laagste '+euro(e0.min)+'</b></div>'+
@@ -370,15 +380,15 @@ window.recalc=function(){
     ('\n\nVanaf '+Math.max(p.stopAge,p.aowAge)+': '+(stoppedAfterAowNet>=0?'<b>geen onttrekking</b> · je houdt '+euro(stoppedAfterAowNet)+'/mnd over':'<b>'+euro(-stoppedAfterAowNet)+'/mnd uit vermogen</b>'))+
   '</div></div>'+
   '<div class="card"><h2>Waar ligt je speelruimte?</h2><div class="kpis">'+
-    '<div class="kpi"><span>Bij 3% rendement</span><b>'+(earliest3!==null?'volledig stoppen rond '+earliest3:'nog niet genoeg')+'</b></div>'+
+    '<div class="kpi"><span>Bij 3% rendement</span><b>'+(currentPlanAt3?('je huidige stop op '+Math.round(p.stopAge)+' werkt'):(earliest3!==null?'stoppen rond '+earliest3:'nog niet genoeg'))+'</b></div>'+
     '<div class="kpi"><span>Hypotheek nu</span><b>'+euro(p.mortPayment)+'/mnd</b></div>'+
     '<div class="kpi"><span>Nu: rente / aflossing</span><b>'+euro(mi.interest)+' / '+euro(mi.principal)+'</b></div>'+
     '<div class="kpi"><span>Hypotheek eindigt rond</span><b>'+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',',')+' jaar':'onbekend')+'</b></div>'+
     '<div class="kpi"><span>Restschuld einddatum</span><b>'+euro(mi.residual)+'</b></div>'+
   '</div></div>'+
 
-  '<div class="card"><h2>Belangrijkste risico’s</h2><div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.\n\n2. Je hypotheek van '+euro(p.mortgage)+' tegen '+pct(p.mortRate)+' kost nu '+euro(p.mortPayment)+'/mnd. Daarvan is nu ongeveer '+euro(mi.interest)+' rente en '+euro(mi.principal)+' aflossing. Bij gelijkblijvende rente en betaling loopt hij rond leeftijd '+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'—')+' af; vanaf dan valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.\n\n3. AOW en pensioen bepalen hoeveel je portefeuille na '+p.aowAge+' nog hoeft te dragen.\n\n4. Je hoeft je vermogen niet per se te laten groeien. Je vermogen mag gecontroleerd dalen, maar in deze berekening nooit onder je minimale buffer van '+euro(p.endBuffer)+'.</div></div>'+
-  (baseNarrative?'<div class="card"><h2>Onderliggende Geldcheck-intelligentie</h2><p class="note">De bestaande engine blijft als veiligheidslaag actief.</p><div class="answer">'+baseNarrative.story+'</div></div>':'');
+  '<div class="card"><h2>Belangrijkste risico’s</h2><div class="answer">1. Slechte beursjaren vlak na volledig stoppen kunnen veel meer kwaad doen dan hetzelfde gemiddelde rendement later.\n\n2. Je hypotheek van '+euro(p.mortgage)+' tegen '+pct(p.mortRate)+' kost nu '+euro(p.mortPayment)+'/mnd. Daarvan is nu ongeveer '+euro(mi.interest)+' rente en '+euro(mi.principal)+' aflossing. '+(isFinite(mi.endAge)?('Rond leeftijd '+mi.endAge.toFixed(1).replace('.',',')+' eindigt deze hypotheekfase.'+(mi.residual>0?' Dan staat nog '+euro(mi.residual)+' open en dat bedrag is als aflossing meegenomen.':' Daarna valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.')):'Er is nog geen bruikbare einddatum ingevuld.')\n\n3. AOW en pensioen bepalen hoeveel je portefeuille na '+p.aowAge+' nog hoeft te dragen.\n\n4. Je hoeft je vermogen niet per se te laten groeien. Je vermogen mag gecontroleerd dalen, maar in deze berekening nooit onder je minimale buffer van '+euro(p.endBuffer)+'.</div></div>'+
+  '';
 };
 
 function setField(id,val){document.getElementById(id).value=val}
