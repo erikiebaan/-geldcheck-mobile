@@ -13,7 +13,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{background:#fff8dc;border:1px solid var(--line);border-radius:999px;padding:9px 11px;font-size:13px;font-weight:800}
 .answer{white-space:pre-line;line-height:1.58}.good{color:var(--g)}.warn{color:#a86600}.bad{color:var(--danger)}.leadanswer{font-size:18px;line-height:1.55}.mutedcard{background:var(--soft2)}
 .scenario{display:grid;grid-template-columns:.55fr 1fr 1fr;gap:8px;padding:13px 0;border-bottom:1px solid #eee}.scenario:last-child{border:0}.scenario b{text-align:right}.scenario span:nth-child(2){font-weight:800}
-.note{font-size:12px;color:var(--muted)} .chartwrap{height:360px;margin-top:8px}.chartwrap svg{width:100%;height:100%;overflow:visible}.chartgrid{stroke:#ebe7df;stroke-width:1}.chartline{fill:none;stroke:var(--blue);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.chartfill{fill:#eef4ff}.chartaxis{font-size:11px;fill:#777}.chartdot{fill:#19765f}.chartzero{stroke:#b43131;stroke-dasharray:5 5;stroke-width:1.5}.chartmark{stroke:#d3ad31;stroke-width:1;stroke-dasharray:3 4}.chartmarktext{font-size:10px;fill:#8a6b00;font-weight:700}
+.note{font-size:12px;color:var(--muted)} .chartwrap{height:360px;margin-top:8px}.chartwrap svg{width:100%;height:100%;overflow:visible}.chartgrid{stroke:#ebe7df;stroke-width:1}.chartline{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.chartline.base{stroke:var(--blue)}.chartline.changed{stroke:#8f2de2}.chartfill{fill:#eef4ff}.chartfill.changed{fill:rgba(143,45,226,.08)}.chartlegend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;font-weight:800}.chartlegend span{display:flex;align-items:center;gap:6px}.legendline{display:inline-block;width:24px;height:4px;border-radius:999px}.legendline.base{background:var(--blue)}.legendline.changed{background:#8f2de2}.changemark{stroke:#8f2de2;stroke-width:1.2;stroke-dasharray:4 4}.changemarktext{font-size:10px;fill:#6e1ab0;font-weight:800}.chartaxis{font-size:11px;fill:#777}.chartdot{fill:#19765f}.chartzero{stroke:#b43131;stroke-dasharray:5 5;stroke-width:1.5}.chartmark{stroke:#d3ad31;stroke-width:1;stroke-dasharray:3 4}.chartmarktext{font-size:10px;fill:#8a6b00;font-weight:700}
 .phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
 .topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}.statusline.live .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(57,120,212,.14)}
 @media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}h1{font-size:44px}}
@@ -358,7 +358,7 @@ function settleYear(state,netCash){
   }
 }
 
-function simulatePath(p, realReturn){
+function simulatePath(p, realReturn, includeChanges=true){
   const start=startingAssets(p);
   let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
   const mi=mortgageInfo(p), di=debtInfo(p);
@@ -377,7 +377,7 @@ function simulatePath(p, realReturn){
     if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
 
     let annualSpend=annualSpendAt(p,age,mi,di), oneOff=0, monthlyIncomeChange=0, monthlySpendChange=0;
-    changes.forEach(e=>{
+    if(includeChanges) changes.forEach(e=>{
       if(e.kind==='oneoff'&&e.age===age)oneOff+=e.amount;
       if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlyIncomeChange+=e.monthly;
       if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlySpendChange+=e.monthly;
@@ -393,7 +393,29 @@ function simulatePath(p, realReturn){
   }
   return out;
 }
-function chartSvg(path,markers=[]){ const w=760,h=300,padL=56,padR=18,padT=18,padB=34; const xs=path.map(d=>d.age), ys=path.map(d=>d.capital); let ymin=Math.min(0,...ys), ymax=Math.max(1,...ys); const range=Math.max(1,ymax-ymin); ymin-=range*.08; ymax+=range*.08; const x=a=>padL+(a-xs[0])/(xs[xs.length-1]-xs[0])*(w-padL-padR); const y=v=>padT+(ymax-v)/(ymax-ymin)*(h-padT-padB); const pts=path.map(d=>x(d.age).toFixed(1)+','+y(d.capital).toFixed(1)).join(' '); const area=padL+','+y(0)+' '+pts+' '+x(xs[xs.length-1])+','+y(0); let grid=''; for(let i=0;i<=4;i++){ const v=ymin+(ymax-ymin)*i/4; const yy=y(v); grid+='<line class="chartgrid" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+yy+'" y2="'+yy+'"/><text class="chartaxis" x="4" y="'+(yy+4)+'">'+euro(v)+'</text>'; } let labels=''; const step=Math.max(1,Math.ceil((xs[xs.length-1]-xs[0])/6)); for(let a=xs[0];a<=xs[xs.length-1];a+=step){ labels+='<text class="chartaxis" x="'+x(a)+'" y="'+(h-8)+'" text-anchor="middle">'+a+'</text>'; } let z=(0>=ymin&&0<=ymax)?'<line class="chartzero" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(0)+'" y2="'+y(0)+'"/>':''; let marks=''; markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age); const ty=padT+12+(j%3)*14; marks+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+m.label+' '+Math.round(m.age)+'</text>';}); return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop">'+grid+z+'<polygon class="chartfill" points="'+area+'"/>'+marks+'<polyline class="chartline" points="'+pts+'"/>'+labels+'</svg>'; }
+function chartSvg(basePath,changedPath,markers=[],changeMarkers=[]){
+  const w=760,h=300,padL=56,padR=18,padT=18,padB=34;
+  const xs=basePath.map(d=>d.age);
+  const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[])];
+  let ymin=Math.min(0,...allYs),ymax=Math.max(1,...allYs);
+  const range=Math.max(1,ymax-ymin);ymin-=range*.08;ymax+=range*.08;
+  const x=a=>padL+(a-xs[0])/(xs[xs.length-1]-xs[0])*(w-padL-padR);
+  const y=v=>padT+(ymax-v)/(ymax-ymin)*(h-padT-padB);
+  const pts=path=>path.map(d=>x(d.age).toFixed(1)+','+y(d.capital).toFixed(1)).join(' ');
+  const basePts=pts(basePath),changedPts=changedPath?pts(changedPath):'';
+  const baseArea=padL+','+y(0)+' '+basePts+' '+x(xs[xs.length-1])+','+y(0);
+  const changedArea=changedPath?padL+','+y(0)+' '+changedPts+' '+x(xs[xs.length-1])+','+y(0):'';
+  let grid='';
+  for(let i=0;i<=4;i++){const v=ymin+(ymax-ymin)*i/4,yy=y(v);grid+='<line class="chartgrid" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+yy+'" y2="'+yy+'"/><text class="chartaxis" x="4" y="'+(yy+4)+'">'+euro(v)+'</text>';}
+  let labels='';const step=Math.max(1,Math.ceil((xs[xs.length-1]-xs[0])/6));
+  for(let a=xs[0];a<=xs[xs.length-1];a+=step)labels+='<text class="chartaxis" x="'+x(a)+'" y="'+(h-8)+'" text-anchor="middle">'+a+'</text>';
+  const z=(0>=ymin&&0<=ymax)?'<line class="chartzero" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(0)+'" y2="'+y(0)+'"/>':'';
+  let marks='';
+  markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;marks+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+m.label+' '+Math.round(m.age)+'</text>';});
+  let cmarks='';
+  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+54+(j%3)*16;cmarks+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+m.label+'</text>';});
+  return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+marks+cmarks+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+labels+'</svg>';
+}
 
 function simulateReal(p, realReturn){
   const start=startingAssets(p);
@@ -706,7 +728,8 @@ window.recalc=function(){
   const e30=simulateReal(p,(1+.30)/(1+p.inflation)-1);
   const shock3=simulateShock(p,(1+.03)/(1+p.inflation)-1,p.stopAge,.30);
   const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
-  const pathNeeded=simulatePath(p,chartReal);
+  const pathBase=simulatePath(p,chartReal,false);
+  const pathNeeded=simulatePath(p,chartReal,true);
   const earliest3=earliestAtNominal(p,.03);
   const real3=(1+.03)/(1+p.inflation)-1;
   const currentAt3=simulateReal(p,real3);
@@ -773,9 +796,15 @@ window.recalc=function(){
     ...(p.pension>0&&p.pensionAge!==p.aowAge?[{age:p.pensionAge,label:'Pensioen'}]:[]),
     ...(isFinite(mi.endAge)?[{age:effectiveMortgageCutAge(p,mi),label:effectiveMortgageResidual(p,mi)>0?'Hypotheek einde':(p.houseReleaseAge>0?'Woning':'Hypotheek af')}]:[]),
     ...(p.careAge>0?[{age:p.careAge,label:'Zorgkosten'}]:[]),
-    ...(p.otherDebt>0&&isFinite(di.endAge)?[{age:debtCutAge(di),label:di.residual>0?'Schuld einde':'Schuld af'}]:[]),
-    ...changes.map(e=>({age:e.kind==='oneoff'?e.age:e.startAge,label:e.label||'Verandering'}))
+    ...(p.otherDebt>0&&isFinite(di.endAge)?[{age:debtCutAge(di),label:di.residual>0?'Schuld einde':'Schuld af'}]:[])
   ];
+  const changeMarkers=changes.map(e=>{
+    const age=e.kind==='oneoff'?e.age:e.startAge;
+    let label=e.label||'Verandering';
+    if(e.kind==='oneoff') label+=' '+(e.amount<0?'+':'−')+euro(Math.abs(e.amount));
+    else label+=' '+(e.monthly>=0?'+':'−')+euro(Math.abs(e.monthly))+'/mnd';
+    return {age,label};
+  });
   const result=document.getElementById('result');
   const mortgageEnd=isFinite(mi.endAge)?effectiveMortgageCutAge(p,mi).toString():'onbekend';
   const mortgageRisk=isFinite(mi.endAge)
@@ -927,9 +956,10 @@ window.recalc=function(){
 
     `<div class="card">
       <h2>Verloop van je vermogen</h2>
-      <p class="sectionhint">De lijn laat zien hoe je vermogen zich ontwikkelt bij het benodigde rendement.</p>
-      <div class="chartwrap">${chartSvg(pathNeeded,markers)}</div>
-      <p class="note">STOPPEN · AOW · PENSIOEN · HYPOTHEEK zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
+      <p class="sectionhint">Vergelijk je basisplan met het plan inclusief wat je later toevoegt.</p>
+      <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}</div>
+      <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers)}</div>
+      <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
     </div>`,
 
     `<div class="card">
