@@ -15,7 +15,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 .scenario{display:grid;grid-template-columns:.55fr 1fr 1fr;gap:8px;padding:13px 0;border-bottom:1px solid #eee}.scenario:last-child{border:0}.scenario b{text-align:right}.scenario span:nth-child(2){font-weight:800}
 .note{font-size:12px;color:var(--muted)} .chartwrap{height:360px;margin-top:8px}.chartwrap svg{width:100%;height:100%;overflow:visible}.chartgrid{stroke:#ebe7df;stroke-width:1}.chartline{fill:none;stroke:var(--blue);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.chartfill{fill:#eef4ff}.chartaxis{font-size:11px;fill:#777}.chartdot{fill:#19765f}.chartzero{stroke:#b43131;stroke-dasharray:5 5;stroke-width:1.5}.chartmark{stroke:#d3ad31;stroke-width:1;stroke-dasharray:3 4}.chartmarktext{font-size:10px;fill:#8a6b00;font-weight:700}
 .phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
-.topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}
+.topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}.statusline.live .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(57,120,212,.14)}
 @media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}h1{font-size:44px}}
 </style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Heb ik straks genoeg?</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
 <div class="topintro">
@@ -43,7 +43,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   <div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" value="245000"></div>
   <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>
   <div class="field"><label>Hypotheekbetaling p/m</label><input id="mortPayment" type="number" value="1100"></div>
-</div><button class="primary" onclick="recalc();toggleDetails(false)">Bereken mijn plan</button></div></div>
+</div><button class="primary" onclick="recalc();toggleDetails(false)">Klaar</button></div></div>
 
 <div id="result"></div>
 
@@ -265,5 +265,24 @@ window.applyAsk=function(){
   recalc();
 }
 window.quick=function(t){document.getElementById('ask').value=t;applyAsk()}
+
+let recalcTimer=null;
+function scheduleRecalc(){
+  clearTimeout(recalcTimer);
+  recalcTimer=setTimeout(()=>{
+    recalc();
+    const s=document.querySelector('.statusline');
+    if(s){s.classList.add('live'); s.querySelector('span:last-child').innerHTML='<b>Automatisch bijgewerkt</b> op basis van je laatste wijziging.';}
+  },180);
+}
+['age','stopAge','income','spend','capital','workReduction','aowAge','aow','pension','endAge','endBuffer','inflation','mortgage','mortRate','mortPayment']
+  .forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){
+      el.addEventListener('input',scheduleRecalc);
+      el.addEventListener('change',scheduleRecalc);
+    }
+  });
+
 recalc();
 })();</script></body></html>
