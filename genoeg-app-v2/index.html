@@ -24,23 +24,23 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 </div>
 
 <div class="card mutedcard" id="gegevens"><h2>Mijn situatie</h2><div class="summaryrow">
-<div class="summarypill"><span>Netto financieel vermogen</span><b id="sumCapital">€250.000</b><small id="sumCapitalBreakdown" class="note"></small></div>
-<div class="summarypill"><span>Stoppen</span><b id="sumStop">60 jaar</b></div>
-<div class="summarypill"><span>Buffer</span><b id="sumBuffer">€50.000</b></div>
+<div class="summarypill"><span>Netto financieel vermogen</span><b id="sumCapital">—</b><small id="sumCapitalBreakdown" class="note"></small></div>
+<div class="summarypill"><span>Stoppen</span><b id="sumStop">—</b></div>
+<div class="summarypill"><span>Buffer</span><b id="sumBuffer">—</b></div>
 </div><div class="statusline"><span class="dot"></span><span>Tik op <b>Mijn gegevens</b> om je plan aan te passen.</span></div><div class="details" id="details">
 
 <div class="group">
   <div class="grouphead"><div class="groupicon">NU</div><div><h3>Nu</h3><p>Waar sta je vandaag?</p></div></div>
   <div class="grid">
-    <div class="field"><label>Leeftijd nu</label><input id="age" type="number" value="55"></div>
-    <div class="field"><label>Netto inkomen p/m</label><input id="income" type="number" value="3000"></div>
-    <div class="field"><label>Uitgaven p/m</label><input id="spend" type="number" value="2100"></div>
-    <div class="field"><label>Spaargeld / cash</label><input id="cash" type="number" value="0"></div>
-    <div class="field"><label>Rente op cash % p/j</label><input id="cashRate" type="number" step="0.1" value="0"></div>
-    <div class="field"><label>Belegd vermogen</label><input id="capital" type="number" value="250000"></div>
-    <div class="field"><label>Overige schulden</label><input id="otherDebt" type="number" value="0"></div>
-    <div class="field"><label>Rente overige schuld % p/j</label><input id="otherDebtRate" type="number" step="0.1" value="0"></div>
-    <div class="field"><label>Betaling overige schuld p/m <span class="optional">(zit in uitgaven)</span></label><input id="otherDebtPayment" type="number" value="0"></div>
+    <div class="field"><label>Leeftijd nu</label><input id="age" type="number" value="" placeholder="bijv. 49"></div>
+    <div class="field"><label>Netto inkomen p/m</label><input id="income" type="number" value="" placeholder="netto per maand"></div>
+    <div class="field"><label>Uitgaven p/m</label><input id="spend" type="number" value="" placeholder="per maand"></div>
+    <div class="field"><label>Spaargeld / cash</label><input id="cash" type="number" value="" placeholder="€"></div>
+    <div class="field"><label>Rente op cash % p/j</label><input id="cashRate" type="number" step="0.1" value="" placeholder="%"></div>
+    <div class="field"><label>Belegd vermogen</label><input id="capital" type="number" value="" placeholder="€"></div>
+    <div class="field"><label>Overige schulden</label><input id="otherDebt" type="number" value="" placeholder="€"></div>
+    <div class="field"><label>Rente overige schuld % p/j</label><input id="otherDebtRate" type="number" step="0.1" value="" placeholder="%"></div>
+    <div class="field"><label>Betaling overige schuld p/m <span class="optional">(zit in uitgaven)</span></label><input id="otherDebtPayment" type="number" value="" placeholder="€ p/m"></div>
     <div class="field"><label>Overige schuld eindigt: leeftijd óf jaar</label><input id="otherDebtEndAge" type="number" value="0" placeholder="bijv. 65 of 2036"></div>
   </div>
   <div id="debtWarning" class="warningbox" style="display:none"></div>
@@ -49,10 +49,10 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 <div class="group">
   <div class="grouphead"><div class="groupicon">⌂</div><div><h3>Wonen</h3><p>Hypotheek en wat er op de einddatum gebeurt.</p></div></div>
   <div class="grid">
-    <div class="field"><label>Woningwaarde</label><input id="homeValue" type="number" value="0"></div>
-    <div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" value="245000"></div>
-    <div class="field"><label>Hypotheekbetaling p/m</label><input id="mortPayment" type="number" value="1100"></div>
-    <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="3.5"></div>
+    <div class="field"><label>Woningwaarde</label><input id="homeValue" type="number" value="" placeholder="€"></div>
+    <div class="field"><label>Hypotheekschuld</label><input id="mortgage" type="number" value="" placeholder="€"></div>
+    <div class="field"><label>Hypotheekbetaling p/m</label><input id="mortPayment" type="number" value="" placeholder="€ p/m"></div>
+    <div class="field"><label>Hypotheekrente %</label><input id="mortRate" type="number" step="0.1" value="" placeholder="%"></div>
     <div class="field"><label>Hypotheekvorm</label>
       <select id="mortType">
         <option value="annuity">Annuïtair</option>
@@ -61,8 +61,8 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
         <option value="combination">Combinatie</option>
       </select>
     </div>
-    <div class="field"><label>Hypotheek eindigt: leeftijd óf jaar</label><input id="mortEndAge" type="number" value="0" placeholder="bijv. 75 of 2046"></div>
-    <div class="field"><label>Restschuld op einddatum</label><input id="mortResidual" type="number" min="0" value="0"></div>
+    <div class="field"><label>Hypotheek eindigt: leeftijd óf jaar</label><input id="mortEndAge" type="number" value="" placeholder="bijv. 75 of 2046"></div>
+    <div class="field"><label>Restschuld op einddatum</label><input id="mortResidual" type="number" min="0" value="" placeholder="€"></div>
   </div>
   <div id="mortWarning" class="warningbox" style="display:none"></div>
 </div>
@@ -70,21 +70,21 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 <div class="group">
   <div class="grouphead"><div class="groupicon">→</div><div><h3>Later</h3><p>Inkomen dat later vanzelf begint.</p></div></div>
   <div class="grid">
-    <div class="field"><label>Volledig stoppen op</label><input id="stopAge" type="number" value="60"></div>
-    <div class="field"><label>Minder werken tot stop (%)</label><input id="workReduction" type="number" min="0" max="100" value="40"></div>
-    <div class="field"><label>AOW vanaf leeftijd</label><input id="aowAge" type="number" value="67"></div>
-    <div class="field"><label>AOW netto p/m</label><input id="aow" type="number" value="1500"></div>
-    <div class="field"><label>Pensioen vanaf leeftijd</label><input id="pensionAge" type="number" value="67"></div>
-    <div class="field"><label>Pensioen netto p/m</label><input id="pension" type="number" value="0"></div>
+    <div class="field"><label>Volledig stoppen op</label><input id="stopAge" type="number" value="" placeholder="bijv. 69"></div>
+    <div class="field"><label>Minder werken tot stop (%)</label><input id="workReduction" type="number" min="0" max="100" value="" placeholder="0–100"></div>
+    <div class="field"><label>AOW vanaf leeftijd</label><input id="aowAge" type="number" value="" placeholder="bijv. 67"></div>
+    <div class="field"><label>AOW netto p/m</label><input id="aow" type="number" value="" placeholder="€ p/m"></div>
+    <div class="field"><label>Pensioen vanaf leeftijd</label><input id="pensionAge" type="number" value="" placeholder="bijv. 67"></div>
+    <div class="field"><label>Pensioen netto p/m</label><input id="pension" type="number" value="" placeholder="€ p/m"></div>
   </div>
 
   <div class="toggleline"><div><b>Samen rekenen met partner?</b><div class="note">Alleen tonen als dit voor jouw huishouden relevant is.</div></div><button type="button" class="tinybtn" onclick="togglePartner()">Partner toevoegen</button></div>
   <div id="partnerFields" class="grid optional">
-    <div class="field"><label>Leeftijd partner nu</label><input id="partnerAge" type="number" value="55"></div>
-    <div class="field"><label>Partner netto inkomen p/m</label><input id="partnerIncome" type="number" value="0"></div>
-    <div class="field"><label>Partner stopt op leeftijd</label><input id="partnerStopAge" type="number" value="67"></div>
-    <div class="field"><label>Partner AOW/pensioen vanaf</label><input id="partnerPensionAge" type="number" value="67"></div>
-    <div class="field"><label>Partner AOW + pensioen netto p/m</label><input id="partnerPension" type="number" value="0"></div>
+    <div class="field"><label>Leeftijd partner nu</label><input id="partnerAge" type="number" value="" placeholder="leeftijd"></div>
+    <div class="field"><label>Partner netto inkomen p/m</label><input id="partnerIncome" type="number" value="" placeholder="€ p/m"></div>
+    <div class="field"><label>Partner stopt op leeftijd</label><input id="partnerStopAge" type="number" value="" placeholder="leeftijd"></div>
+    <div class="field"><label>Partner AOW/pensioen vanaf</label><input id="partnerPensionAge" type="number" value="" placeholder="leeftijd"></div>
+    <div class="field"><label>Partner AOW + pensioen netto p/m</label><input id="partnerPension" type="number" value="" placeholder="€ p/m"></div>
   </div>
 </div>
 
@@ -99,9 +99,9 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
         <option value="expense">Maandlast verandert</option>
       </select>
     </div>
-    <div class="field"><label>Bedrag</label><input id="changeAmount" type="number" min="0" value="0" placeholder="bijv. 100000"></div>
-    <div class="field"><label>Vanaf / op leeftijd óf jaar</label><input id="changeStart" type="number" value="0" placeholder="bijv. 59 of 2036"></div>
-    <div class="field" id="changeEndField"><label>Tot leeftijd óf jaar <span class="note">(optioneel)</span></label><input id="changeEnd" type="number" value="0" placeholder="leeg = blijvend"></div>
+    <div class="field"><label>Bedrag</label><input id="changeAmount" type="number" min="0" value="" placeholder="bijv. 100000"></div>
+    <div class="field"><label>Vanaf / op leeftijd óf jaar</label><input id="changeStart" type="number" value="" placeholder="bijv. 59 of 2036"></div>
+    <div class="field" id="changeEndField"><label>Tot leeftijd óf jaar <span class="note">(optioneel)</span></label><input id="changeEnd" type="number" value="" placeholder="leeg = blijvend"></div>
     <div class="field"><label>Richting bij maandbedrag</label>
       <select id="changeDirection">
         <option value="plus">Meer</option>
@@ -117,9 +117,9 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 <div class="group">
   <div class="grouphead"><div class="groupicon">✓</div><div><h3>Doel</h3><p>Wanneer is “genoeg” voor jou echt genoeg?</p></div></div>
   <div class="grid">
-    <div class="field"><label>Genoeg tot leeftijd</label><input id="endAge" type="number" value="90"></div>
-    <div class="field"><label>Minimale buffer tijdens je hele plan</label><input id="endBuffer" type="number" value="50000"></div>
-    <div class="field"><label>Inflatie-aanname %</label><input id="inflation" type="number" step="0.1" value="2"></div>
+    <div class="field"><label>Genoeg tot leeftijd</label><input id="endAge" type="number" value="" placeholder="bijv. 90"></div>
+    <div class="field"><label>Minimale buffer tijdens je hele plan</label><input id="endBuffer" type="number" value="" placeholder="bijv. 50000"></div>
+    <div class="field"><label>Inflatie-aanname %</label><input id="inflation" type="number" step="0.1" value="" placeholder="bijv. 2"></div>
   </div>
 </div>
 
@@ -129,15 +129,15 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
     <button type="button" class="tinybtn" id="advancedBtn" onclick="toggleAdvanced()">Toon meer</button>
   </div>
   <div id="advancedFields" class="grid optional">
-    <div class="field"><label>Gewenst eindvermogen / nalatenschap</label><input id="endTarget" type="number" value="0"></div>
-    <div class="field"><label>Pensioen indexatie % p/j</label><input id="pensionIndex" type="number" step="0.1" value="2"></div>
-    <div class="field"><label>AOW indexatie % p/j</label><input id="aowIndex" type="number" step="0.1" value="2"></div>
-    <div class="field"><label>Vermogensheffing % p/j</label><input id="wealthTax" type="number" step="0.1" value="0"></div>
-    <div class="field"><label>Beleggingskosten % p/j</label><input id="investmentCost" type="number" step="0.1" value="0"></div>
-    <div class="field"><label>Extra zorgkosten vanaf leeftijd</label><input id="careAge" type="number" value="0" placeholder="bijv. 80"></div>
-    <div class="field"><label>Extra zorgkosten p/m</label><input id="careMonthly" type="number" value="0"></div>
-    <div class="field"><label>Woning verkopen / verkleinen op leeftijd</label><input id="houseReleaseAge" type="number" value="0" placeholder="bijv. 78"></div>
-    <div class="field"><label>Netto bedrag dat uit woning vrijkomt</label><input id="houseRelease" type="number" value="0" placeholder="na aflossing hypotheek"></div>
+    <div class="field"><label>Gewenst eindvermogen / nalatenschap</label><input id="endTarget" type="number" value="" placeholder="€"></div>
+    <div class="field"><label>Pensioen indexatie % p/j</label><input id="pensionIndex" type="number" step="0.1" value="" placeholder="%"></div>
+    <div class="field"><label>AOW indexatie % p/j</label><input id="aowIndex" type="number" step="0.1" value="" placeholder="%"></div>
+    <div class="field"><label>Vermogensheffing % p/j</label><input id="wealthTax" type="number" step="0.1" value="" placeholder="%"></div>
+    <div class="field"><label>Beleggingskosten % p/j</label><input id="investmentCost" type="number" step="0.1" value="" placeholder="%"></div>
+    <div class="field"><label>Extra zorgkosten vanaf leeftijd</label><input id="careAge" type="number" value="" placeholder="bijv. 80"></div>
+    <div class="field"><label>Extra zorgkosten p/m</label><input id="careMonthly" type="number" value="" placeholder="€ p/m"></div>
+    <div class="field"><label>Woning verkopen / verkleinen op leeftijd</label><input id="houseReleaseAge" type="number" value="" placeholder="bijv. 78"></div>
+    <div class="field"><label>Netto bedrag dat uit woning vrijkomt</label><input id="houseRelease" type="number" value="" placeholder="€" placeholder="na aflossing hypotheek"></div>
   </div>
   <div id="advancedWarning" class="warningbox" style="display:none"></div>
 </div>
@@ -672,6 +672,17 @@ window.toggleDetails=function(force){
 window.recalc=function(){
   const p=plan();
   const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
+  const result=document.getElementById('result');
+  const hasCore=p.age>0&&p.stopAge>=p.age&&p.endAge>p.age&&p.spend>=0&&document.getElementById('spend')?.value!=='';
+  if(!hasCore){
+    if(sc)sc.textContent='—';
+    if(ss)ss.textContent=p.stopAge>0?Math.round(p.stopAge)+' jaar':'—';
+    if(sb)sb.textContent=document.getElementById('endBuffer')?.value!==''?euro(p.endBuffer):'—';
+    const breakdown=document.getElementById('sumCapitalBreakdown');
+    if(breakdown)breakdown.textContent='';
+    if(result)result.innerHTML='<div class="card mutedcard"><h2>Vul eerst je basisgegevens in</h2><p>Begin met je leeftijd, maandelijkse uitgaven, wanneer je wilt stoppen en tot welke leeftijd je wilt rekenen. Daarna verschijnt je Geldcheck automatisch.</p></div>';
+    return;
+  }
   if(sc)sc.textContent=euro(p.capital+p.cash-p.otherDebt); if(ss)ss.textContent=Math.round(p.stopAge)+' jaar'; if(sb)sb.textContent=euro(p.endBuffer);
   const mi=mortgageInfo(p), di=debtInfo(p);
   const effectiveMortResidual=effectiveMortgageResidual(p,mi);
@@ -805,7 +816,6 @@ window.recalc=function(){
     else label+=' '+(e.monthly>=0?'+':'−')+euro(Math.abs(e.monthly))+'/mnd';
     return {age,label};
   });
-  const result=document.getElementById('result');
   const mortgageEnd=isFinite(mi.endAge)?effectiveMortgageCutAge(p,mi).toString():'onbekend';
   const mortgageRisk=isFinite(mi.endAge)
     ? (effectiveMortResidual>0
@@ -969,11 +979,11 @@ window.recalc=function(){
 
     `<div class="card">
       <h2>Als rendement tegenvalt</h2>
-      <div class="scenario"><span>0%</span><span>${scenarioStatus(e0)}</span><b>laagste ${euro(e0.min)}</b></div>
-      <div class="scenario"><span>3%</span><span>${scenarioStatus(e3)}</span><b>laagste ${euro(e3.min)}</b></div>
-      <div class="scenario"><span>5%</span><span>${scenarioStatus(e5)}</span><b>laagste ${euro(e5.min)}</b></div>
-      <div class="scenario"><span>3% + crash</span><span>${scenarioStatus(shock3)}</span><b>laagste ${euro(shock3.min)}</b></div>
-      <p class="note">${isBufferTimingProblem?'Dezelfde lage buffer bij verschillende rendementen laat zien dat het tekort te vroeg ontstaat om met extra rendement op te lossen.':'Hier telt niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.'}</p>
+      <div class="scenario"><span>0%</span><span>${scenarioStatus(e0)}</span><b>laagste vermogensniveau ${euro(e0.min)}</b></div>
+      <div class="scenario"><span>3%</span><span>${scenarioStatus(e3)}</span><b>laagste vermogensniveau ${euro(e3.min)}</b></div>
+      <div class="scenario"><span>5%</span><span>${scenarioStatus(e5)}</span><b>laagste vermogensniveau ${euro(e5.min)}</b></div>
+      <div class="scenario"><span>3% + crash</span><span>${scenarioStatus(shock3)}</span><b>laagste vermogensniveau ${euro(shock3.min)}</b></div>
+      <p class="note">${isBufferTimingProblem?'Dezelfde lage buffer bij verschillende rendementen laat zien dat het tekort te vroeg ontstaat om met extra rendement op te lossen.':'“Laagste vermogensniveau” is het laagste bedrag dat je financiële vermogen onderweg bereikt. Hier telt dus niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.'}</p>
     </div>`,
 
     `<div class="card">
