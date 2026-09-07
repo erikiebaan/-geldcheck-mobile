@@ -17,7 +17,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 .phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
 .topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}.statusline.live .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(57,120,212,.14)}
 @media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}h1{font-size:44px}}
-</style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Heb ik straks genoeg?</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
+</style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Financiële kern v2</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
 <div class="topintro">
   <h1>Heb ik straks genoeg?</h1>
   <p>Je antwoord in één getal. Nu gebaseerd op wat je <b>nu hebt</b>, wat er <b>later binnenkomt</b> en wat er <b>verandert</b>.</p>
@@ -170,7 +170,7 @@ function simulatePath(p, realReturn){
     if(p.partnerPension>0&&age>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
 
     let annualSpend=p.spend*12;
-    if(age>=mi.endAge && p.mortType!=='interestOnly' && p.mortType!=='combination')annualSpend-=p.mortPayment*12;
+    if(age>=mi.endAge)annualSpend-=p.mortPayment*12;
 
     let oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
     changes.forEach(e=>{
@@ -207,7 +207,7 @@ function simulateReal(p, realReturn){
     if(p.partnerPension>0&&age>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
 
     let annualSpend=p.spend*12;
-    if(age>=mi.endAge && p.mortType!=='interestOnly' && p.mortType!=='combination')annualSpend-=p.mortPayment*12;
+    if(age>=mi.endAge)annualSpend-=p.mortPayment*12;
 
     let oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
     changes.forEach(e=>{
@@ -270,6 +270,7 @@ window.recalc=function(){
   const p=plan();
   const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
   if(sc)sc.textContent=euro(p.capital+p.cash-p.otherDebt); if(ss)ss.textContent=Math.round(p.stopAge)+' jaar'; if(sb)sb.textContent=euro(p.endBuffer);
+  const mi=mortgageInfo(p);
   const mw=document.getElementById('mortWarning');
   if(mw){
     if((p.mortType==='interestOnly'||p.mortType==='combination')&&mi.residual>0){
@@ -280,7 +281,6 @@ window.recalc=function(){
   const rr=requiredReal(p);
   const nominal=isFinite(rr)?(1+rr)*(1+p.inflation)-1:Infinity;
   const kept=p.income*(1-p.workReduction);
-  const mi=mortgageInfo(p);
   const partnerNow=(p.partnerIncome>0&&p.age<p.partnerStopAge)?p.partnerIncome:0;
   const workOnlyNet=kept+partnerNow-p.spend;
   const workPlusAowNet=kept+p.aow+(p.pensionAge<=p.aowAge?p.pension:0)+partnerNow-p.spend;
@@ -394,7 +394,12 @@ window.applyAsk=function(){
     let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;
     changes.push({kind:'oneoff',label:'wereldreis',amount:amt,age:Number(m[3])});changesText.push('wereldreis '+euro(amt)+' op '+m[3]);
   }
-  if((m=s.match(/vanaf\s*([0-9]{2}).*?(?:werk|werken).*?([0-9\.]+)/\s*(k|duizend)?\s*(?:netto\s*)?(?:per maand|p\/m|maand)(?:.*?tot\s*([0-9]{2}))?/i))){
+  if((m=s.match(/(?:krijg|ontvang|erfenis).*?([0-9\.]+)\s*(k|duizend)?[^0-9]+(?:op|vanaf|als ik)\s*(?:mijn\s*)?([0-9]{2})/i))){
+    let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;
+    changes.push({kind:'oneoff',label:'eenmalige ontvangst',amount:-amt,age:Number(m[3])});
+    changesText.push('ontvangst +'+euro(amt)+' op '+m[3]);
+  }
+  if((m=s.match(/vanaf\s*([0-9]{2}).*?(?:werk|werken).*?([0-9\.]+)\s*(k|duizend)?\s*(?:netto\s*)?(?:per maand|p\/m|maand)(?:.*?tot\s*([0-9]{2}))?/i))){
     let amt=Number(m[2].replace('.',''));if(m[3])amt*=1000;
     changes.push({kind:'income',label:'extra werkinkomen',monthly:amt,startAge:Number(m[1]),endAge:m[4]?Number(m[4]):null});
     changesText.push('extra inkomen +'+euro(amt)+'/mnd vanaf '+m[1]+(m[4]?' tot '+m[4]:''));
