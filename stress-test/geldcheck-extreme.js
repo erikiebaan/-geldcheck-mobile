@@ -1,4 +1,4 @@
-// regression: universal financial changes
+// regression: dual-line base-vs-changes chart
 "use strict";
 
 let seed=20260907;
