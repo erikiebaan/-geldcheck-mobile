@@ -148,7 +148,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   </div>
 </div>
 
-<button class="primary" onclick="recalc();toggleDetails(false)">Klaar</button>
+<button class="primary" onclick="finishDetails()">Klaar</button>
 </div></div>
 
 <div id="result"></div>
@@ -162,7 +162,18 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 <script src="../narrative_engine.js?v=0.1"></script>
 <script>
 (function(){"use strict";
-let changes=[];
+const CHANGES_STORAGE_KEY='geldcheck-financial-changes-v1';
+function loadFinancialChanges(){
+  try{
+    const stored=JSON.parse(sessionStorage.getItem(CHANGES_STORAGE_KEY)||'[]');
+    if(!Array.isArray(stored))return [];
+    return stored.filter(e=>e&&['oneoff','income','expense'].includes(e.kind));
+  }catch(_){return [];}
+}
+function saveFinancialChanges(){
+  try{sessionStorage.setItem(CHANGES_STORAGE_KEY,JSON.stringify(changes));}catch(_){}
+}
+let changes=loadFinancialChanges();
 
 const n=id=>Number(document.getElementById(id)?.value)||0;
 const s=id=>document.getElementById(id)?.value||'';
@@ -632,7 +643,7 @@ function renderChangesList(){
   el.innerHTML=changes.map((e,i)=>'<div class="kpi" style="margin-bottom:7px"><span>'+changeLabelText(e)+'</span><button type="button" class="tinybtn" style="margin-top:8px" onclick="removeFinancialChange('+i+')">Verwijder</button></div>').join('');
 }
 window.removeFinancialChange=function(i){
-  changes.splice(i,1);renderChangesList();recalc();
+  changes.splice(i,1);saveFinancialChanges();renderChangesList();recalc();
 }
 window.addFinancialChange=function(){
   const p=plan();
@@ -657,9 +668,17 @@ window.addFinancialChange=function(){
   else if(type==='pay') changes.push({kind:'oneoff',label:label||'eenmalige uitgave',amount:amount,age:start});
   else if(type==='income') changes.push({kind:'income',label:label||'inkomensverandering',monthly:dir*amount,startAge:start,endAge:end});
   else changes.push({kind:'expense',label:label||'lastenverandering',monthly:dir*amount,startAge:start,endAge:end});
+  saveFinancialChanges();
   document.getElementById('changeAmount').value=0;
   document.getElementById('changeLabel').value='';
   renderChangesList();recalc();
+}
+window.finishDetails=function(){
+  if(Math.max(0,n('changeAmount'))>0){
+    window.addFinancialChange();
+    if(Math.max(0,n('changeAmount'))>0)return;
+  }else recalc();
+  toggleDetails(false);
 }
 function updateDynamicQuestions(){const f=document.getElementById('assetRiskField');if(f)f.style.display=n('capital')>0?'block':'none';}
 function updateChangeForm(){
@@ -1074,6 +1093,7 @@ function parseMoney(s){let m=s.match(/(?:€\s*)?([0-9]+(?:[\.,][0-9]+)?)\s*(k|d
 window.applyAsk=function(){
   const raw=document.getElementById('ask').value.trim();if(!raw)return;
   const s=raw.toLowerCase();let changesText=[];
+  const changesBefore=changes.length;
   let m;
   if((m=s.match(/([0-9]+)\s*(?:euro|€)?\s*(?:per maand|p\/m|maand)\s*(?:meer|extra)(?:\s*uitgeven)?/i))){
     setField('spend',n('spend')+Number(m[1]));changesText.push('uitgaven +'+euro(Number(m[1]))+' p/m');
@@ -1103,6 +1123,7 @@ window.applyAsk=function(){
   if((m=s.match(/([0-9]{1,2})%\s*(?:minder werken|afbouwen)/i))){setField('workReduction',Number(m[1]));changesText.push(m[1]+'% minder werken')}
   const msg=changesText.length?'Aangepast: '+changesText.join(' · '):'Ik kon deze zin nog niet goed begrijpen. Pas je gegevens aan via Mijn gegevens.';
   if(changesText.length){ const b=document.querySelector('.bottomask button'); if(b){const old=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=old,1000);} }
+  if(changes.length!==changesBefore)saveFinancialChanges();
   recalc();
 }
 window.quick=function(t){document.getElementById('ask').value=t;applyAsk()}
