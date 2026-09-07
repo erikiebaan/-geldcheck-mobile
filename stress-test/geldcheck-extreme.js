@@ -1,4 +1,4 @@
-// regression: financial completeness layer
+// regression: buffer-vs-return classification
 "use strict";
 
 let seed=20260907;
