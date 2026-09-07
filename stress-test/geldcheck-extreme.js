@@ -9,7 +9,7 @@ function cut(age){ return finite(age)?Math.ceil(age-1e-9):Infinity; }
 
 function mortgageInfo(p){
   const r=p.mortRate/12, pay=Math.max(0,p.mortPayment), interest=p.mortgage*r;
-  const contractualEnd=p.mortEndAge>p.age?p.mortEndAge:0;
+  const contractualEnd=(p.mortEndAge>0&&p.mortEndAge>=p.age)?p.mortEndAge:0;
   const monthsToEnd=contractualEnd?Math.max(0,Math.round((contractualEnd-p.age)*12)):Infinity;
   if(p.mortgage<=0)return {endAge:p.age,residual:0,interest:0,principal:0};
   const annuityBalance=(principal0,months,payment)=>{
@@ -44,7 +44,7 @@ function mortgageInfo(p){
 function debtInfo(p){
   const debt=Math.max(0,p.otherDebt),r=Math.max(0,p.otherDebtRate)/12,pay=Math.max(0,p.otherDebtPayment);
   if(debt<=0)return {endAge:p.age,residual:0};
-  const contractualEnd=p.otherDebtEndAge>p.age?p.otherDebtEndAge:0;
+  const contractualEnd=(p.otherDebtEndAge>0&&p.otherDebtEndAge>=p.age)?p.otherDebtEndAge:0;
   const balanceAfter=months=>{
     if(months<=0)return debt;if(pay<=0)return debt*Math.pow(1+r,months);
     if(r<=0)return Math.max(0,debt-pay*months);
@@ -73,18 +73,30 @@ function annualSpendAt(p,age,mi,di){
   return spend;
 }
 function settle(state,net){
-  state.cash+=net;
-  if(state.cash<0){state.inv+=state.cash;state.cash=0;}
+  if(net>=0){
+    let surplus=net;
+    if(state.deficit>0){
+      const repair=Math.min(state.deficit,surplus);
+      state.deficit-=repair;surplus-=repair;
+    }
+    state.cash+=surplus;
+  }else{
+    let need=-net;
+    const fromCash=Math.min(state.cash,need);state.cash-=fromCash;need-=fromCash;
+    const fromInv=Math.min(state.inv,need);state.inv-=fromInv;need-=fromInv;
+    if(need>0)state.deficit+=need;
+  }
+  state.cash=Math.max(0,state.cash);state.inv=Math.max(0,state.inv);
   if(state.cash>state.cashTarget){state.inv+=state.cash-state.cashTarget;state.cash=state.cashTarget;}
 }
 function simulate(p,nominal){
   const mi=mortgageInfo(p),di=debtInfo(p);
-  let state={cash:Math.max(0,p.cash),inv:Math.max(0,p.capital),cashTarget:Math.max(0,p.cash)};
+  let state={cash:Math.max(0,p.cash),inv:Math.max(0,p.capital),deficit:0,cashTarget:Math.max(0,p.cash)};
   const rr=(1+nominal)/(1+p.inflation)-1,cr=(1+p.cashRate)/(1+p.inflation)-1;
-  let min=state.cash+state.inv-p.otherDebt,end=min,depletionAge=null;
+  let min=state.cash+state.inv-state.deficit-p.otherDebt,end=min,depletionAge=null;
   const path=[min];
   for(let age=p.age;age<p.endAge;age++){
-    state.inv*=1+rr;state.cash*=1+cr;
+    state.inv=Math.max(0,state.inv)*(1+rr);state.cash*=1+cr;
     let income=age<p.stopAge?p.income*(1-p.workReduction):0;
     if(age>=p.aowAge)income+=p.aow;
     if(age>=p.pensionAge)income+=p.pension;
@@ -92,7 +104,7 @@ function simulate(p,nominal){
     if(finite(mi.endAge)&&age===cut(mi.endAge)&&mi.residual>0)oneOff+=mi.residual;
     if(finite(di.endAge)&&age===cut(di.endAge)&&di.residual>0)oneOff+=di.residual;
     settle(state,income*12-spend-oneOff);
-    end=state.cash+state.inv-debtBalanceAtAge(p,age+1,di);
+    end=state.cash+state.inv-state.deficit-debtBalanceAtAge(p,age+1,di);
     min=Math.min(min,end); if(end<0&&depletionAge===null)depletionAge=age+1;path.push(end);
   }
   return {end,min,depletionAge,path,mi,di};
@@ -124,10 +136,21 @@ function scenario(i){
   };
 }
 
+function normalizePlan(p){
+  const q={...p};
+  q.workReduction=Math.min(1,Math.max(0,q.workReduction));
+  q.mortResidual=Math.min(Math.max(0,q.mortResidual),Math.max(0,q.mortgage));
+  q.income=Math.max(0,q.income);q.spend=Math.max(0,q.spend);
+  q.cash=Math.max(0,q.cash);q.capital=Math.max(0,q.capital);
+  q.otherDebt=Math.max(0,q.otherDebt);q.otherDebtRate=Math.max(0,q.otherDebtRate);q.otherDebtPayment=Math.max(0,q.otherDebtPayment);
+  q.mortgage=Math.max(0,q.mortgage);q.mortRate=Math.max(0,q.mortRate);q.mortPayment=Math.max(0,q.mortPayment);
+  return q;
+}
+
 const findings=[];
 function add(id,sev,code,detail){findings.push({id,sev,code,detail});}
 for(let i=1;i<=1000;i++){
-  const p=scenario(i);
+  const raw=scenario(i); const p=normalizePlan(raw);
   try{
     const s0=simulate(p,0),s3=simulate(p,.03),s5=simulate(p,.05);
     for(const [tag,s] of [["0",s0],["3",s3],["5",s5]]){
@@ -140,11 +163,11 @@ for(let i=1;i<=1000;i++){
     const mi=mortgageInfo(p),di=debtInfo(p);
     for(let a=p.age;a<p.endAge;a++) if(annualSpendAt(p,a,mi,di)<-1e-9)add(i,"CRITICAL","NEGATIVE_SPEND","annual spend below zero");
     // validation holes that create nonsensical economics
-    if(p.workReduction>1)add(i,"HIGH","WORK_REDUCTION_GT_100","work reduction allows negative salary");
-    if(p.mortgage>0&&p.mortEndAge===p.age)add(i,"HIGH","MORT_END_EQUALS_NOW","end age equal current age is treated as absent");
-    if(p.otherDebt>0&&p.otherDebtEndAge===p.age)add(i,"HIGH","DEBT_END_EQUALS_NOW","end age equal current age is treated as absent");
-    if(p.otherDebt>0&&p.otherDebtPayment===0&&p.otherDebtEndAge===0&&p.otherDebtRate>0)add(i,"HIGH","DEBT_GROWS_WITHOUT_EXIT","interest-bearing debt has no payment/end date");
-    if(p.mortType==="combination"&&p.mortResidual>p.mortgage)add(i,"MEDIUM","COMBO_RESIDUAL_CLAMPED","input residual exceeds mortgage and is silently clamped");
+    if(p.workReduction<0||p.workReduction>1)add(i,"CRITICAL","WORK_REDUCTION_NOT_CLAMPED","work reduction escaped clamp");
+    if(p.mortgage>0&&raw.mortEndAge===raw.age&&mortgageInfo(p).endAge!==p.age)add(i,"CRITICAL","MORT_END_NOW_FAIL","mortgage ending now was not immediate");
+    if(p.otherDebt>0&&raw.otherDebtEndAge===raw.age&&debtInfo(p).endAge!==p.age)add(i,"CRITICAL","DEBT_END_NOW_FAIL","other debt ending now was not immediate");
+    if(p.otherDebt>0&&p.otherDebtPayment===0&&p.otherDebtEndAge===0&&p.otherDebtRate>0){const di=debtInfo(p),b0=debtBalanceAtAge(p,p.age,di),b1=debtBalanceAtAge(p,p.age+1,di);if(!(b1>=b0))add(i,"CRITICAL","UNMANAGED_DEBT_NOT_TRACKED","unmanaged debt did not remain/grow");}
+    if(p.mortType==="combination"&&p.mortResidual>p.mortgage)add(i,"CRITICAL","COMBO_RESIDUAL_NOT_CLAMPED","combination residual exceeds mortgage after normalize");
     if(p.endBuffer>p.cash+p.capital-p.otherDebt && requiredNominal(p)===0)add(i,"CRITICAL","IMPOSSIBLE_ZERO_RETURN","0% declared enough despite starting net assets below buffer");
     // required return consistency
     const req=requiredNominal(p);
