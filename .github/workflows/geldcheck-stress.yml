@@ -1,0 +1,19 @@
+name: Geldcheck 1000 Extreme Stress
+
+on:
+  push:
+    paths:
+      - 'stress-test/**'
+      - '.github/workflows/geldcheck-stress.yml'
+  workflow_dispatch:
+
+jobs:
+  stress:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run 1000 extreme financial scenarios
+        run: node stress-test/geldcheck-extreme.js
