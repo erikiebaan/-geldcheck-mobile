@@ -37,7 +37,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
     <div class="field"><label>Uitgaven p/m</label><input id="spend" type="number" value="" placeholder="per maand"></div>
     <div class="field"><label>Spaargeld / cash</label><input id="cash" type="number" value="" placeholder="€"></div>
     <div class="field"><label>Rente op cash % p/j</label><input id="cashRate" type="number" step="0.1" value="" placeholder="%"></div>
-    <div class="field"><label>Belegd vermogen</label><input id="capital" type="number" value="" placeholder="€"></div>
+    <div class="field"><label>Belegd vermogen</label><input id="capital" type="number" value="" placeholder="€"></div><div class="field" id="assetRiskField" style="display:none"><label>Hoe is dit ongeveer belegd?</label><select id="assetRisk"><option value="mixed">Gemengd</option><option value="defensive">Voorzichtig</option><option value="equity">Vooral aandelen</option></select><div class="note">Alleen voor de stresstest.</div></div>
     <div class="field"><label>Overige schulden</label><input id="otherDebt" type="number" value="" placeholder="€"></div>
     <div class="field"><label>Rente overige schuld % p/j</label><input id="otherDebtRate" type="number" step="0.1" value="" placeholder="%"></div>
     <div class="field"><label>Betaling overige schuld p/m <span class="optional">(zit in uitgaven)</span></label><input id="otherDebtPayment" type="number" value="" placeholder="€ p/m"></div>
@@ -459,6 +459,7 @@ function simulateReal(p, realReturn){
   }
   return {end:state.cash+state.inv-state.deficit-debtBalanceAtAge(p,p.endAge,di),min,depletionAge};
 }
+function assetShockPct(){const v=s('assetRisk');return v==='defensive'?.12:v==='equity'?.35:.25;}
 function simulateShock(p, realReturn, shockAge, shockPct){
   const start=startingAssets(p);
   let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
@@ -652,6 +653,7 @@ window.addFinancialChange=function(){
   document.getElementById('changeLabel').value='';
   renderChangesList();recalc();
 }
+function updateDynamicQuestions(){const f=document.getElementById('assetRiskField');if(f)f.style.display=n('capital')>0?'block':'none';}
 function updateChangeForm(){
   const type=s('changeType');
   const recurring=type==='income'||type==='expense';
@@ -660,26 +662,7 @@ function updateChangeForm(){
   if(end)end.style.display=recurring?'block':'none';
   if(direction)direction.style.display=recurring?'block':'none';
 }
-window.toggleCoverage=function(){
-  const el=document.getElementById('coveragePanel'); if(!el)return;
-  const open=el.style.display!=='none';
-  if(open){el.style.display='none';return;}
-  const rows=[
-    ['Activa & vermogen','Direct/gebundeld','cash, beleggingen, woning, schulden; overige bezittingen kunnen als vermogen of toekomstige ontvangst worden verwerkt'],
-    ['Pensioen & uitkeringen','Direct/dynamisch','AOW, pensioen, partner; afwijkende of buitenlandse uitkeringen via maandinkomen-verandering'],
-    ['Wonen & vastgoed','Direct/dynamisch','woningwaarde, hypotheek, rente, vorm, einddatum, restschuld, downsizing; onderhoud via uitgaven/veranderingen'],
-    ['Levenskosten','Gebundeld','boodschappen, kleding, energie, verzekeringen, abonnementen en vrije tijd zitten in totale uitgaven'],
-    ['Mobiliteit','Gebundeld/dynamisch','lopende autokosten in uitgaven; vervanging auto als eenmalige toekomstige uitgave'],
-    ['Zorg & welzijn','Direct/dynamisch','lopende zorg in uitgaven; extra zorgkosten vanaf latere leeftijd apart beschikbaar'],
-    ['Belastingen & kosten','Advanced','vermogensheffing en beleggingskosten; netto inkomen/AOW/pensioen voorkomt dubbele bruto-belastingmodellering'],
-    ['Familie & nalatenschap','Dynamisch','erfenis, schenking, steun aan kinderen en nalatenschap via Veranderingen en gewenst eindvermogen'],
-    ['Inflatie & economie','Direct/stress','inflatie, reëel rendement en scenario’s; vaste nominale hypotheek wordt apart toegelicht'],
-    ['Risico & onvoorzien','Direct/stress','buffer, 0/3/5%-scenario’s, crashscenario, langere levensduur via eindleeftijd en toekomstige grote uitgaven']
-  ];
-  el.innerHTML='<div class="note" style="margin-bottom:8px"><b>Coverage-audit</b> · details worden alleen apart gevraagd als samenvoegen de uitkomst zou vertekenen.</div>'+
-    rows.map(r=>'<div class="kpi" style="margin-bottom:6px"><span><b>'+r[0]+'</b><br><small>'+r[2]+'</small></span><b style="font-size:12px">'+r[1]+'</b></div>').join('');
-  el.style.display='block';
-}
+window.toggleCoverage=function(){const el=document.getElementById('coveragePanel');if(!el)return;if(el.style.display!=='none'){el.style.display='none';return;}const rows=[['Activa & vermogen',n('capital')>0?'↗ Dynamisch gevraagd':'✓ Direct / ≈ gebundeld','assetrisico verschijnt alleen bij belegd vermogen'],['Pensioen & uitkeringen','✓ Direct / ↗ dynamisch','AOW, pensioen, partner en inkomensveranderingen'],['Wonen & vastgoed','✓ Direct / ↗ dynamisch','woning, hypotheek en toekomstige wijzigingen'],['Levenskosten','≈ Gebundeld','detailkosten zitten in totale uitgaven'],['Mobiliteit','≈ Gebundeld / ↗ dynamisch','lopende kosten en toekomstige vervanging'],['Zorg & welzijn','✓ Direct / ↗ dynamisch','lopende en latere zorgkosten'],['Belastingen & kosten','✓ Advanced','vermogensheffing en beleggingskosten'],['Familie & nalatenschap','↗ Dynamisch','erfenis, schenking en eindvermogen'],['Inflatie & economie','✓ Direct / stress','inflatie, reëel rendement en nominale schuld'],['Risico & onvoorzien',n('capital')>0?'✓ Buffer + ↗ assetstress':'✓ Buffer / stress','buffer, scenario’s, crash en langleven']];el.innerHTML='<div class="note" style="margin-bottom:10px"><b>Onder de motorkap: 8 bouwstenen</b><br>vermogen · schulden · inkomsten · uitgaven · eenmalige gebeurtenissen · groei/indexatie · risico/exposure · regels/voorwaarden</div><div class="note" style="margin-bottom:8px"><b>Status</b> · ✓ meegerekend · ≈ gebundeld · ↗ alleen gevraagd indien relevant · ○ nog niet individueel gemodelleerd.</div>'+rows.map(r=>'<div class="kpi" style="margin-bottom:6px"><span><b>'+r[0]+'</b><br><small>'+r[2]+'</small></span><b style="font-size:12px">'+r[1]+'</b></div>').join('');el.style.display='block';}
 window.partnerOn=false;
 window.togglePartner=function(){
   window.partnerOn=!window.partnerOn;
@@ -696,6 +679,7 @@ window.toggleDetails=function(force){
   if(open)document.getElementById('gegevens')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 window.recalc=function(){
+  updateDynamicQuestions();
   const p=plan();
   const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
   const result=document.getElementById('result');
@@ -763,7 +747,7 @@ window.recalc=function(){
   const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1);
   const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);
   const e30=simulateReal(p,(1+.30)/(1+p.inflation)-1);
-  const shock3=simulateShock(p,(1+.03)/(1+p.inflation)-1,p.stopAge,.30);
+  const shock3=simulateShock(p,(1+.03)/(1+p.inflation)-1,p.stopAge,assetShockPct());
   const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
   const pathBase=simulatePath(p,chartReal,false);
   const pathNeeded=simulatePath(p,chartReal,true);
@@ -1013,7 +997,7 @@ window.recalc=function(){
       <div class="scenario"><span>0%</span><span>${scenarioStatus(e0)}</span><b>laagste vermogensniveau ${euro(e0.min)}</b></div>
       <div class="scenario"><span>3%</span><span>${scenarioStatus(e3)}</span><b>laagste vermogensniveau ${euro(e3.min)}</b></div>
       <div class="scenario"><span>5%</span><span>${scenarioStatus(e5)}</span><b>laagste vermogensniveau ${euro(e5.min)}</b></div>
-      <div class="scenario"><span>3% + crash</span><span>${scenarioStatus(shock3)}</span><b>laagste vermogensniveau ${euro(shock3.min)}</b></div>
+      <div class="scenario"><span>3% + crash (${Math.round(assetShockPct()*100)}% beleggingen)</span><span>${scenarioStatus(shock3)}</span><b>laagste vermogensniveau ${euro(shock3.min)}</b></div>
       <p class="note">${isBufferTimingProblem?'Dezelfde lage buffer bij verschillende rendementen laat zien dat het tekort te vroeg ontstaat om met extra rendement op te lossen.':'“Laagste vermogensniveau” is het laagste bedrag dat je financiële vermogen onderweg bereikt. Hier telt dus niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.'}</p>
     </div>`,
 
@@ -1134,6 +1118,7 @@ function scheduleRecalc(){
   });
 document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
 updateChangeForm();
+updateDynamicQuestions();
 renderChangesList();
 recalc();
 })();</script></body></html>
