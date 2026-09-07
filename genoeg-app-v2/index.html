@@ -75,7 +75,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
     <div class="field"><label>AOW vanaf leeftijd</label><input id="aowAge" type="number" value="" placeholder="bijv. 67"></div>
     <div class="field"><label>AOW netto p/m</label><input id="aow" type="number" value="" placeholder="€ p/m"></div>
     <div class="field"><label>Pensioen vanaf leeftijd</label><input id="pensionAge" type="number" value="" placeholder="bijv. 67"></div>
-    <div class="field"><label>Pensioen netto p/m</label><input id="pension" type="number" value="" placeholder="€ p/m"></div>
+    <div class="field"><label>Pensioen netto p/m</label><input id="pension" type="number" min="0" value="" placeholder="€ p/m"><div class="note">Geen pensioen opgebouwd? Vul €0 in.</div></div>
   </div>
 
   <div class="toggleline"><div><b>Samen rekenen met partner?</b><div class="note">Alleen tonen als dit voor jouw huishouden relevant is.</div></div><button type="button" class="tinybtn" onclick="togglePartner()">Partner toevoegen</button></div>
@@ -1030,10 +1030,11 @@ window.recalc=function(){
   }
 
   if(e3.min<p.endBuffer){
-    const gap=(p.endBuffer-e3.min)/Math.max(1,startNet);
+    const gapAmount=p.endBuffer-e3.min;
+    const gap=gapAmount/Math.max(1,startNet);
     riskCandidates.push({
       score:Math.min(95,50+gap*160),
-      text:'Ook bij 3% gemiddeld rendement wordt je buffer niet gehaald; het laagste punt is '+euro(e3.min)+'.'
+      text:'Bij 3% rendement komt je plan '+euro(gapAmount)+' tekort ten opzichte van je gekozen buffer. Een mogelijke aanpassing kan dit verschil verkleinen of oplossen.'
     });
   }
 
@@ -1094,6 +1095,7 @@ window.recalc=function(){
     const state=intact?'Buffer blijft intact':(kind==='stress'?'Later bijsturen nodig':'Plan komt '+euro(scenarioGap)+' tekort');
     let detail='Laagste vermogen in dit scenario: '+euro(sim.min)+'.';
     if(kind==='stress'&&sim.min<0)detail='Zonder tussentijds bijsturen raakt het vermogen vóór je '+p.endAge+'e op. Berekend tekort in deze extreme test: '+euro(Math.abs(sim.min))+'.';
+    else if(!intact&&sim.min<0)detail='Zonder aanpassing raakt het vermogen kort voor je '+p.endAge+'e op. Je kunt ruim daarvoor opnieuw bijsturen.';
     return '<div class="scenario-card '+kind+(intact?' goodcase':'')+'"><div class="scenario-top"><span class="scenario-rate">'+rate+'</span><span class="scenario-tag">'+tag+'</span></div><div class="scenario-state">'+state+'</div><div class="scenario-value">'+detail+'</div></div>';
   };
   const withdrawalItems=[
@@ -1128,7 +1130,7 @@ window.recalc=function(){
     (!currentPlanAt3||rescueCase)?`<div class="card">
       <h2>Je hebt mogelijkheden</h2>
       <p>${gapAt3>0?'Bij 3% rendement komt je plan op het kwetsbaarste moment nog ongeveer <b>'+euro(gapAt3)+'</b> tekort. Dat betekent niet dat je geen opties hebt. Een kleine, realistische aanpassing kan al veel verschil maken.':'Je gekozen aanpassing brengt je plan bij 3% binnen de gewenste buffer.'}</p>
-      ${rescueCase?'<div class="answer"><b>'+(rescueWorks?'Met '+esc(rescueCase.label)+' blijft je buffer bij 3% intact.':'Met '+esc(rescueCase.label)+' verbetert je laagste vermogen met ongeveer '+euro(rescueImprovement)+'. Dit helpt, maar is nog niet helemaal voldoende.')+'</b></div>':''}
+      ${rescueCase?'<div class="answer"><b>'+(rescueWorks?'Met '+esc(rescueCase.label)+' verbetert je laagste vermogen met ongeveer '+euro(rescueImprovement)+' tot '+euro(rescueAt3.min)+'. Daarmee blijft je buffer bij 3% intact.':'Met '+esc(rescueCase.label)+' verbetert je laagste vermogen met ongeveer '+euro(rescueImprovement)+'. Dit helpt, maar is nog niet helemaal voldoende.')+'</b></div>':''}
       ${rescueControls(p)}
     </div>`:'',
 
