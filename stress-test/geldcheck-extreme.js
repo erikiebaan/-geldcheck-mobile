@@ -1,4 +1,4 @@
-// regression: empty-start and lowest-wealth labels
+// regression: centralized pension/AOW indexation defaults
 "use strict";
 
 let seed=20260907;
