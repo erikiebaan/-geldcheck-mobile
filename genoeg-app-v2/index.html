@@ -97,6 +97,25 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   </div>
 </div>
 
+<div class="group">
+  <div class="toggleline">
+    <div><b>Meer financiële details</b><div class="note">Alleen nodig als dit voor jouw plan relevant is.</div></div>
+    <button type="button" class="tinybtn" id="advancedBtn" onclick="toggleAdvanced()">Toon meer</button>
+  </div>
+  <div id="advancedFields" class="grid optional">
+    <div class="field"><label>Gewenst eindvermogen / nalatenschap</label><input id="endTarget" type="number" value="0"></div>
+    <div class="field"><label>Pensioen indexatie % p/j</label><input id="pensionIndex" type="number" step="0.1" value="2"></div>
+    <div class="field"><label>AOW indexatie % p/j</label><input id="aowIndex" type="number" step="0.1" value="2"></div>
+    <div class="field"><label>Vermogensheffing % p/j</label><input id="wealthTax" type="number" step="0.1" value="0"></div>
+    <div class="field"><label>Beleggingskosten % p/j</label><input id="investmentCost" type="number" step="0.1" value="0"></div>
+    <div class="field"><label>Extra zorgkosten vanaf leeftijd</label><input id="careAge" type="number" value="0" placeholder="bijv. 80"></div>
+    <div class="field"><label>Extra zorgkosten p/m</label><input id="careMonthly" type="number" value="0"></div>
+    <div class="field"><label>Woning verkopen / verkleinen op leeftijd</label><input id="houseReleaseAge" type="number" value="0" placeholder="bijv. 78"></div>
+    <div class="field"><label>Netto bedrag dat uit woning vrijkomt</label><input id="houseRelease" type="number" value="0" placeholder="na aflossing hypotheek"></div>
+  </div>
+  <div id="advancedWarning" class="warningbox" style="display:none"></div>
+</div>
+
 <button class="primary" onclick="recalc();toggleDetails(false)">Klaar</button>
 </div></div>
 
@@ -141,7 +160,11 @@ function plan(){
     aowAge:n('aowAge'),aow:Math.max(0,n('aow')),pensionAge:n('pensionAge'),pension:Math.max(0,n('pension')),
     partnerAge:n('partnerAge')||age,partnerIncome:Math.max(0,n('partnerIncome')),partnerStopAge:n('partnerStopAge'),
     partnerPensionAge:n('partnerPensionAge'),partnerPension:Math.max(0,n('partnerPension')),
-    endAge:n('endAge'),endBuffer:Math.max(0,n('endBuffer')),inflation:Math.max(0,n('inflation')/100),
+    endAge:n('endAge'),endBuffer:Math.max(0,n('endBuffer')),endTarget:Math.max(0,n('endTarget')),
+    inflation:Math.max(0,n('inflation')/100),pensionIndex:n('pensionIndex')/100,aowIndex:n('aowIndex')/100,
+    wealthTax:Math.max(0,n('wealthTax')/100),investmentCost:Math.max(0,n('investmentCost')/100),
+    careAge:n('careAge'),careMonthly:Math.max(0,n('careMonthly')),
+    houseReleaseAge:n('houseReleaseAge'),houseRelease:Math.max(0,n('houseRelease')),
     homeValue:Math.max(0,n('homeValue')),mortgage,mortRate:Math.max(0,n('mortRate')/100),mortPayment:Math.max(0,n('mortPayment')),
     mortType:s('mortType'),mortEndAge:normalizeAge(n('mortEndAge'),age),
     mortResidual:Math.min(mortgage,mortResidualRaw),mortResidualRaw
@@ -255,14 +278,33 @@ function debtBalanceAtAge(p,age,di){
   return bal;
 }
 
+function indexedRealMonthly(base,startAge,age,indexRate,inflation){
+  if(base<=0||age<startAge)return 0;
+  const years=Math.max(0,age-startAge);
+  const realFactor=Math.pow((1+indexRate)/(1+inflation),years);
+  return base*realFactor;
+}
+
+function effectiveMortgageCutAge(p,mi){
+  const normal=mortgageCutAge(mi);
+  if(p.houseReleaseAge>0&&p.houseReleaseAge>=p.age)return Math.min(normal,p.houseReleaseAge);
+  return normal;
+}
+
+function effectiveMortgageResidual(p,mi){
+  if(p.houseReleaseAge>0&&p.houseReleaseAge>=p.age&&p.houseReleaseAge<=mortgageCutAge(mi))return 0;
+  return mi.residual;
+}
+
 function partnerTimelineAge(p,userAge){
   return p.partnerAge+(userAge-p.age);
 }
 
 function annualSpendAt(p,age,mi,di){
   let spend=Math.max(0,p.spend*12);
-  if(age>=mortgageCutAge(mi))spend=Math.max(0,spend-p.mortPayment*12);
+  if(age>=effectiveMortgageCutAge(p,mi))spend=Math.max(0,spend-p.mortPayment*12);
   if(age>=debtCutAge(di))spend=Math.max(0,spend-p.otherDebtPayment*12);
+  if(p.careAge>0&&age>=p.careAge)spend+=p.careMonthly*12;
   return spend;
 }
 
@@ -297,12 +339,12 @@ function simulatePath(p, realReturn){
   const keptIncome=p.income*(1-p.workReduction);
   const realCashReturn=(1+p.cashRate)/(1+p.inflation)-1;
   for(let age=p.age;age<p.endAge;age++){
-    state.inv=Math.max(0,state.inv)*(1+realReturn);
+    state.inv=Math.max(0,state.inv)*(1+realReturn)*Math.max(0,1-p.wealthTax-p.investmentCost);
     state.cash*=1+realCashReturn;
     let annualIncome=0;
     if(age<p.stopAge)annualIncome+=keptIncome*12;
-    if(age>=p.aowAge)annualIncome+=p.aow*12;
-    if(age>=p.pensionAge)annualIncome+=p.pension*12;
+    if(age>=p.aowAge)annualIncome+=indexedRealMonthly(p.aow,p.aowAge,age,p.aowIndex,p.inflation)*12;
+    if(age>=p.pensionAge)annualIncome+=indexedRealMonthly(p.pension,p.pensionAge,age,p.pensionIndex,p.inflation)*12;
     const pa=partnerTimelineAge(p,age);
     if(p.partnerIncome>0&&pa<p.partnerStopAge)annualIncome+=p.partnerIncome*12;
     if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
@@ -315,7 +357,9 @@ function simulatePath(p, realReturn){
     });
     annualIncome+=monthlyIncomeChange*12;
     annualSpend=Math.max(0,annualSpend+monthlySpendChange*12);
-    if(isFinite(mi.endAge)&&age===mortgageCutAge(mi)&&mi.residual>0)oneOff+=mi.residual;
+    const effMortResidual=effectiveMortgageResidual(p,mi);
+    if(isFinite(mi.endAge)&&age===effectiveMortgageCutAge(p,mi)&&effMortResidual>0)oneOff+=effMortResidual;
+    if(p.houseReleaseAge>0&&age===p.houseReleaseAge&&p.houseRelease>0)oneOff-=p.houseRelease;
     if(isFinite(di.endAge)&&age===debtCutAge(di)&&di.residual>0)oneOff+=di.residual;
     settleYear(state,annualIncome-annualSpend-oneOff);
     out.push({age:age+1,capital:state.cash+state.inv-state.deficit-debtBalanceAtAge(p,age+1,di)});
@@ -332,12 +376,12 @@ function simulateReal(p, realReturn){
   const keptIncome=p.income*(1-p.workReduction);
   const realCashReturn=(1+p.cashRate)/(1+p.inflation)-1;
   for(let age=p.age;age<p.endAge;age++){
-    state.inv=Math.max(0,state.inv)*(1+realReturn);
+    state.inv=Math.max(0,state.inv)*(1+realReturn)*Math.max(0,1-p.wealthTax-p.investmentCost);
     state.cash*=1+realCashReturn;
     let annualIncome=0;
     if(age<p.stopAge)annualIncome+=keptIncome*12;
-    if(age>=p.aowAge)annualIncome+=p.aow*12;
-    if(age>=p.pensionAge)annualIncome+=p.pension*12;
+    if(age>=p.aowAge)annualIncome+=indexedRealMonthly(p.aow,p.aowAge,age,p.aowIndex,p.inflation)*12;
+    if(age>=p.pensionAge)annualIncome+=indexedRealMonthly(p.pension,p.pensionAge,age,p.pensionIndex,p.inflation)*12;
     const pa=partnerTimelineAge(p,age);
     if(p.partnerIncome>0&&pa<p.partnerStopAge)annualIncome+=p.partnerIncome*12;
     if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
@@ -350,7 +394,9 @@ function simulateReal(p, realReturn){
     });
     annualIncome+=monthlyIncomeChange*12;
     annualSpend=Math.max(0,annualSpend+monthlySpendChange*12);
-    if(isFinite(mi.endAge)&&age===mortgageCutAge(mi)&&mi.residual>0)oneOff+=mi.residual;
+    const effMortResidual=effectiveMortgageResidual(p,mi);
+    if(isFinite(mi.endAge)&&age===effectiveMortgageCutAge(p,mi)&&effMortResidual>0)oneOff+=effMortResidual;
+    if(p.houseReleaseAge>0&&age===p.houseReleaseAge&&p.houseRelease>0)oneOff-=p.houseRelease;
     if(isFinite(di.endAge)&&age===debtCutAge(di)&&di.residual>0)oneOff+=di.residual;
     settleYear(state,annualIncome-annualSpend-oneOff);
     const total=state.cash+state.inv-state.deficit-debtBalanceAtAge(p,age+1,di); min=Math.min(min,total);
@@ -358,6 +404,36 @@ function simulateReal(p, realReturn){
   }
   return {end:state.cash+state.inv-state.deficit-debtBalanceAtAge(p,p.endAge,di),min,depletionAge};
 }
+function simulateShock(p, realReturn, shockAge, shockPct){
+  const start=startingAssets(p);
+  let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
+  const mi=mortgageInfo(p),di=debtInfo(p);
+  let min=state.cash+state.inv-state.deficit-start.debt,depletionAge=null;
+  const keptIncome=p.income*(1-p.workReduction);
+  const realCashReturn=(1+p.cashRate)/(1+p.inflation)-1;
+  for(let age=p.age;age<p.endAge;age++){
+    state.inv=Math.max(0,state.inv)*(1+realReturn)*Math.max(0,1-p.wealthTax-p.investmentCost);
+    if(age===shockAge)state.inv*=Math.max(0,1-shockPct);
+    state.cash*=1+realCashReturn;
+    let annualIncome=0;
+    if(age<p.stopAge)annualIncome+=keptIncome*12;
+    if(age>=p.aowAge)annualIncome+=indexedRealMonthly(p.aow,p.aowAge,age,p.aowIndex,p.inflation)*12;
+    if(age>=p.pensionAge)annualIncome+=indexedRealMonthly(p.pension,p.pensionAge,age,p.pensionIndex,p.inflation)*12;
+    const pa=partnerTimelineAge(p,age);
+    if(p.partnerIncome>0&&pa<p.partnerStopAge)annualIncome+=p.partnerIncome*12;
+    if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
+    let annualSpend=annualSpendAt(p,age,mi,di),oneOff=0;
+    const eff=effectiveMortgageResidual(p,mi);
+    if(isFinite(mi.endAge)&&age===effectiveMortgageCutAge(p,mi)&&eff>0)oneOff+=eff;
+    if(isFinite(di.endAge)&&age===debtCutAge(di)&&di.residual>0)oneOff+=di.residual;
+    if(p.houseReleaseAge>0&&age===p.houseReleaseAge&&p.houseRelease>0)oneOff-=p.houseRelease;
+    settleYear(state,annualIncome-annualSpend-oneOff);
+    const total=state.cash+state.inv-state.deficit-debtBalanceAtAge(p,age+1,di);
+    min=Math.min(min,total);if(total<0&&depletionAge===null)depletionAge=age+1;
+  }
+  return {end:state.cash+state.inv-state.deficit-debtBalanceAtAge(p,p.endAge,di),min,depletionAge};
+}
+
 function mortgageCutAge(mi){
   if(!isFinite(mi.endAge)) return Infinity;
   return Math.ceil(mi.endAge-1e-9);
@@ -367,15 +443,16 @@ function monthlyFlowAt(p, age, mi, di){
   const kept=p.income*(1-p.workReduction);
   let income=0;
   if(age<p.stopAge) income+=kept;
-  if(age>=p.aowAge) income+=p.aow;
-  if(age>=p.pensionAge) income+=p.pension;
+  if(age>=p.aowAge) income+=indexedRealMonthly(p.aow,p.aowAge,age,p.aowIndex,p.inflation);
+  if(age>=p.pensionAge) income+=indexedRealMonthly(p.pension,p.pensionAge,age,p.pensionIndex,p.inflation);
   const pa=partnerTimelineAge(p,age);
   if(p.partnerIncome>0&&pa<p.partnerStopAge) income+=p.partnerIncome;
   if(p.partnerPension>0&&pa>=p.partnerPensionAge) income+=p.partnerPension;
 
   let spend=Math.max(0,p.spend);
-  if(age>=mortgageCutAge(mi)) spend=Math.max(0,spend-p.mortPayment);
+  if(age>=effectiveMortgageCutAge(p,mi)) spend=Math.max(0,spend-p.mortPayment);
   if(age>=debtCutAge(di)) spend=Math.max(0,spend-p.otherDebtPayment);
+  if(p.careAge>0&&age>=p.careAge) spend+=p.careMonthly;
 
   changes.forEach(e=>{
     if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) income+=e.monthly;
@@ -394,7 +471,7 @@ function flowLabel(p,age,mi,di){
   const pa=partnerTimelineAge(p,age);
   if(p.partnerIncome>0&&pa<p.partnerStopAge) bits.push('partnerinkomen');
   if(p.partnerPension>0&&pa>=p.partnerPensionAge) bits.push('partnerpensioen');
-  if(age>=mortgageCutAge(mi)&&p.mortgage>0&&mi.residual<=0) bits.push('hypotheek af');
+  if(age>=effectiveMortgageCutAge(p,mi)&&p.mortgage>0&&effectiveMortgageResidual(p,mi)<=0) bits.push(p.houseReleaseAge>0&&age>=p.houseReleaseAge?'woning aangepast':'hypotheek af');
   if(age>=debtCutAge(di)&&p.otherDebt>0) bits.push('overige schuld af');
   return bits.join(' + ');
 }
@@ -404,8 +481,10 @@ function buildCashflowPhases(p,mi,di){
   if(p.pension>0) cuts.push(p.pensionAge);
   if(p.partnerIncome>0) cuts.push(p.age+(p.partnerStopAge-p.partnerAge));
   if(p.partnerPension>0) cuts.push(p.age+(p.partnerPensionAge-p.partnerAge));
-  const mc=mortgageCutAge(mi);
+  const mc=effectiveMortgageCutAge(p,mi);
   if(isFinite(mc)) cuts.push(mc);
+  if(p.careAge>0) cuts.push(p.careAge);
+  if(p.houseReleaseAge>0) cuts.push(p.houseReleaseAge);
   const dc=debtCutAge(di);
   if(isFinite(dc)) cuts.push(dc);
   changes.forEach(e=>{
@@ -438,7 +517,7 @@ function buildCashflowPhases(p,mi,di){
 
 function requiredReal(p){
   const floorReal=(1/(1+p.inflation))-1; // 0% nominaal
-  const survives=r=>{ const s=simulateReal(p,r); return s.end>=p.endBuffer && s.min>=p.endBuffer; };
+  const survives=r=>{ const s=simulateReal(p,r); return s.end>=Math.max(p.endBuffer,p.endTarget) && s.min>=p.endBuffer; };
   if(survives(floorReal))return floorReal;
   let lo=floorReal,hi=0.30;
   if(!survives(hi))return Infinity;
@@ -454,9 +533,18 @@ function earliestAtNominal(p, nominal){
   const orig=p.stopAge;
   for(let s=p.age;s<=p.endAge-1;s++){
     const q={...p,stopAge:s};
-    { const sim=simulateReal(q,real); if(sim.end>=p.endBuffer && sim.min>=p.endBuffer)return s; }
+    { const sim=simulateReal(q,real); if(sim.end>=Math.max(p.endBuffer,p.endTarget) && sim.min>=p.endBuffer)return s; }
   }
   return null;
+}
+
+window.advancedOn=false;
+window.toggleAdvanced=function(){
+  window.advancedOn=!window.advancedOn;
+  document.getElementById('advancedFields')?.classList.toggle('on',window.advancedOn);
+  const b=document.getElementById('advancedBtn');
+  if(b)b.textContent=window.advancedOn?'Verberg':'Toon meer';
+  scheduleRecalc();
 }
 
 window.partnerOn=false;
@@ -498,13 +586,22 @@ window.recalc=function(){
     if(p.mortType==='combination'&&p.mortResidualRaw>p.mortgage){
       mw.style.display='block';
       mw.innerHTML='<b>Controleer je combinatiehypotheek:</b> de ingevoerde restschuld '+euro(p.mortResidualRaw)+' kan niet groter zijn dan de totale hypotheek '+euro(p.mortgage)+'. Voor de berekening is maximaal de totale hypotheek gebruikt.';
-    } else if((p.mortType==='interestOnly'||p.mortType==='combination')&&mi.residual>0){
+    } else if((p.mortType==='interestOnly'||p.mortType==='combination')&&effectiveMortResidual>0){
       mw.style.display='block';
-      mw.innerHTML='<b>Belangrijk:</b> rond je '+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'?')+'e staat nog '+euro(mi.residual)+' hypotheek open. Dat bedrag telt mee als toekomstige aflossing.';
+      mw.innerHTML='<b>Belangrijk:</b> rond je '+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'?')+'e staat nog '+euro(effectiveMortResidual)+' hypotheek open. Dat bedrag telt mee als toekomstige aflossing.';
     } else if(p.homeValue>0){
       mw.style.display='block';
       mw.innerHTML='<b>Woningwaarde '+euro(p.homeValue)+':</b> zichtbaar als reserve, maar niet automatisch als besteedbaar vermogen meegerekend.';
     } else mw.style.display='none';
+  }
+  const aw=document.getElementById('advancedWarning');
+  if(aw){
+    const notes=[];
+    if(p.endTarget>0)notes.push('<b>Einddoel:</b> op je '+p.endAge+'e wil je minimaal '+euro(p.endTarget)+' overhouden.');
+    if(p.houseReleaseAge>0&&p.houseRelease>0)notes.push('<b>Woning:</b> op je '+p.houseReleaseAge+'e komt netto '+euro(p.houseRelease)+' vrij en stopt de hypotheekbetaling vanaf dat moment.');
+    if(p.careAge>0&&p.careMonthly>0)notes.push('<b>Zorg:</b> vanaf je '+p.careAge+'e telt '+euro(p.careMonthly)+'/mnd extra mee.');
+    if(notes.length){aw.style.display='block';aw.innerHTML=notes.join('<br><br>');}
+    else aw.style.display='none';
   }
   const rr=requiredReal(p);
   const nominal=isFinite(rr)?(1+rr)*(1+p.inflation)-1:Infinity;
@@ -520,12 +617,13 @@ window.recalc=function(){
   const e0=simulateReal(p,(1+0)/(1+p.inflation)-1);
   const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1);
   const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);
+  const shock3=simulateShock(p,(1+.03)/(1+p.inflation)-1,p.stopAge,.30);
   const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
   const pathNeeded=simulatePath(p,chartReal);
   const earliest3=earliestAtNominal(p,.03);
   const real3=(1+.03)/(1+p.inflation)-1;
   const currentAt3=simulateReal(p,real3);
-  const currentPlanAt3=currentAt3.min>=p.endBuffer&&currentAt3.end>=p.endBuffer;
+  const currentPlanAt3=currentAt3.min>=p.endBuffer&&currentAt3.end>=Math.max(p.endBuffer,p.endTarget);
   const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
   let headline;
   if(!isFinite(nominal))headline='Dit plan redt het zelfs niet met 30% rendement';
@@ -547,8 +645,15 @@ window.recalc=function(){
       : 'Je onttrekt '+euro(-x.net)+'/mnd uit vermogen.');
   });
 
-  if(isFinite(mi.endAge)&&mi.endAge>p.age&&mi.endAge<p.endAge&&mi.residual>0){
-    phases.push('Rond je '+mi.endAge.toFixed(1).replace('.',',')+'e eindigt je hypotheek en staat er nog '+euro(mi.residual)+' open. Die restschuld is als eenmalige aflossing in het plan meegenomen.');
+  const effMortResidualNarr=effectiveMortgageResidual(p,mi);
+  if(isFinite(mi.endAge)&&mi.endAge>p.age&&mi.endAge<p.endAge&&effMortResidualNarr>0){
+    phases.push('Rond je '+mi.endAge.toFixed(1).replace('.',',')+'e eindigt je hypotheek en staat er nog '+euro(effMortResidualNarr)+' open. Die restschuld is als eenmalige aflossing in het plan meegenomen.');
+  }
+  if(p.houseReleaseAge>0&&p.houseRelease>0){
+    phases.push('Op je '+p.houseReleaseAge+'e komt netto '+euro(p.houseRelease)+' uit je woning vrij. Vanaf dat moment vervalt in deze berekening ook je hypotheekbetaling.');
+  }
+  if(p.careAge>0&&p.careMonthly>0){
+    phases.push('Vanaf je '+p.careAge+'e zijn '+euro(p.careMonthly)+'/mnd extra zorgkosten meegenomen.');
   }
   if(isFinite(di.endAge)&&di.endAge>p.age&&di.endAge<p.endAge&&di.residual>0){
     phases.push('Rond je '+debtCutAge(di)+'e eindigt je overige schuld en staat er nog '+euro(di.residual)+' open. Ook die restschuld is als eenmalige aflossing meegenomen.');
@@ -557,7 +662,9 @@ window.recalc=function(){
   const scenarioStatus=s=>s.min>=p.endBuffer?'✓ buffer intact':'! buffer te laag';
   const phaseCards=cashflowPhases.map(x=>{
     let oneOffAtStart=0;
-    if(isFinite(mi.endAge)&&mi.residual>0&&Math.round(x.start)===mortgageCutAge(mi)) oneOffAtStart+=mi.residual;
+    const effMortResidualCard=effectiveMortgageResidual(p,mi);
+    if(isFinite(mi.endAge)&&effMortResidualCard>0&&Math.round(x.start)===effectiveMortgageCutAge(p,mi)) oneOffAtStart+=effMortResidualCard;
+    if(p.houseReleaseAge>0&&p.houseRelease>0&&Math.round(x.start)===p.houseReleaseAge) oneOffAtStart-=p.houseRelease;
     if(isFinite(di.endAge)&&di.residual>0&&Math.round(x.start)===debtCutAge(di)) oneOffAtStart+=di.residual;
     return {
       age:x.age,
@@ -570,14 +677,16 @@ window.recalc=function(){
     {age:p.stopAge,label:'Stoppen'},
     {age:p.aowAge,label:'AOW'},
     ...(p.pension>0&&p.pensionAge!==p.aowAge?[{age:p.pensionAge,label:'Pensioen'}]:[]),
-    ...(isFinite(mi.endAge)?[{age:mortgageCutAge(mi),label:mi.residual>0?'Hypotheek einde':'Hypotheek af'}]:[]),
+    ...(isFinite(mi.endAge)?[{age:effectiveMortgageCutAge(p,mi),label:effectiveMortgageResidual(p,mi)>0?'Hypotheek einde':(p.houseReleaseAge>0?'Woning':'Hypotheek af')}]:[]),
+    ...(p.careAge>0?[{age:p.careAge,label:'Zorgkosten'}]:[]),
     ...(p.otherDebt>0&&isFinite(di.endAge)?[{age:debtCutAge(di),label:di.residual>0?'Schuld einde':'Schuld af'}]:[])
   ];
   const result=document.getElementById('result');
-  const mortgageEnd=isFinite(mi.endAge)?mortgageCutAge(mi).toString():'onbekend';
+  const mortgageEnd=isFinite(mi.endAge)?effectiveMortgageCutAge(p,mi).toString():'onbekend';
+  const effectiveMortResidual=effectiveMortgageResidual(p,mi);
   const mortgageRisk=isFinite(mi.endAge)
-    ? (mi.residual>0
-        ? 'Rond leeftijd '+mortgageEnd+' eindigt deze hypotheekfase. Dan staat nog '+euro(mi.residual)+' open; dat bedrag is als toekomstige aflossing meegenomen.'
+    ? (effectiveMortResidual>0
+        ? 'Rond leeftijd '+mortgageEnd+' eindigt deze hypotheekfase. Dan staat nog '+euro(effectiveMortResidual)+' open; dat bedrag is als toekomstige aflossing meegenomen.'
         : 'Rond leeftijd '+mortgageEnd+' is de hypotheek volgens deze invoer afgelost. Daarna valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.')
     : 'Er is nog geen bruikbare hypotheek-einddatum ingevuld.';
 
@@ -594,13 +703,13 @@ window.recalc=function(){
   const annualSpendBase=Math.max(1,p.spend*12);
   const worstMonthlyDraw=Math.max(0,...cashflowPhases.map(x=>-x.net));
 
-  if(mi.residual>0&&isFinite(mi.endAge)){
+  if(effectiveMortResidual>0&&isFinite(mi.endAge)){
     const pctNet=mi.residual/startNet;
     const pctAnnual=mi.residual/annualSpendBase;
     const score=Math.min(95,15+pctNet*160+pctAnnual*10);
     riskCandidates.push({
       score,
-      text:'Op je '+mortgageEnd+'e staat ongeveer '+euro(mi.residual)+' hypotheekrestschuld open. Dat is '+pct(pctNet)+' van je huidige netto financiële vermogen.'
+      text:'Op je '+mortgageEnd+'e staat ongeveer '+euro(effectiveMortResidual)+' hypotheekrestschuld open. Dat is '+pct(pctNet)+' van je huidige netto financiële vermogen.'
     });
   }
 
@@ -642,6 +751,25 @@ window.recalc=function(){
     riskCandidates.push({
       score:Math.min(95,50+gap*160),
       text:'Ook bij 3% gemiddeld rendement wordt je buffer niet gehaald; het laagste punt is '+euro(e3.min)+'.'
+    });
+  }
+
+  if(p.wealthTax+p.investmentCost>0){
+    riskCandidates.push({
+      score:30+Math.min(50,(p.wealthTax+p.investmentCost)*700),
+      text:'Vermogensheffing en beleggingskosten samen drukken je rendement met ongeveer '+pct(p.wealthTax+p.investmentCost)+' per jaar.'
+    });
+  }
+  if(p.careAge>0&&p.careMonthly>0){
+    riskCandidates.push({
+      score:35+Math.min(40,(p.careMonthly*12)/Math.max(1,startNet)*300),
+      text:'Vanaf je '+p.careAge+'e zijn '+euro(p.careMonthly)+'/mnd extra zorgkosten opgenomen.'
+    });
+  }
+  if(p.endTarget>p.endBuffer){
+    riskCandidates.push({
+      score:25,
+      text:'Je wilt op je '+p.endAge+'e nog '+euro(p.endTarget)+' overhouden. Dat einddoel ligt boven je minimale buffer.'
     });
   }
 
@@ -704,6 +832,7 @@ window.recalc=function(){
       <div class="scenario"><span>0%</span><span>${scenarioStatus(e0)}</span><b>laagste ${euro(e0.min)}</b></div>
       <div class="scenario"><span>3%</span><span>${scenarioStatus(e3)}</span><b>laagste ${euro(e3.min)}</b></div>
       <div class="scenario"><span>5%</span><span>${scenarioStatus(e5)}</span><b>laagste ${euro(e5.min)}</b></div>
+      <div class="scenario"><span>3% + crash</span><span>${scenarioStatus(shock3)}</span><b>laagste ${euro(shock3.min)}</b></div>
       <p class="note">Hier telt niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.</p>
     </div>`,
 
@@ -727,11 +856,14 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
             ? prefix+'<b>geen onttrekking</b> · je houdt '+euro(x.net)+'/mnd over'
             : prefix+'<b>'+euro(-x.net)+'/mnd uit vermogen</b>';
         }),
-        ...(isFinite(mi.endAge)&&mi.residual>0
-          ? ['Op '+mortgageCutAge(mi)+': <b>'+euro(mi.residual)+' eenmalig uit vermogen</b> voor aflossing van de hypotheekrestschuld.']
+        ...(isFinite(mi.endAge)&&effectiveMortResidual>0
+          ? ['Op '+mortgageCutAge(mi)+': <b>'+euro(effectiveMortResidual)+' eenmalig uit vermogen</b> voor aflossing van de hypotheekrestschuld.']
           : []),
         ...(isFinite(di.endAge)&&di.residual>0
           ? ['Op '+debtCutAge(di)+': <b>'+euro(di.residual)+' eenmalig uit vermogen</b> voor aflossing van de overige restschuld.']
+          : []),
+        ...(p.houseReleaseAge>0&&p.houseRelease>0
+          ? ['Op '+p.houseReleaseAge+': <b>'+euro(p.houseRelease)+' komt vrij uit de woning</b>.']
           : [])
       ].join('\n\n')}</div>
     </div>`,
@@ -740,10 +872,11 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
       <h2>Waar ligt je speelruimte?</h2>
       <div class="kpis">
         <div class="kpi"><span>Bij 3% rendement</span><b>${currentPlanAt3?('je huidige stop op '+Math.round(p.stopAge)+' werkt'):(earliest3!==null?'stoppen rond '+earliest3:'nog niet genoeg')}</b></div>
+        ${p.endTarget>0?`<div class="kpi"><span>Gewenst eindvermogen</span><b>${euro(p.endTarget)}</b></div>`:''}
         <div class="kpi"><span>Hypotheek nu</span><b>${euro(p.mortPayment)}/mnd</b></div>
         <div class="kpi"><span>Nu: rente / aflossing</span><b>${euro(mi.interest)} / ${euro(mi.principal)}</b></div>
         <div class="kpi"><span>Hypotheek eindigt rond</span><b>${mortgageEnd}</b></div>
-        <div class="kpi"><span>Restschuld einddatum</span><b>${euro(mi.residual)}</b></div>
+        <div class="kpi"><span>Restschuld einddatum</span><b>${euro(effectiveMortResidual)}</b></div>
         ${p.otherDebt>0?`<div class="kpi"><span>Overige schuld</span><b>${euro(p.otherDebt)}</b></div><div class="kpi"><span>Rente / betaling schuld</span><b>${pct(p.otherDebtRate)} / ${euro(p.otherDebtPayment)}/mnd</b></div><div class="kpi"><span>Schuld eindigt rond</span><b>${isFinite(di.endAge)?debtCutAge(di):'onbekend'}</b></div><div class="kpi"><span>Restschuld overige schuld</span><b>${euro(di.residual)}</b></div>`:''}
       </div>
     </div>`,
@@ -804,7 +937,7 @@ function scheduleRecalc(){
     if(s){s.classList.add('live'); s.querySelector('span:last-child').innerHTML='<b>Automatisch bijgewerkt</b> op basis van je laatste wijziging.';}
   },180);
 }
-['age','stopAge','income','spend','cash','cashRate','capital','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual']
+['age','stopAge','income','spend','cash','cashRate','capital','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual','endTarget','pensionIndex','aowIndex','wealthTax','investmentCost','careAge','careMonthly','houseReleaseAge','houseRelease']
   .forEach(id=>{
     const el=document.getElementById(id);
     if(el){
