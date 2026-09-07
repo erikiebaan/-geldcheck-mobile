@@ -817,6 +817,11 @@ window.recalc=function(){
     return {age,label};
   });
   const mortgageEnd=isFinite(mi.endAge)?effectiveMortgageCutAge(p,mi).toString():'onbekend';
+  const mortgageYearsForInsight=Math.max(0,Math.min(p.endAge,(isFinite(mi.endAge)?effectiveMortgageCutAge(p,mi):p.endAge))-p.age);
+  const mortgageRealLater=(p.mortPayment>0&&p.inflation>0)?p.mortPayment/Math.pow(1+p.inflation,mortgageYearsForInsight):p.mortPayment;
+  const mortgageInflationInsight=(p.mortgage>0&&p.mortPayment>0&&p.inflation>0)
+    ? '<div class="inflationinsight"><b>Inflatie werkt hier óók in je voordeel</b><p>Je hypotheekbetaling van '+euro(p.mortPayment)+'/mnd is een nominale contractlast en stijgt niet automatisch mee met de algemene inflatie. Bij '+pct(p.inflation)+' inflatie voelt dezelfde betaling over '+Math.round(mortgageYearsForInsight)+' jaar in koopkracht van vandaag als ongeveer <strong>'+euro(mortgageRealLater)+'/mnd</strong>. Je gewone leefkosten zijn wél inflatiegevoelig; een vaste nominale schuld wordt daardoor reëel steeds lichter.</p></div>'
+    : '';
   const mortgageRisk=isFinite(mi.endAge)
     ? (effectiveMortResidual>0
         ? 'Rond leeftijd '+mortgageEnd+' eindigt deze hypotheekfase. Dan staat nog '+euro(effectiveMortResidual)+' open; dat bedrag is als toekomstige aflossing meegenomen.'
@@ -1032,6 +1037,7 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
         <div class="kpi"><span>Nu: rente / aflossing</span><b>${euro(mi.interest)} / ${euro(mi.principal)}</b></div>
         <div class="kpi"><span>Hypotheek eindigt rond</span><b>${mortgageEnd}</b></div>
         <div class="kpi"><span>Restschuld einddatum</span><b>${euro(effectiveMortResidual)}</b></div>
+        ${mortgageInflationInsight}
         ${p.otherDebt>0?`<div class="kpi"><span>Overige schuld</span><b>${euro(p.otherDebt)}</b></div><div class="kpi"><span>Rente / betaling schuld</span><b>${pct(p.otherDebtRate)} / ${euro(p.otherDebtPayment)}/mnd</b></div><div class="kpi"><span>Schuld eindigt rond</span><b>${isFinite(di.endAge)?debtCutAge(di):'onbekend'}</b></div><div class="kpi"><span>Restschuld overige schuld</span><b>${euro(di.residual)}</b></div>`:''}
       </div>
     </div>`,
