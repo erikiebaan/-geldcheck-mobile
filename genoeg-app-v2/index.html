@@ -109,6 +109,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
       </select>
     </div>
     <div class="field"><label>Omschrijving <span class="note">(optioneel)</span></label><input id="changeLabel" value="" placeholder="erfenis, auto, lijfrente…"></div>
+    <div class="field" id="changeCertaintyField"><label>Hoe zeker is deze ontvangst?</label><select id="changeCertainty"><option value="uncertain">Nog onzeker</option><option value="certain">Zeker / toegezegd</option></select><div class="note">Een onzekere ontvangst verschijnt alleen in het paarse scenario en verlaagt je hoofdantwoord niet.</div></div>
   </div>
   <button type="button" class="tinybtn" style="margin-top:10px" onclick="addFinancialChange()">+ Verandering toevoegen</button>
   <div id="changesList" style="margin-top:10px"></div>
@@ -165,13 +166,13 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 const CHANGES_STORAGE_KEY='geldcheck-financial-changes-v1';
 function loadFinancialChanges(){
   try{
-    const stored=JSON.parse(sessionStorage.getItem(CHANGES_STORAGE_KEY)||'[]');
+    const stored=history.state?.geldcheckFinancialChanges||[];
     if(!Array.isArray(stored))return [];
     return stored.filter(e=>e&&['oneoff','income','expense'].includes(e.kind));
   }catch(_){return [];}
 }
 function saveFinancialChanges(){
-  try{sessionStorage.setItem(CHANGES_STORAGE_KEY,JSON.stringify(changes));}catch(_){}
+  try{history.replaceState({...history.state,geldcheckFinancialChanges:changes},'');sessionStorage.removeItem(CHANGES_STORAGE_KEY);}catch(_){}
 }
 let changes=loadFinancialChanges();
 
@@ -179,6 +180,7 @@ const n=id=>Number(document.getElementById(id)?.value)||0;
 const s=id=>document.getElementById(id)?.value||'';
 const euro=x=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Math.round(x));
 const pct=x=>(x*100).toFixed(1).replace('.',',')+'%';
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function optionalRate(id,fallback){
   const el=document.getElementById(id);
   if(!el)return fallback;
@@ -383,9 +385,18 @@ function settleYear(state,netCash){
   }
 }
 
+function changeIncluded(e,mode){
+  if(mode===false||mode==='base')return false;
+  if(mode==='main'&&e.kind==='oneoff'&&e.amount<0&&e.certainty!=='certain')return false;
+  return true;
+}
+function startingOneOff(p,mode){
+  return changes.reduce((sum,e)=>sum+(changeIncluded(e,mode)&&e.kind==='oneoff'&&e.age===p.age?e.amount:0),0);
+}
 function simulatePath(p, realReturn, includeChanges=true){
   const start=startingAssets(p);
   let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
+  settleYear(state,-startingOneOff(p,includeChanges));
   const mi=mortgageInfo(p), di=debtInfo(p);
   const out=[{age:p.age,capital:state.cash+state.inv-state.deficit-start.debt}];
   const keptIncome=p.income*(1-p.workReduction);
@@ -403,7 +414,8 @@ function simulatePath(p, realReturn, includeChanges=true){
 
     let annualSpend=annualSpendAt(p,age,mi,di), oneOff=0, monthlyIncomeChange=0, monthlySpendChange=0;
     if(includeChanges) changes.forEach(e=>{
-      if(e.kind==='oneoff'&&e.age===age)oneOff+=e.amount;
+      if(changeIncluded(e,includeChanges)&&e.kind==='oneoff'&&e.age===age+1)oneOff+=e.amount;
+      if(!changeIncluded(e,includeChanges))return;
       if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlyIncomeChange+=e.monthly;
       if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlySpendChange+=e.monthly;
     });
@@ -438,13 +450,14 @@ function chartSvg(basePath,changedPath,markers=[],changeMarkers=[]){
   let marks='';
   markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;marks+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+m.label+' '+Math.round(m.age)+'</text>';});
   let cmarks='';
-  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+54+(j%3)*16;cmarks+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+m.label+'</text>';});
+  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+54+(j%3)*16;cmarks+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});
   return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+marks+cmarks+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+labels+'</svg>';
 }
 
-function simulateReal(p, realReturn){
+function simulateReal(p, realReturn, mode='all'){
   const start=startingAssets(p);
   let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
+  settleYear(state,-startingOneOff(p,mode));
   const mi=mortgageInfo(p), di=debtInfo(p);
   let min=state.cash+state.inv-state.deficit-start.debt,depletionAge=null;
   const keptIncome=p.income*(1-p.workReduction);
@@ -462,7 +475,8 @@ function simulateReal(p, realReturn){
 
     let annualSpend=annualSpendAt(p,age,mi,di),oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
     changes.forEach(e=>{
-      if(e.kind==='oneoff'&&e.age===age)oneOff+=e.amount;
+      if(!changeIncluded(e,mode))return;
+      if(e.kind==='oneoff'&&e.age===age+1)oneOff+=e.amount;
       if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlyIncomeChange+=e.monthly;
       if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlySpendChange+=e.monthly;
     });
@@ -482,6 +496,7 @@ function assetShockPct(){const v=s('assetRisk');return v==='defensive'?.12:v==='
 function simulateShock(p, realReturn, shockAge, shockPct){
   const start=startingAssets(p);
   let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
+  settleYear(state,-startingOneOff(p,'main'));
   const mi=mortgageInfo(p),di=debtInfo(p);
   let min=state.cash+state.inv-state.deficit-start.debt,depletionAge=null;
   const keptIncome=p.income*(1-p.workReduction);
@@ -499,7 +514,8 @@ function simulateShock(p, realReturn, shockAge, shockPct){
     if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
     let annualSpend=annualSpendAt(p,age,mi,di),oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
     changes.forEach(e=>{
-      if(e.kind==='oneoff'&&e.age===age)oneOff+=e.amount;
+      if(!changeIncluded(e,'main'))return;
+      if(e.kind==='oneoff'&&e.age===age+1)oneOff+=e.amount;
       if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlyIncomeChange+=e.monthly;
       if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge))monthlySpendChange+=e.monthly;
     });
@@ -540,7 +556,7 @@ function monthlyFlowAt(p, age, mi, di){
     if(e.kind==='income'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) income+=e.monthly;
     if(e.kind==='expense'&&age>=e.startAge&&(e.endAge===null||age<e.endAge)) spend+=e.monthly;
   });
-
+  spend=Math.max(0,spend);
   return {income,spend,net:income-spend};
 }
 
@@ -574,7 +590,6 @@ function buildCashflowPhases(p,mi,di){
       cuts.push(e.startAge);
       if(e.endAge!==null) cuts.push(e.endAge);
     }
-    if(e.kind==='oneoff') cuts.push(e.age);
   });
   const ages=[...new Set(cuts.filter(a=>isFinite(a)&&a>=p.age&&a<=p.endAge).map(a=>Math.round(a)))].sort((a,b)=>a-b);
   if(ages[0]!==p.age) ages.unshift(p.age);
@@ -599,7 +614,7 @@ function buildCashflowPhases(p,mi,di){
 
 function requiredReal(p){
   const floorReal=(1/(1+p.inflation))-1; // 0% nominaal
-  const survives=r=>{ const s=simulateReal(p,r); return s.end>=Math.max(p.endBuffer,p.endTarget) && s.min>=p.endBuffer; };
+  const survives=r=>{ const s=simulateReal(p,r,'main'); return s.end>=Math.max(p.endBuffer,p.endTarget) && s.min>=p.endBuffer; };
   if(survives(floorReal))return floorReal;
   let lo=floorReal,hi=0.30;
   if(!survives(hi))return Infinity;
@@ -615,7 +630,7 @@ function earliestAtNominal(p, nominal){
   const orig=p.stopAge;
   for(let s=p.age;s<=p.endAge-1;s++){
     const q={...p,stopAge:s};
-    { const sim=simulateReal(q,real); if(sim.end>=Math.max(p.endBuffer,p.endTarget) && sim.min>=p.endBuffer)return s; }
+    { const sim=simulateReal(q,real,'main'); if(sim.end>=Math.max(p.endBuffer,p.endTarget) && sim.min>=p.endBuffer)return s; }
   }
   return null;
 }
@@ -631,11 +646,11 @@ window.toggleAdvanced=function(){
 
 function changeLabelText(e){
   if(e.kind==='oneoff'){
-    return (e.amount<0?'Ontvangst ':'Uitgave ')+euro(Math.abs(e.amount))+' op '+e.age+(e.label?' · '+e.label:'');
+    return (e.amount<0?'Ontvangst ':'Uitgave ')+euro(Math.abs(e.amount))+' op '+e.age+(e.amount<0&&e.certainty!=='certain'?' · onzeker':'')+(e.label?' · '+esc(e.label):'');
   }
   const direction=e.monthly>=0?'+':'−';
   const base=(e.kind==='income'?'Inkomen ':'Lasten ')+direction+euro(Math.abs(e.monthly))+'/mnd vanaf '+e.startAge;
-  return base+(e.endAge!==null?' tot '+e.endAge:'')+(e.label?' · '+e.label:'');
+  return base+(e.endAge!==null?' tot '+e.endAge:'')+(e.label?' · '+esc(e.label):'');
 }
 function renderChangesList(){
   const el=document.getElementById('changesList'); if(!el)return;
@@ -654,7 +669,7 @@ window.addFinancialChange=function(){
   const end=endRaw?normalizeAge(endRaw,p.age):null;
   const label=s('changeLabel').trim();
   const dir=s('changeDirection')==='minus'?-1:1;
-  if(amount<=0||start<p.age||start>p.endAge){
+  if(amount<=0||start<p.age||start>=p.endAge){
     const el=document.getElementById('changesList');
     if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> vul een bedrag in en kies een moment tussen je huidige leeftijd en je eindleeftijd.</div>';
     return;
@@ -664,7 +679,7 @@ window.addFinancialChange=function(){
     if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> “tot” moet later zijn dan “vanaf”.</div>';
     return;
   }
-  if(type==='receive') changes.push({kind:'oneoff',label:label||'eenmalige ontvangst',amount:-amount,age:start});
+  if(type==='receive') changes.push({kind:'oneoff',label:label||'eenmalige ontvangst',amount:-amount,age:start,certainty:s('changeCertainty')==='certain'?'certain':'uncertain'});
   else if(type==='pay') changes.push({kind:'oneoff',label:label||'eenmalige uitgave',amount:amount,age:start});
   else if(type==='income') changes.push({kind:'income',label:label||'inkomensverandering',monthly:dir*amount,startAge:start,endAge:end});
   else changes.push({kind:'expense',label:label||'lastenverandering',monthly:dir*amount,startAge:start,endAge:end});
@@ -686,8 +701,10 @@ function updateChangeForm(){
   const recurring=type==='income'||type==='expense';
   const end=document.getElementById('changeEndField');
   const direction=document.getElementById('changeDirection')?.closest('.field');
+  const certainty=document.getElementById('changeCertaintyField');
   if(end)end.style.display=recurring?'block':'none';
   if(direction)direction.style.display=recurring?'block':'none';
+  if(certainty)certainty.style.display=type==='receive'?'block':'none';
 }
 window.toggleCoverage=function(){const el=document.getElementById('coveragePanel');if(!el)return;if(el.style.display!=='none'){el.style.display='none';return;}const rows=[['Activa & vermogen',n('capital')>0?'↗ Dynamisch gevraagd':'✓ Direct / ≈ gebundeld','assetrisico verschijnt alleen bij belegd vermogen'],['Pensioen & uitkeringen','✓ Direct / ↗ dynamisch','AOW, pensioen, partner en inkomensveranderingen'],['Wonen & vastgoed','✓ Direct / ↗ dynamisch','woning, hypotheek en toekomstige wijzigingen'],['Levenskosten','≈ Gebundeld','detailkosten zitten in totale uitgaven'],['Mobiliteit','≈ Gebundeld / ↗ dynamisch','lopende kosten en toekomstige vervanging'],['Zorg & welzijn','✓ Direct / ↗ dynamisch','lopende en latere zorgkosten'],['Belastingen & kosten','✓ Advanced','vermogensheffing en beleggingskosten'],['Familie & nalatenschap','↗ Dynamisch','erfenis, schenking en eindvermogen'],['Inflatie & economie','✓ Direct / stress','inflatie, reëel rendement en nominale schuld'],['Risico & onvoorzien',n('capital')>0?'✓ Buffer + ↗ assetstress':'✓ Buffer / stress','buffer, scenario’s, crash en langleven']];el.innerHTML='<div class="note" style="margin-bottom:10px"><b>Onder de motorkap: 8 bouwstenen</b><br>vermogen · schulden · inkomsten · uitgaven · eenmalige gebeurtenissen · groei/indexatie · risico/exposure · regels/voorwaarden</div><div class="note" style="margin-bottom:8px"><b>Status</b> · ✓ meegerekend · ≈ gebundeld · ↗ alleen gevraagd indien relevant · ○ nog niet individueel gemodelleerd.</div>'+rows.map(r=>'<div class="kpi" style="margin-bottom:6px"><span><b>'+r[0]+'</b><br><small>'+r[2]+'</small></span><b style="font-size:12px">'+r[1]+'</b></div>').join('');el.style.display='block';}
 window.partnerOn=false;
@@ -770,17 +787,17 @@ window.recalc=function(){
   const stoppedAfterAowNet=laterIncome-p.spend;
   const beforeGap=Math.max(0,-workOnlyNet);
   const afterAowGap=Math.max(0,-stoppedAfterAowNet);
-  const e0=simulateReal(p,(1+0)/(1+p.inflation)-1);
-  const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1);
-  const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);
-  const e30=simulateReal(p,(1+.30)/(1+p.inflation)-1);
+  const e0=simulateReal(p,(1+0)/(1+p.inflation)-1,'main');
+  const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1,'main');
+  const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1,'main');
+  const e30=simulateReal(p,(1+.30)/(1+p.inflation)-1,'main');
   const shock3=simulateShock(p,(1+.03)/(1+p.inflation)-1,p.stopAge,assetShockPct());
   const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
   const pathBase=simulatePath(p,chartReal,false);
   const pathNeeded=simulatePath(p,chartReal,true);
   const earliest3=earliestAtNominal(p,.03);
   const real3=(1+.03)/(1+p.inflation)-1;
-  const currentAt3=simulateReal(p,real3);
+  const currentAt3=simulateReal(p,real3,'main');
   const currentPlanAt3=currentAt3.min>=p.endBuffer&&currentAt3.end>=Math.max(p.endBuffer,p.endTarget);
   const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
   const targetEnd=Math.max(p.endBuffer,p.endTarget);
@@ -798,9 +815,9 @@ window.recalc=function(){
   else headline='Je plan vraagt een hoog rendement';
 
   let eventsTxt=changes.length?changes.map(e=>{
-    if(e.kind==='oneoff') return e.label+' '+(e.amount<0?'+':'−')+euro(Math.abs(e.amount))+' op '+e.age;
-    if(e.kind==='income') return e.label+' +'+euro(e.monthly)+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
-    return e.label+' '+(e.monthly<0?'-':'')+euro(Math.abs(e.monthly))+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
+    if(e.kind==='oneoff') return esc(e.label)+' '+(e.amount<0?'+':'−')+euro(Math.abs(e.amount))+' op '+e.age+(e.amount<0&&e.certainty!=='certain'?' (onzeker; alleen paars)':'');
+    if(e.kind==='income') return esc(e.label)+' +'+euro(e.monthly)+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
+    return esc(e.label)+' '+(e.monthly<0?'-':'')+euro(Math.abs(e.monthly))+'/mnd vanaf '+e.startAge+(e.endAge!==null?' tot '+e.endAge:'');
   }).join(' · '):'geen extra veranderingen';
   const cashflowPhases=buildCashflowPhases(p,mi,di);
   let phases=cashflowPhases.map(x=>{
@@ -1060,8 +1077,8 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
           ? ['Op '+p.houseReleaseAge+': <b>'+euro(p.houseRelease)+' komt vrij uit de woning</b>.']
           : []),
         ...changes.filter(e=>e.kind==='oneoff').map(e=>e.amount<0
-          ? 'Op '+e.age+': <b>'+euro(Math.abs(e.amount))+' komt binnen</b>'+(e.label?' · '+e.label:'')+'.'
-          : 'Op '+e.age+': <b>'+euro(e.amount)+' eenmalig uit vermogen</b>'+(e.label?' · '+e.label:'')+'.')
+          ? 'Op '+e.age+': <b>'+euro(Math.abs(e.amount))+' komt binnen</b>'+(e.amount<0&&e.certainty!=='certain'?' (onzeker; alleen in paars)':'')+(e.label?' · '+esc(e.label):'')+'.'
+          : 'Op '+e.age+': <b>'+euro(e.amount)+' eenmalig uit vermogen</b>'+(e.label?' · '+esc(e.label):'')+'.')
       ].join('\n\n')}</div>
     </div>`,
 
@@ -1104,7 +1121,7 @@ window.applyAsk=function(){
   }
   if((m=s.match(/(?:krijg|ontvang|erfenis).*?([0-9\.]+)\s*(k|duizend)?[^0-9]+(?:op|vanaf|als ik)\s*(?:mijn\s*)?([0-9]{2})/i))){
     let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;
-    changes.push({kind:'oneoff',label:'eenmalige ontvangst',amount:-amt,age:Number(m[3])});
+    changes.push({kind:'oneoff',label:'eenmalige ontvangst',amount:-amt,age:Number(m[3]),certainty:'uncertain'});
     changesText.push('ontvangst +'+euro(amt)+' op '+m[3]);
   }
   if((m=s.match(/vanaf\s*([0-9]{2}).*?(?:werk|werken).*?([0-9\.]+)\s*(k|duizend)?\s*(?:netto\s*)?(?:per maand|p\/m|maand)(?:.*?tot\s*([0-9]{2}))?/i))){
@@ -1121,6 +1138,13 @@ window.applyAsk=function(){
   if((m=s.match(/(?:stoppen|stop)\s*(?:op|met)\s*([0-9]{2})/i))){setField('stopAge',Number(m[1]));changesText.push('volledig stoppen op '+m[1])}
   if((m=s.match(/(?:tot|t\/m)\s*([0-9]{2})\s*(?:genoeg|geld|leven|jaar)?/i))){setField('endAge',Number(m[1]));changesText.push('genoeg tot '+m[1])}
   if((m=s.match(/([0-9]{1,2})%\s*(?:minder werken|afbouwen)/i))){setField('workReduction',Number(m[1]));changesText.push(m[1]+'% minder werken')}
+  const p=plan();
+  const added=changes.slice(changesBefore).filter(e=>{
+    const start=e.kind==='oneoff'?e.age:e.startAge;
+    return Number.isFinite(start)&&start>=p.age&&start<p.endAge&&
+      (e.kind==='oneoff'||e.endAge===null||(Number.isFinite(e.endAge)&&e.endAge>start));
+  });
+  if(added.length!==changes.length-changesBefore)changes.splice(changesBefore,changes.length-changesBefore,...added);
   const msg=changesText.length?'Aangepast: '+changesText.join(' · '):'Ik kon deze zin nog niet goed begrijpen. Pas je gegevens aan via Mijn gegevens.';
   if(changesText.length){ const b=document.querySelector('.bottomask button'); if(b){const old=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=old,1000);} }
   if(changes.length!==changesBefore)saveFinancialChanges();
