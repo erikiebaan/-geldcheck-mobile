@@ -619,6 +619,7 @@ window.recalc=function(){
   const e0=simulateReal(p,(1+0)/(1+p.inflation)-1);
   const e3=simulateReal(p,(1+.03)/(1+p.inflation)-1);
   const e5=simulateReal(p,(1+.05)/(1+p.inflation)-1);
+  const e30=simulateReal(p,(1+.30)/(1+p.inflation)-1);
   const shock3=simulateShock(p,(1+.03)/(1+p.inflation)-1,p.stopAge,.30);
   const chartReal=Math.max(rr,(1/(1+p.inflation))-1);
   const pathNeeded=simulatePath(p,chartReal);
@@ -627,8 +628,15 @@ window.recalc=function(){
   const currentAt3=simulateReal(p,real3);
   const currentPlanAt3=currentAt3.min>=p.endBuffer&&currentAt3.end>=Math.max(p.endBuffer,p.endTarget);
   const className=!isFinite(nominal)||nominal>.07?'bad':nominal>.045?'warn':'good';
+  const targetEnd=Math.max(p.endBuffer,p.endTarget);
+  const highReturnEndsEnough=e30.end>=targetEnd;
+  const highReturnBreaksBuffer=e30.min<p.endBuffer;
+  const bufferShortfall=Math.max(0,p.endBuffer-e30.min);
+  const isBufferTimingProblem=!isFinite(nominal)&&highReturnEndsEnough&&highReturnBreaksBuffer;
+  const isStructuralProblem=!isFinite(nominal)&&!highReturnEndsEnough;
   let headline;
-  if(!isFinite(nominal))headline='Dit plan redt het zelfs niet met 30% rendement';
+  if(isBufferTimingProblem)headline='Je plan heeft tijdelijk te weinig buffer';
+  else if(isStructuralProblem)headline='Je plan heeft een structureel tekort';
   else if(nominal<=0.00001)headline='Je plan blijft overeind bij 0% rendement';
   else if(nominal<=.03)headline='Je plan vraagt weinig rendement';
   else if(nominal<=.05)headline='Je plan lijkt haalbaar, maar rendement telt mee';
@@ -732,10 +740,22 @@ window.recalc=function(){
     });
   }
 
-  if(nominal>.00001){
+  if(isFinite(nominal)&&nominal>.00001){
     riskCandidates.push({
       score:Math.min(95,20+nominal*900),
       text:'Je plan vraagt ongeveer '+pct(nominal)+' gemiddeld nominaal beleggingsrendement. Hoe hoger dit vereiste rendement, hoe gevoeliger je plan wordt voor tegenvallende markten.'
+    });
+  }
+  if(isBufferTimingProblem){
+    riskCandidates.push({
+      score:100,
+      text:'Je probleem is geen rendementsprobleem maar een tijdelijk buffertekort. Zelfs bij zeer hoog gemiddeld rendement komt je vermogen onderweg ongeveer '+euro(bufferShortfall)+' onder je gekozen buffer.'
+    });
+  }
+  if(isStructuralProblem){
+    riskCandidates.push({
+      score:100,
+      text:'Ook bij zeer hoog gemiddeld rendement ligt je eindvermogen onder je doel. Er is dus een structureel tekort in plaats van alleen een rendementsvraag.'
     });
   }
 
@@ -810,10 +830,14 @@ window.recalc=function(){
   result.innerHTML = [
     `<div class="card hero">
       <div class="sub">${headline}</div>
-      <div class="big">${isFinite(nominal)?pct(Math.max(0,nominal)):'—'}</div>
-      <p>${isFinite(nominal)&&nominal<=0.00001
-        ? 'Bij 0% nominaal beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e. Inflatie blijft wel invloed houden op je koopkracht.'
-        : 'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en onderweg minimaal '+euro(p.endBuffer)+' buffer te houden.'}</p>
+      <div class="big">${isBufferTimingProblem?euro(bufferShortfall):(isStructuralProblem?euro(Math.max(0,targetEnd-e30.end)):(isFinite(nominal)?pct(Math.max(0,nominal)):'—'))}</div>
+      <p>${isBufferTimingProblem
+        ? 'tijdelijk tekort ten opzichte van je gekozen buffer van '+euro(p.endBuffer)+'. Meer gemiddeld rendement lost dit vroege buffermoment niet op.'
+        : isStructuralProblem
+          ? 'structureel tekort op je einddoel, ook binnen de hoge-rendementstest.'
+          : isFinite(nominal)&&nominal<=0.00001
+            ? 'Bij 0% nominaal beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e. Inflatie blijft wel invloed houden op je koopkracht.'
+            : 'gemiddeld nominaal rendement per jaar nodig om je plan te financieren tot je '+p.endAge+'e en onderweg minimaal '+euro(p.endBuffer)+' buffer te houden.'}</p>
     </div>`,
 
     `<div class="card">
@@ -834,14 +858,16 @@ window.recalc=function(){
       <div class="scenario"><span>3%</span><span>${scenarioStatus(e3)}</span><b>laagste ${euro(e3.min)}</b></div>
       <div class="scenario"><span>5%</span><span>${scenarioStatus(e5)}</span><b>laagste ${euro(e5.min)}</b></div>
       <div class="scenario"><span>3% + crash</span><span>${scenarioStatus(shock3)}</span><b>laagste ${euro(shock3.min)}</b></div>
-      <p class="note">Hier telt niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.</p>
+      <p class="note">${isBufferTimingProblem?'Dezelfde lage buffer bij verschillende rendementen laat zien dat het tekort te vroeg ontstaat om met extra rendement op te lossen.':'Hier telt niet alleen je eindvermogen, maar vooral of je buffer onderweg intact blijft.'}</p>
     </div>`,
 
     `<div class="card">
       <h2>Wat betekent dit voor jou?</h2>
       <div class="answer leadanswer"><b>${isFinite(nominal)
         ? 'Met '+pct(Math.max(0,nominal))+' gemiddeld rendement blijft je minimale buffer van '+euro(p.endBuffer)+' intact.'
-        : 'Met deze invoer is je bufferdoel niet haalbaar binnen de geteste rendementen.'}</b>
+        : isBufferTimingProblem
+          ? 'Je plan heeft onderweg tijdelijk ongeveer '+euro(bufferShortfall)+' te weinig buffer. Dit is geen rendementsprobleem.'
+          : 'Met deze invoer blijft er een structureel tekort op je einddoel.'}</b>
 
 ${phases.join('\n\n')}
 
@@ -872,7 +898,7 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
     `<div class="card">
       <h2>Waar ligt je speelruimte?</h2>
       <div class="kpis">
-        <div class="kpi"><span>Bij 3% rendement</span><b>${currentPlanAt3?('je huidige stop op '+Math.round(p.stopAge)+' werkt'):(earliest3!==null?'stoppen rond '+earliest3:'nog niet genoeg')}</b></div>
+        <div class="kpi"><span>Bij 3% rendement</span><b>${currentPlanAt3?('je huidige stop op '+Math.round(p.stopAge)+' werkt'):(earliest3!==null?'stoppen rond '+earliest3:(isBufferTimingProblem?'tijdelijk '+euro(bufferShortfall)+' buffer tekort':'nog niet genoeg'))}</b></div>
         ${p.endTarget>0?`<div class="kpi"><span>Gewenst eindvermogen</span><b>${euro(p.endTarget)}</b></div>`:''}
         <div class="kpi"><span>Hypotheek nu</span><b>${euro(p.mortPayment)}/mnd</b></div>
         <div class="kpi"><span>Nu: rente / aflossing</span><b>${euro(mi.interest)} / ${euro(mi.principal)}</b></div>
