@@ -12,11 +12,11 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 .chat{background:#faf8f3;border-radius:18px;padding:14px;margin-top:12px}.chatrow{display:flex;gap:8px}.chatrow input{flex:1}.chatrow button{background:var(--blue);color:white;white-space:nowrap}
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.chip{background:#fff8dc;border:1px solid var(--line);border-radius:999px;padding:9px 11px;font-size:13px;font-weight:800}
 .answer{white-space:pre-line;line-height:1.58}.good{color:var(--g)}.warn{color:#a86600}.bad{color:var(--danger)}.leadanswer{font-size:18px;line-height:1.55}.mutedcard{background:var(--soft2)}
-.scenario{display:grid;grid-template-columns:.55fr 1fr 1fr;gap:8px;padding:13px 0;border-bottom:1px solid #eee}.scenario:last-child{border:0}.scenario b{text-align:right}.scenario span:nth-child(2){font-weight:800}
+.scenario-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.scenario-card{border:1px solid var(--line);border-radius:18px;padding:15px;background:var(--soft2);min-height:132px}.scenario-card.stress{background:#fffaf0;border-color:#eadca8}.scenario-card.goodcase{background:#f0faf6;border-color:#bfe6d5}.scenario-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.scenario-rate{font-size:24px;font-weight:950;letter-spacing:-.03em}.scenario-tag{font-size:11px;font-weight:850;color:var(--muted);background:#fff;border:1px solid var(--line);padding:5px 8px;border-radius:999px}.scenario-state{font-weight:900;margin-top:12px}.scenario-value{font-size:13px;color:var(--muted);line-height:1.4;margin-top:5px}.storylead{background:#f0faf6;border:1px solid #bfe6d5;border-radius:18px;padding:16px;font-size:18px;line-height:1.5}.storygrid,.moneygrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.storyitem,.moneyitem{border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--soft2);line-height:1.45}.storyitem{color:var(--muted)}.moneyitem b{display:block;font-size:17px;margin-bottom:4px}.moneyitem span{font-size:13px;color:var(--muted)}
 .note{font-size:12px;color:var(--muted)} .chartwrap{height:360px;margin-top:8px}.chartwrap svg{width:100%;height:100%;overflow:visible}.chartgrid{stroke:#ebe7df;stroke-width:1}.chartline{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}.chartline.base{stroke:var(--blue)}.chartline.changed{stroke:#8f2de2}.chartline.rescue{stroke:#1d9b68}.chartfill{fill:#eef4ff}.chartfill.changed{fill:rgba(143,45,226,.08)}.chartlegend{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 2px;font-size:12px;font-weight:800}.chartlegend span{display:flex;align-items:center;gap:6px}.legendline{display:inline-block;width:24px;height:4px;border-radius:999px}.legendline.base{background:var(--blue)}.legendline.changed{background:#8f2de2}.legendline.rescue{background:#1d9b68}.rescuebox{background:#f0faf6;border:1px solid #bfe6d5;border-radius:20px;padding:16px;margin-top:12px}.rescuegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rescuegrid .wide{grid-column:1/-1}@media(max-width:560px){.rescuegrid{grid-template-columns:1fr}}.changemark{stroke:#8f2de2;stroke-width:1.2;stroke-dasharray:4 4}.changemarktext{font-size:10px;fill:#6e1ab0;font-weight:800}.chartaxis{font-size:11px;fill:#777}.chartdot{fill:#19765f}.chartzero{stroke:#b43131;stroke-dasharray:5 5;stroke-width:1.5}.chartmark{stroke:#d3ad31;stroke-width:1;stroke-dasharray:3 4}.chartmarktext{font-size:10px;fill:#8a6b00;font-weight:700}
 .phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
 .topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}.statusline.live .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(57,120,212,.14)}
-@media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}h1{font-size:44px}}
+@media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid,.scenario-grid,.storygrid,.moneygrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}h1{font-size:44px}}
 </style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Financiële kern v2</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
 <div class="topintro">
   <h1>Heb ik straks genoeg?</h1>
@@ -1029,14 +1029,6 @@ window.recalc=function(){
     });
   }
 
-  if(e0.min<p.endBuffer){
-    const gap=(p.endBuffer-e0.min)/Math.max(1,startNet);
-    riskCandidates.push({
-      score:Math.min(100,55+gap*180),
-      text:'Bij 0% rendement zakt je netto financiële vermogen tot '+euro(e0.min)+', onder je buffer van '+euro(p.endBuffer)+'.'
-    });
-  }
-
   if(e3.min<p.endBuffer){
     const gap=(p.endBuffer-e3.min)/Math.max(1,startNet);
     riskCandidates.push({
@@ -1096,6 +1088,21 @@ window.recalc=function(){
 
   const topRisks=riskCandidates.sort((a,b)=>b.score-a.score).slice(0,4);
   const risksHtml=topRisks.map((r,i)=>(i+1)+'. '+r.text).join('\n\n');
+  const scenarioCard=(rate,tag,sim,kind='')=>{
+    const scenarioGap=Math.max(0,p.endBuffer-sim.min,Math.max(p.endBuffer,p.endTarget)-sim.end);
+    const intact=scenarioGap<=0;
+    const state=intact?'Buffer blijft intact':(kind==='stress'?'Later bijsturen nodig':'Plan komt '+euro(scenarioGap)+' tekort');
+    let detail='Laagste vermogen in dit scenario: '+euro(sim.min)+'.';
+    if(kind==='stress'&&sim.min<0)detail='Zonder tussentijds bijsturen raakt het vermogen vóór je '+p.endAge+'e op. Berekend tekort in deze extreme test: '+euro(Math.abs(sim.min))+'.';
+    return '<div class="scenario-card '+kind+(intact?' goodcase':'')+'"><div class="scenario-top"><span class="scenario-rate">'+rate+'</span><span class="scenario-tag">'+tag+'</span></div><div class="scenario-state">'+state+'</div><div class="scenario-value">'+detail+'</div></div>';
+  };
+  const withdrawalItems=[
+    ...cashflowPhases.map(x=>({title:'Van '+x.start+' tot '+x.end,detail:x.net>=0?'Geen onttrekking · je houdt '+euro(x.net)+'/mnd over':euro(-x.net)+'/mnd uit vermogen'})),
+    ...(isFinite(mi.endAge)&&effectiveMortResidual>0?[{title:'Op '+effectiveMortgageCutAge(p,mi),detail:euro(effectiveMortResidual)+' eenmalig voor de hypotheekrestschuld'}]:[]),
+    ...(isFinite(di.endAge)&&di.residual>0?[{title:'Op '+debtCutAge(di),detail:euro(di.residual)+' eenmalig voor de overige restschuld'}]:[]),
+    ...(p.houseReleaseAge>0&&p.houseRelease>0?[{title:'Op '+p.houseReleaseAge,detail:euro(p.houseRelease)+' komt vrij uit de woning'}]:[]),
+    ...changes.filter(e=>e.kind==='oneoff').map(e=>({title:'Op '+e.age,detail:e.amount<0?euro(Math.abs(e.amount))+' komt binnen'+(e.certainty!=='certain'?' · onzeker scenario':''):euro(e.amount)+' eenmalig uit vermogen'}))
+  ];
 
   result.innerHTML = [
     `<div class="card hero">
@@ -1132,48 +1139,30 @@ window.recalc=function(){
 
     `<div class="card">
       <h2>Als rendement tegenvalt</h2>
-      <div class="scenario"><span>0%</span><span>${scenarioStatus(e0)}</span><b>laagste vermogensniveau ${euro(e0.min)}</b></div>
-      <div class="scenario"><span>3%</span><span>${scenarioStatus(e3)}</span><b>laagste vermogensniveau ${euro(e3.min)}</b></div>
-      <div class="scenario"><span>5%</span><span>${scenarioStatus(e5)}</span><b>laagste vermogensniveau ${euro(e5.min)}</b></div>
-      <div class="scenario"><span>3% + beleggingen −${Math.round(assetShockPct()*100)}% bij stoppen</span><span>${scenarioStatus(shock3)}</span><b>laagste vermogensniveau ${euro(shock3.min)}</b></div>
-      <p class="note">${isBufferTimingProblem?'Dezelfde lage buffer bij verschillende rendementen laat zien dat het tekort te vroeg ontstaat om met extra rendement op te lossen.':'“Laagste vermogensniveau” is het laagste bedrag dat je financiële vermogen onderweg bereikt. De crashregel verlaagt alleen je belegde vermogen op het moment dat je stopt; cash wordt niet mee gecrasht.'}</p>
+      <p class="sectionhint">3% is het voorzichtige planningsscenario. 0% laat alleen zien wat er gebeurt in een langdurige extreme situatie zonder tussentijds bijsturen.</p>
+      <div class="scenario-grid">
+        ${scenarioCard('3%','Voorzichtig plan',e3)}
+        ${scenarioCard('5%','Gunstiger verloop',e5)}
+        ${scenarioCard('0%','Extreme stresstest',e0,'stress')}
+        ${scenarioCard('3% + schok','Beleggingen −'+Math.round(assetShockPct()*100)+'% bij stoppen',shock3,'stress')}
+      </div>
+      <p class="note">De schoktest verlaagt alleen het belegde vermogen op het moment dat je stopt; cash wordt niet geraakt. Een stresstest is geen voorspelling.</p>
     </div>`,
 
     `<div class="card">
       <h2>Wat betekent dit voor jou?</h2>
-      <div class="answer leadanswer"><b>${isFinite(nominal)
+      <div class="storylead"><b>${isFinite(nominal)
         ? 'Met '+pct(Math.max(0,nominal))+' gemiddeld rendement blijft je minimale buffer van '+euro(p.endBuffer)+' intact.'
         : isBufferTimingProblem
           ? 'Je plan heeft onderweg tijdelijk ongeveer '+euro(bufferShortfall)+' te weinig buffer. Dit is geen rendementsprobleem.'
-          : 'Met deze invoer blijft er een structureel tekort op je einddoel.'}</b>
-
-${phases.join('\n\n')}
-
-Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
+          : 'Met deze invoer blijft er een structureel tekort op je einddoel.'}</b></div>
+      <div class="storygrid">${phases.map(x=>'<div class="storyitem">'+x+'</div>').join('')}</div>
+      <p class="note">Veranderingen die zijn meegenomen: ${eventsTxt}.</p>
     </div>`,
 
     `<div class="card">
       <h2>Wanneer komt geld uit je vermogen?</h2>
-      <div class="answer">${[
-        ...cashflowPhases.map(x=>{
-          const prefix='Van '+x.start+' tot '+x.end+': ';
-          return x.net>=0
-            ? prefix+'<b>geen onttrekking</b> · je houdt '+euro(x.net)+'/mnd over'
-            : prefix+'<b>'+euro(-x.net)+'/mnd uit vermogen</b>';
-        }),
-        ...(isFinite(mi.endAge)&&effectiveMortResidual>0
-          ? ['Op '+effectiveMortgageCutAge(p,mi)+': <b>'+euro(effectiveMortResidual)+' eenmalig uit vermogen</b> voor aflossing van de hypotheekrestschuld.']
-          : []),
-        ...(isFinite(di.endAge)&&di.residual>0
-          ? ['Op '+debtCutAge(di)+': <b>'+euro(di.residual)+' eenmalig uit vermogen</b> voor aflossing van de overige restschuld.']
-          : []),
-        ...(p.houseReleaseAge>0&&p.houseRelease>0
-          ? ['Op '+p.houseReleaseAge+': <b>'+euro(p.houseRelease)+' komt vrij uit de woning</b>.']
-          : []),
-        ...changes.filter(e=>e.kind==='oneoff').map(e=>e.amount<0
-          ? 'Op '+e.age+': <b>'+euro(Math.abs(e.amount))+' komt binnen</b>'+(e.amount<0&&e.certainty!=='certain'?' (onzeker; alleen in paars)':'')+(e.label?' · '+esc(e.label):'')+'.'
-          : 'Op '+e.age+': <b>'+euro(e.amount)+' eenmalig uit vermogen</b>'+(e.label?' · '+esc(e.label):'')+'.')
-      ].join('\n\n')}</div>
+      <div class="moneygrid">${withdrawalItems.map(x=>'<div class="moneyitem"><b>'+x.title+'</b><span>'+x.detail+'</span></div>').join('')}</div>
     </div>`,
 
     `<div class="card">
