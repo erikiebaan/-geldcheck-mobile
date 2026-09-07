@@ -177,6 +177,7 @@ function saveFinancialChanges(){
 }
 let changes=loadFinancialChanges();
 let rescue=history.state?.geldcheckRescue||null;
+let rescueOptionsOpen=false;
 let returnExample=[3,5,7].includes(Number(history.state?.geldcheckReturnExample))?Number(history.state.geldcheckReturnExample):null;
 const PLAN_FIELD_IDS=['age','stopAge','income','spend','cash','cashRate','capital','assetRisk','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual','endTarget','pensionIndex','aowIndex','wealthTax','investmentCost','careAge','careMonthly','houseReleaseAge','houseRelease'];
 function loadPlanFields(){
@@ -768,6 +769,11 @@ window.setRescueType=function(type){
   saveRescue();recalc();
 }
 window.clearRescue=function(){rescue=null;saveRescue();recalc();}
+window.openRescueOptions=function(){
+  rescueOptionsOpen=true;
+  recalc();
+  setTimeout(()=>document.getElementById('rescueOptions')?.scrollIntoView({behavior:'smooth',block:'start'}),0);
+}
 window.setReturnExample=function(rate){
   returnExample=rate===null?null:Number(rate);
   saveReturnExample();recalc();
@@ -1142,9 +1148,9 @@ window.recalc=function(){
       <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = mogelijke aanpassing bij 3% rendement':''}${returnExample!==null?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
     </div>`,
 
-    (!currentPlanAt3||rescueCase)?`<div class="card">
+    (!currentPlanAt3||rescueCase||rescueOptionsOpen)?`<div class="card" id="rescueOptions">
       <h2>Je hebt mogelijkheden</h2>
-      <p>${gapAt3>0?'Bij 3% rendement komt je plan op het kwetsbaarste moment nog ongeveer <b>'+euro(gapAt3)+'</b> tekort. Dat betekent niet dat je geen opties hebt. Een kleine, realistische aanpassing kan al veel verschil maken.':'Je gekozen aanpassing brengt je plan bij 3% binnen de gewenste buffer.'}</p>
+      <p>${gapAt3>0?'Bij 3% rendement komt je plan op het kwetsbaarste moment nog ongeveer <b>'+euro(gapAt3)+'</b> tekort. Dat betekent niet dat je geen opties hebt. Een kleine, realistische aanpassing kan al veel verschil maken.':rescueCase?'Je gekozen aanpassing brengt je plan bij 3% binnen de gewenste buffer.':'Je plan werkt al bij 3%. Hier kun je vrijblijvend bekijken wat extra werken of een andere aanpassing met je vermogen doet.'}</p>
       ${rescueCase?'<div class="answer"><b>'+(rescueWorks?'Met '+esc(rescueCase.label)+' verbetert je laagste vermogen met ongeveer '+euro(rescueImprovement)+' tot '+euro(rescueAt3.min)+'. Daarmee blijft je buffer bij 3% intact.':'Met '+esc(rescueCase.label)+' verbetert je laagste vermogen met ongeveer '+euro(rescueImprovement)+'. Dit helpt, maar is nog niet helemaal voldoende.')+'</b></div>':''}
       ${rescueControls(p)}
     </div>`:'',
@@ -1194,6 +1200,7 @@ window.recalc=function(){
         ${mortgageInflationInsight}
         ${p.otherDebt>0?`<div class="kpi"><span>Overige schuld</span><b>${euro(p.otherDebt)}</b></div><div class="kpi"><span>Rente / betaling schuld</span><b>${pct(p.otherDebtRate)} / ${euro(p.otherDebtPayment)}/mnd</b></div><div class="kpi"><span>Schuld eindigt rond</span><b>${isFinite(di.endAge)?debtCutAge(di):'onbekend'}</b></div><div class="kpi"><span>Restschuld overige schuld</span><b>${euro(di.residual)}</b></div>`:''}
       </div>
+      ${currentPlanAt3&&!rescueCase&&!rescueOptionsOpen?'<button type="button" class="tinybtn" style="margin-top:12px" onclick="openRescueOptions()">Toch een aanpassing vergelijken</button>':''}
     </div>`,
 
     `<div class="card">
