@@ -140,6 +140,12 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
     <div class="field"><label>Netto bedrag dat uit woning vrijkomt</label><input id="houseRelease" type="number" value="" placeholder="€" placeholder="na aflossing hypotheek"></div>
   </div>
   <div id="advancedWarning" class="warningbox" style="display:none"></div>
+  <div class="inflationinsight" style="margin-top:14px">
+    <b>200+ financiële factoren, zonder 200 vragen</b>
+    <p>Geldcheck bundelt detailposten slim: boodschappen, verzekeringen, vervoer en vrije tijd zitten bijvoorbeeld in je uitgaven; toekomstige erfenissen, auto's, verbouwingen of schenkingen voeg je toe bij Veranderingen. Alleen factoren die je uitkomst echt kunnen veranderen vragen we apart.</p>
+    <button type="button" class="tinybtn" style="margin-top:9px" onclick="toggleCoverage()">Bekijk wat is afgedekt</button>
+    <div id="coveragePanel" style="display:none;margin-top:10px"></div>
+  </div>
 </div>
 
 <button class="primary" onclick="recalc();toggleDetails(false)">Klaar</button>
@@ -654,6 +660,26 @@ function updateChangeForm(){
   if(end)end.style.display=recurring?'block':'none';
   if(direction)direction.style.display=recurring?'block':'none';
 }
+window.toggleCoverage=function(){
+  const el=document.getElementById('coveragePanel'); if(!el)return;
+  const open=el.style.display!=='none';
+  if(open){el.style.display='none';return;}
+  const rows=[
+    ['Activa & vermogen','Direct/gebundeld','cash, beleggingen, woning, schulden; overige bezittingen kunnen als vermogen of toekomstige ontvangst worden verwerkt'],
+    ['Pensioen & uitkeringen','Direct/dynamisch','AOW, pensioen, partner; afwijkende of buitenlandse uitkeringen via maandinkomen-verandering'],
+    ['Wonen & vastgoed','Direct/dynamisch','woningwaarde, hypotheek, rente, vorm, einddatum, restschuld, downsizing; onderhoud via uitgaven/veranderingen'],
+    ['Levenskosten','Gebundeld','boodschappen, kleding, energie, verzekeringen, abonnementen en vrije tijd zitten in totale uitgaven'],
+    ['Mobiliteit','Gebundeld/dynamisch','lopende autokosten in uitgaven; vervanging auto als eenmalige toekomstige uitgave'],
+    ['Zorg & welzijn','Direct/dynamisch','lopende zorg in uitgaven; extra zorgkosten vanaf latere leeftijd apart beschikbaar'],
+    ['Belastingen & kosten','Advanced','vermogensheffing en beleggingskosten; netto inkomen/AOW/pensioen voorkomt dubbele bruto-belastingmodellering'],
+    ['Familie & nalatenschap','Dynamisch','erfenis, schenking, steun aan kinderen en nalatenschap via Veranderingen en gewenst eindvermogen'],
+    ['Inflatie & economie','Direct/stress','inflatie, reëel rendement en scenario’s; vaste nominale hypotheek wordt apart toegelicht'],
+    ['Risico & onvoorzien','Direct/stress','buffer, 0/3/5%-scenario’s, crashscenario, langere levensduur via eindleeftijd en toekomstige grote uitgaven']
+  ];
+  el.innerHTML='<div class="note" style="margin-bottom:8px"><b>Coverage-audit</b> · details worden alleen apart gevraagd als samenvoegen de uitkomst zou vertekenen.</div>'+
+    rows.map(r=>'<div class="kpi" style="margin-bottom:6px"><span><b>'+r[0]+'</b><br><small>'+r[2]+'</small></span><b style="font-size:12px">'+r[1]+'</b></div>').join('');
+  el.style.display='block';
+}
 window.partnerOn=false;
 window.togglePartner=function(){
   window.partnerOn=!window.partnerOn;
@@ -1043,7 +1069,7 @@ Veranderingen die zijn meegenomen: ${eventsTxt}.</div>
     </div>`,
 
     `<div class="card">
-      <h2>Belangrijkste risico’s</h2>
+      <h2>Belangrijkste risico’s</h2><p class="sectionhint">Geldcheck gebruikt een 200+ factoren-check als dekking: veel detailposten zijn bewust gebundeld in vermogen, inkomen, uitgaven, wonen en veranderingen. Alleen materiële uitzonderingen worden apart gevraagd.</p>
       <p class="sectionhint">Gerangschikt op wat in jouw huidige plan de meeste impact heeft.</p>
       <div class="answer">${risksHtml}</div>
     </div>`
