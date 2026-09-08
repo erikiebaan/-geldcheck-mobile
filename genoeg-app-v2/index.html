@@ -17,7 +17,8 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 .optiongrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0}.optioncard{border:1px solid #bfe6d5;border-radius:16px;padding:14px;background:#f7fcfa}.optioncard span{display:block;font-size:12px;color:var(--muted)}.optioncard b{display:block;font-size:20px;margin:5px 0 2px}.optioncard small{color:var(--muted);line-height:1.35}
 .phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
 .topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}.statusline.live .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(57,120,212,.14)}
-@media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid,.scenario-grid,.storygrid,.moneygrid,.optiongrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}h1{font-size:44px}}
+.storagebar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 10px;padding:13px 14px;border:1px solid #cfe3da;border-radius:16px;background:#f4fbf8}.storagebar b{display:block;font-size:14px}.storagebar span{display:block;margin-top:2px;font-size:12px;color:var(--muted)}.resetbtn{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--danger);padding:9px 11px;border-radius:999px;font-size:13px}
+@media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid,.scenario-grid,.storygrid,.moneygrid,.optiongrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}.storagebar{align-items:flex-start;flex-direction:column}.resetbtn{width:100%}h1{font-size:44px}}
 </style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Financiële kern v2</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
 <div class="topintro">
   <h1>Heb ik straks genoeg?</h1>
@@ -150,6 +151,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   </div>
 </div>
 
+<div class="storagebar"><div><b>Automatisch opgeslagen op dit apparaat</b><span id="savedAt">Je invoer blijft bewaard als je later terugkomt.</span></div><button type="button" class="resetbtn" onclick="resetSavedPlan()">Nieuw plan / alles wissen</button></div>
 <button class="primary" onclick="finishDetails()">Klaar</button>
 </div></div>
 
@@ -165,42 +167,66 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 <script>
 (function(){"use strict";
 const CHANGES_STORAGE_KEY='geldcheck-financial-changes-v1';
+const PLAN_STORAGE_KEY='geldcheck-plan-v2';
+function readSavedPlan(){
+  try{const value=JSON.parse(localStorage.getItem(PLAN_STORAGE_KEY)||'null');return value&&value.version===2?value:null;}catch(_){return null;}
+}
+const savedPlan=readSavedPlan();
+function savedValue(key,fallback){
+  if(savedPlan&&Object.prototype.hasOwnProperty.call(savedPlan,key))return savedPlan[key];
+  if(history.state&&Object.prototype.hasOwnProperty.call(history.state,key))return history.state[key];
+  return fallback;
+}
 function loadFinancialChanges(){
   try{
-    const stored=history.state?.geldcheckFinancialChanges||[];
+    const legacy=JSON.parse(sessionStorage.getItem(CHANGES_STORAGE_KEY)||'[]');
+    const stored=savedValue('changes',savedValue('geldcheckFinancialChanges',legacy));
     if(!Array.isArray(stored))return [];
     const valid=stored.filter(e=>e&&['oneoff','income','expense'].includes(e.kind));
     return valid.filter((e,i)=>valid.findIndex(x=>JSON.stringify(x)===JSON.stringify(e))===i);
   }catch(_){return [];}
 }
 function saveFinancialChanges(){
-  try{history.replaceState({...history.state,geldcheckFinancialChanges:changes},'');sessionStorage.removeItem(CHANGES_STORAGE_KEY);}catch(_){}
+  persistPlan();
 }
 let changes=loadFinancialChanges();
-let rescue=history.state?.geldcheckRescue||null;
+let rescue=savedValue('rescue',savedValue('geldcheckRescue',null));
 let rescueDraft=rescue?{...rescue}:null;
 let rescueOptionsOpen=false;
-let returnExample=[3,5,7].includes(Number(history.state?.geldcheckReturnExample))?Number(history.state.geldcheckReturnExample):null;
+let returnExample=[3,5,7].includes(Number(savedValue('returnExample',savedValue('geldcheckReturnExample',null))))?Number(savedValue('returnExample',savedValue('geldcheckReturnExample',null))):null;
 const PLAN_FIELD_IDS=['age','stopAge','income','spend','cash','cashRate','capital','assetRisk','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual','endTarget','pensionIndex','aowIndex','wealthTax','investmentCost','careAge','careMonthly','houseReleaseAge','houseRelease'];
 function loadPlanFields(){
   try{
-    const stored=history.state?.geldcheckPlanFields;
+    const stored=savedValue('fields',savedValue('geldcheckPlanFields',null));
     if(!stored||typeof stored!=='object')return;
-    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id))el.value=stored[id];});
+    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id)){el.value=stored[id];if(savedPlan?.touched?.includes(id))el.dataset.touched='1';}});
+  }catch(_){}
+}
+function savedTimeText(value){
+  if(!value)return 'Je invoer blijft bewaard als je later terugkomt.';
+  const d=new Date(value);if(!Number.isFinite(d.getTime()))return 'Je invoer blijft bewaard als je later terugkomt.';
+  return 'Laatst opgeslagen om '+d.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})+'. Alleen zichtbaar in deze browser.';
+}
+function showSavedTime(value){const el=document.getElementById('savedAt');if(el)el.textContent=savedTimeText(value);}
+function persistPlan(){
+  try{
+    const fields={},touched=[];
+    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el){fields[id]=el.value;if(el.dataset.touched==='1')touched.push(id);}});
+    const snapshot={version:2,updatedAt:new Date().toISOString(),fields,touched,changes,partnerOn:!!window.partnerOn,rescue,returnExample,advancedOn:!!window.advancedOn};
+    localStorage.setItem(PLAN_STORAGE_KEY,JSON.stringify(snapshot));
+    history.replaceState({...history.state,geldcheckPlanFields:fields,geldcheckFinancialChanges:changes,geldcheckPartnerOn:!!window.partnerOn,geldcheckRescue:rescue,geldcheckReturnExample:returnExample},'');
+    sessionStorage.removeItem(CHANGES_STORAGE_KEY);
+    showSavedTime(snapshot.updatedAt);
   }catch(_){}
 }
 function savePlanFields(){
-  try{
-    const fields={};
-    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el)fields[id]=el.value;});
-    history.replaceState({...history.state,geldcheckPlanFields:fields},'');
-  }catch(_){}
+  persistPlan();
 }
-function saveRescue(){try{history.replaceState({...history.state,geldcheckRescue:rescue},'');}catch(_){}}
-function saveReturnExample(){try{history.replaceState({...history.state,geldcheckReturnExample:returnExample},'');}catch(_){}}
+function saveRescue(){persistPlan();}
+function saveReturnExample(){persistPlan();}
 loadPlanFields();
-window.partnerOn=typeof history.state?.geldcheckPartnerOn==='boolean'
-  ? history.state.geldcheckPartnerOn
+window.partnerOn=typeof savedValue('partnerOn',savedValue('geldcheckPartnerOn',null))==='boolean'
+  ? savedValue('partnerOn',savedValue('geldcheckPartnerOn',false))
   : ['partnerIncome','partnerStopAge','partnerPensionAge','partnerPension'].some(id=>filledValue(id));
 window.validationRequested=false;
 
@@ -702,7 +728,7 @@ function minimumMonthlyAtNominal(p,kind,startAge,nominal){
   return Math.ceil(hi/10)*10;
 }
 
-window.advancedOn=false;
+window.advancedOn=!!savedValue('advancedOn',false);
 window.toggleAdvanced=function(){
   window.advancedOn=!window.advancedOn;
   document.getElementById('advancedFields')?.classList.toggle('on',window.advancedOn);
@@ -852,7 +878,7 @@ function updateChangeForm(){
   if(certainty)certainty.style.display=type==='receive'?'block':'none';
 }
 window.toggleCoverage=function(){const el=document.getElementById('coveragePanel');if(!el)return;if(el.style.display!=='none'){el.style.display='none';return;}const rows=[['Activa & vermogen',n('capital')>0?'↗ Dynamisch gevraagd':'✓ Direct / ≈ gebundeld','assetrisico verschijnt alleen bij belegd vermogen'],['Pensioen & uitkeringen','✓ Direct / ↗ dynamisch','AOW, pensioen, partner en inkomensveranderingen'],['Wonen & vastgoed','✓ Direct / ↗ dynamisch','woning, hypotheek en toekomstige wijzigingen'],['Levenskosten','≈ Gebundeld','detailkosten zitten in totale uitgaven'],['Mobiliteit','≈ Gebundeld / ↗ dynamisch','lopende kosten en toekomstige vervanging'],['Zorg & welzijn','✓ Direct / ↗ dynamisch','lopende en latere zorgkosten'],['Belastingen & kosten','✓ Advanced','vermogensheffing en beleggingskosten'],['Familie & nalatenschap','↗ Dynamisch','erfenis, schenking en eindvermogen'],['Inflatie & economie','✓ Direct / stress','inflatie, reëel rendement en nominale schuld'],['Risico & onvoorzien',n('capital')>0?'✓ Buffer + ↗ assetstress':'✓ Buffer / stress','buffer, scenario’s, crash en langleven']];el.innerHTML='<div class="note" style="margin-bottom:10px"><b>Onder de motorkap: 8 bouwstenen</b><br>vermogen · schulden · inkomsten · uitgaven · eenmalige gebeurtenissen · groei/indexatie · risico/exposure · regels/voorwaarden</div><div class="note" style="margin-bottom:8px"><b>Status</b> · ✓ meegerekend · ≈ gebundeld · ↗ alleen gevraagd indien relevant · ○ nog niet individueel gemodelleerd.</div>'+rows.map(r=>'<div class="kpi" style="margin-bottom:6px"><span><b>'+r[0]+'</b><br><small>'+r[2]+'</small></span><b style="font-size:12px">'+r[1]+'</b></div>').join('');el.style.display='block';}
-function savePartnerState(){try{history.replaceState({...history.state,geldcheckPartnerOn:window.partnerOn},'');}catch(_){}}
+function savePartnerState(){persistPlan();}
 function updatePartnerVisibility(){
   document.getElementById('partnerFields')?.classList.toggle('on',window.partnerOn);
   const b=document.getElementById('partnerToggleBtn');
@@ -872,6 +898,11 @@ window.toggleDetails=function(force){
   const open=typeof force==='boolean'?force:!el.classList.contains('open');
   el.classList.toggle('open',open);
   if(open)document.getElementById('gegevens')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+window.resetSavedPlan=function(){
+  if(!window.confirm('Wil je alle ingevulde gegevens en vergelijkingen wissen en met een leeg plan beginnen?'))return;
+  try{localStorage.removeItem(PLAN_STORAGE_KEY);sessionStorage.removeItem(CHANGES_STORAGE_KEY);history.replaceState({},'');}catch(_){}
+  window.location.reload();
 }
 window.recalc=function(){
   updateDynamicQuestions();
@@ -1363,6 +1394,10 @@ document.getElementById('changeType')?.addEventListener('change',updateChangeFor
 updateChangeForm();
 updateDynamicQuestions();
 updatePartnerVisibility();
+document.getElementById('advancedFields')?.classList.toggle('on',window.advancedOn);
+const advancedButton=document.getElementById('advancedBtn');if(advancedButton)advancedButton.textContent=window.advancedOn?'Verberg':'Toon meer';
 renderChangesList();
 recalc();
+showSavedTime(savedPlan?.updatedAt);
+if(!savedPlan&&(history.state?.geldcheckPlanFields||history.state?.geldcheckFinancialChanges))persistPlan();
 })();</script></body></html>
