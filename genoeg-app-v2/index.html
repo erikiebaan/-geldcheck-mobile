@@ -65,7 +65,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
       </select>
     </div>
     <div class="field"><label>Hypotheek eindigt: leeftijd óf jaar</label><input id="mortEndAge" type="number" value="" placeholder="bijv. 75 of 2046"></div>
-    <div class="field"><label>Restschuld op einddatum</label><input id="mortResidual" type="number" min="0" value="" placeholder="€"></div>
+    <div class="field" id="mortResidualField"><label id="mortResidualLabel">Aflossingsvrij deel</label><input id="mortResidual" type="number" min="0" value="" placeholder="€"><div class="note">Alleen invullen bij een combinatiehypotheek.</div></div>
   </div>
   <div id="mortWarning" class="warningbox" style="display:none"></div>
 </div>
@@ -809,6 +809,7 @@ function planIssues(p){
     .forEach(([id,label])=>{if(!filled(id))missing.push(label);});
   if(filled('aow')&&p.aow>0&&!filled('aowAge'))missing.push('AOW-leeftijd');
   if(filled('pension')&&p.pension>0&&!filled('pensionAge'))missing.push('pensioenleeftijd');
+  if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))missing.push('aflossingsvrije deel van je combinatiehypotheek');
   if(filled('stopAge')&&filled('age')&&p.stopAge<p.age)missing.push('stopmoment na je huidige leeftijd');
   if(filled('endAge')&&filled('age')&&p.endAge<=p.age)missing.push('eindleeftijd na je huidige leeftijd');
   const ageFields=[['age','leeftijd'],['stopAge','stopmoment'],['endAge','eindleeftijd'],['aowAge','AOW-leeftijd'],['pensionAge','pensioenleeftijd'],['mortEndAge','hypotheek-einddatum'],['otherDebtEndAge','einddatum overige schuld'],['careAge','startleeftijd zorgkosten'],['houseReleaseAge','leeftijd woningaanpassing']];
@@ -868,6 +869,10 @@ function rescueControls(p){
   return '<div class="rescuebox"><div class="rescuegrid"><div class="field wide"><label>Welke mogelijkheid wil je bekijken?</label><select id="rescueType" onchange="setRescueType(this.value)"><option value="income" '+(type==='income'?'selected':'')+'>Iets blijven verdienen</option><option value="expense" '+(type==='expense'?'selected':'')+'>Minder uitgeven</option><option value="later" '+(type==='later'?'selected':'')+'>Later stoppen</option><option value="housing" '+(type==='housing'?'selected':'')+'>Goedkoper wonen</option></select></div>'+fields+'<div class="wide"><button type="button" class="primary" onclick="applyRescue()">Vergelijk met mijn plan</button>'+(rescue?' <button type="button" class="tinybtn" onclick="clearRescue()">Wis vergelijking</button>':'')+'</div></div></div>';
 }
 function updateDynamicQuestions(){const f=document.getElementById('assetRiskField');if(f)f.style.display=n('capital')>0?'block':'none';}
+function updateMortgageForm(){
+  const type=s('mortType'),field=document.getElementById('mortResidualField');
+  if(field)field.style.display=type==='combination'?'block':'none';
+}
 function updateChangeForm(){
   const type=s('changeType');
   const recurring=type==='income'||type==='expense';
@@ -907,6 +912,7 @@ window.resetSavedPlan=function(){
 }
 window.recalc=function(){
   updateDynamicQuestions();
+  updateMortgageForm();
   const p=plan();
   const issues=planIssues(p);
   const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
@@ -1145,15 +1151,6 @@ window.recalc=function(){
     });
   }
 
-  if(e3.min<p.endBuffer){
-    const gapAmount=p.endBuffer-e3.min;
-    const gap=gapAmount/Math.max(1,startNet);
-    riskCandidates.push({
-      score:Math.min(95,50+gap*160),
-      text:'Bij 3% rendement komt je plan '+euro(gapAmount)+' tekort ten opzichte van je gekozen buffer. Een mogelijke aanpassing kan dit verschil verkleinen of oplossen.'
-    });
-  }
-
   if(p.wealthTax+p.investmentCost>0){
     riskCandidates.push({
       score:30+Math.min(50,(p.wealthTax+p.investmentCost)*700),
@@ -1377,6 +1374,7 @@ PLAN_FIELD_IDS.forEach(id=>{
 document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
 updateChangeForm();
 updateDynamicQuestions();
+updateMortgageForm();
 updatePartnerVisibility();
 document.getElementById('advancedFields')?.classList.toggle('on',window.advancedOn);
 const advancedButton=document.getElementById('advancedBtn');if(advancedButton)advancedButton.textContent=window.advancedOn?'Verberg':'Toon meer';
