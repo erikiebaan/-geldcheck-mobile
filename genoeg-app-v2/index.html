@@ -933,9 +933,10 @@ window.recalc=function(){
   const pathRescue=rescueCase?withExtraChanges(rescueCase.extra,()=>simulatePath(rescueCase.plan,chartReal,'main')):null;
   const exampleNominal=returnExample===null?null:returnExample/100;
   const exampleReal=exampleNominal===null?null:(1+exampleNominal)/(1+p.inflation)-1;
+  const exampleUnavailable=returnExample!==null&&p.capital<=0;
   const cashReal=(1+p.cashRate)/(1+p.inflation)-1;
-  const pathExample=exampleReal===null?null:simulatePath(p,exampleReal,'main');
-  const exampleResult=exampleReal===null?null:simulateReal(p,exampleReal,'main');
+  const pathExample=exampleReal===null||exampleUnavailable?null:simulatePath(p,exampleReal,'main');
+  const exampleResult=exampleReal===null||exampleUnavailable?null:simulateReal(p,exampleReal,'main');
   const earliest3=earliestAtNominal(p,.03);
   const currentAt3=simulateReal(p,real3,'main');
   const pathAt3=simulatePath(p,real3,'main');
@@ -1179,11 +1180,12 @@ window.recalc=function(){
     `<div class="card">
       <h2>Verloop van je vermogen</h2>
       <p class="sectionhint">Vergelijk je basisplan met het plan inclusief wat je later toevoegt.</p>
-      <div class="returnpicker"><button type="button" class="returnpick ${returnExample===3?'active':''}" onclick="setReturnExample(3)">3%</button><button type="button" class="returnpick ${returnExample===5?'active':''}" onclick="setReturnExample(5)">5%</button><button type="button" class="returnpick ${returnExample===7?'active':''}" onclick="setReturnExample(7)">7% historisch voorbeeld</button>${returnExample!==null?'<button type="button" class="returnpick" onclick="setReturnExample(null)">Wis lijn</button>':''}</div>
+      <div class="returnpicker"><button type="button" class="returnpick ${returnExample===3?'active':''}" onclick="setReturnExample(3)">3%</button><button type="button" class="returnpick ${returnExample===5?'active':''}" onclick="setReturnExample(5)">5%</button><button type="button" class="returnpick ${returnExample===7?'active':''}" onclick="setReturnExample(7)">7% historisch voorbeeld</button>${returnExample!==null?'<button type="button" class="returnpick" onclick="setReturnExample(null)">'+(exampleUnavailable?'Wis keuze':'Wis lijn')+'</button>':''}</div>
+      ${exampleUnavailable?'<div class="returninsight"><b>Je hebt €0 belegd. Daarom verandert deze lijn niet.</b><br>Vul een bedrag bij ‘Belegd vermogen’ in om te zien wat '+returnExample+'% rendement met je plan zou doen.</div>':''}
       ${exampleResult?'<div class="returninsight"><b>'+returnExample+'% nominaal is bij '+pct(p.inflation)+' inflatie ongeveer '+pct(exampleReal)+' reële groei.</b><br>In dit voorbeeld eindigt je financiële vermogen rond '+euro(exampleResult.end)+' op je '+p.endAge+'e. Alleen je belegde deel krijgt dit rendement; spaargeld blijft tegen jouw ingevulde spaarrente lopen.'+(p.capital>0?'<br>Omdat je nu al belegt, wordt nieuw overschot boven je huidige cashbuffer in dit voorbeeld ook belegd.':'<br>Omdat je €0 belegd vermogen hebt ingevuld, blijft nieuw overschot in dit voorbeeld spaargeld.')+(p.cash>0?'<br>Je spaargeld groeit met '+pct(p.cashRate)+' rente en verandert na inflatie ongeveer '+pct(cashReal)+' per jaar in koopkracht.':'')+(returnExample===7?'<div class="note" style="margin-top:6px">7% is een historisch aandelenvoorbeeld, geen verwachting of garantie. <a href="https://www.msci.com/documents/10199/255599/msci-world-index.pdf" target="_blank" rel="noopener">Bron en risico’s</a>.</div>':'')+'</div>':''}
-      <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}${rescueCase?'<span><i class="legendline rescue"></i>Mogelijke aanpassing</span>':''}${returnExample!==null?'<span><i class="legendline example"></i>'+returnExample+'% nominaal</span>':''}</div>
+      <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}${rescueCase?'<span><i class="legendline rescue"></i>Mogelijke aanpassing</span>':''}${pathExample?'<span><i class="legendline example"></i>'+returnExample+'% nominaal</span>':''}</div>
       <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers,pathRescue,pathExample)}</div>
-      <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = mogelijke aanpassing bij 3% rendement':''}${returnExample!==null?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
+      <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = mogelijke aanpassing bij 3% rendement':''}${pathExample?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
     </div>`,
 
     (!currentPlanAt3||rescueCase||rescueOptionsOpen)?`<div class="card" id="rescueOptions">
@@ -1205,7 +1207,7 @@ window.recalc=function(){
         ${scenarioCard('3%','Voorzichtig plan',e3)}
         ${scenarioCard('5%','Gunstiger verloop',e5)}
         ${scenarioCard('0%','Extreme stresstest',e0,'stress')}
-        ${scenarioCard('3% + schok','Beleggingen −'+Math.round(assetShockPct()*100)+'% bij stoppen',shock3,'stress')}
+        ${p.capital>0?scenarioCard('3% + schok','Beleggingen −'+Math.round(assetShockPct()*100)+'% bij stoppen',shock3,'stress'):'<div class="scenario-card stress"><div class="scenario-top"><span class="scenario-rate">Schok</span><span class="scenario-tag">€0 belegd</span></div><div class="scenario-state">Niet van toepassing</div><div class="scenario-value">Je hebt geen belegd vermogen ingevuld, dus er is niets waarop de beleggingsschok kan worden toegepast.</div></div>'}
       </div>
       <p class="note">De schoktest verlaagt alleen het belegde vermogen op het moment dat je stopt; cash wordt niet geraakt. Een stresstest is geen voorspelling.</p>
     </div>`,
