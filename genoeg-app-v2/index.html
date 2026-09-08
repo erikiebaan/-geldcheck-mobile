@@ -78,7 +78,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
     <div class="field"><label>Pensioen netto p/m</label><input id="pension" type="number" min="0" value="" placeholder="€ p/m"><div class="note">Geen pensioen opgebouwd? Vul €0 in.</div></div>
   </div>
 
-  <div class="toggleline"><div><b>Samen rekenen met partner?</b><div class="note">Alleen tonen als dit voor jouw huishouden relevant is.</div></div><button type="button" class="tinybtn" onclick="togglePartner()">Partner toevoegen</button></div>
+  <div class="toggleline"><div><b>Samen rekenen met partner?</b><div class="note">Alleen tonen als dit voor jouw huishouden relevant is.</div></div><button type="button" class="tinybtn" id="partnerToggleBtn" onclick="togglePartner()">Partner toevoegen</button></div>
   <div id="partnerFields" class="grid optional">
     <div class="field"><label>Leeftijd partner nu</label><input id="partnerAge" type="number" value="" placeholder="leeftijd"></div>
     <div class="field"><label>Partner netto inkomen p/m</label><input id="partnerIncome" type="number" value="" placeholder="€ p/m"></div>
@@ -177,6 +177,7 @@ function saveFinancialChanges(){
 }
 let changes=loadFinancialChanges();
 let rescue=history.state?.geldcheckRescue||null;
+let rescueDraft=rescue?{...rescue}:null;
 let rescueOptionsOpen=false;
 let returnExample=[3,5,7].includes(Number(history.state?.geldcheckReturnExample))?Number(history.state.geldcheckReturnExample):null;
 const PLAN_FIELD_IDS=['age','stopAge','income','spend','cash','cashRate','capital','assetRisk','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual','endTarget','pensionIndex','aowIndex','wealthTax','investmentCost','careAge','careMonthly','houseReleaseAge','houseRelease'];
@@ -197,11 +198,15 @@ function savePlanFields(){
 function saveRescue(){try{history.replaceState({...history.state,geldcheckRescue:rescue},'');}catch(_){}}
 function saveReturnExample(){try{history.replaceState({...history.state,geldcheckReturnExample:returnExample},'');}catch(_){}}
 loadPlanFields();
+window.partnerOn=typeof history.state?.geldcheckPartnerOn==='boolean'
+  ? history.state.geldcheckPartnerOn
+  : ['partnerIncome','partnerStopAge','partnerPensionAge','partnerPension'].some(id=>filledValue(id));
 window.validationRequested=false;
 
 const n=id=>Number(document.getElementById(id)?.value)||0;
 const s=id=>document.getElementById(id)?.value||'';
 const filled=id=>(document.getElementById(id)?.value??'').toString().trim()!=='';
+function filledValue(id){const raw=(document.getElementById(id)?.value??'').toString().trim();return raw!==''&&Number(raw)!==0;}
 const euro=x=>new Intl.NumberFormat('nl-NL',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(Math.round(x));
 const pct=x=>(x*100).toFixed(1).replace('.',',')+'%';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -234,8 +239,11 @@ function plan(){
     otherDebtEndAge:normalizeAge(n('otherDebtEndAge'),age),
     workReduction:Math.min(1,Math.max(0,workReductionRaw)),workReductionRaw,
     aowAge:n('aowAge'),aow:Math.max(0,n('aow')),pensionAge:n('pensionAge'),pension:Math.max(0,n('pension')),
-    partnerAge:n('partnerAge')||age,partnerIncome:Math.max(0,n('partnerIncome')),partnerStopAge:n('partnerStopAge'),
-    partnerPensionAge:n('partnerPensionAge'),partnerPension:Math.max(0,n('partnerPension')),
+    partnerAge:window.partnerOn?(n('partnerAge')||age):age,
+    partnerIncome:window.partnerOn?Math.max(0,n('partnerIncome')):0,
+    partnerStopAge:window.partnerOn?n('partnerStopAge'):0,
+    partnerPensionAge:window.partnerOn?n('partnerPensionAge'):0,
+    partnerPension:window.partnerOn?Math.max(0,n('partnerPension')):0,
     endAge:n('endAge'),endBuffer:Math.max(0,n('endBuffer')),endTarget:Math.max(0,n('endTarget')),
     inflation:Math.max(0,n('inflation')/100),
     pensionIndex:optionalRate('pensionIndex',Math.max(0,n('inflation')/100)),
@@ -403,7 +411,7 @@ function settleYear(state,netCash){
   state.cash=Math.max(0,state.cash);
   state.inv=Math.max(0,state.inv);
   const cashTarget=Math.max(0,state.cashTarget);
-  if(state.cash>cashTarget){
+  if(state.investSurplus&&state.cash>cashTarget){
     state.inv+=state.cash-cashTarget;
     state.cash=cashTarget;
   }
@@ -417,12 +425,22 @@ function changeIncluded(e,mode){
 function startingOneOff(p,mode){
   return changes.reduce((sum,e)=>sum+(changeIncluded(e,mode)&&e.kind==='oneoff'&&e.age===p.age?e.amount:0),0);
 }
+function scheduledOneOffAt(p,mi,di,atAge){
+  let amount=0;
+  const mortAge=effectiveMortgageCutAge(p,mi),mortResidual=effectiveMortgageResidual(p,mi);
+  if(isFinite(mortAge)&&atAge===mortAge&&mortResidual>0)amount+=mortResidual;
+  if(p.houseReleaseAge>0&&atAge===p.houseReleaseAge&&p.houseRelease>0)amount-=p.houseRelease;
+  const otherDebtAge=debtCutAge(di);
+  if(isFinite(otherDebtAge)&&atAge===otherDebtAge&&di.residual>0)amount+=di.residual;
+  return amount;
+}
 function simulatePath(p, realReturn, includeChanges=true){
   const start=startingAssets(p);
-  let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
+  let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash,investSurplus:start.inv>0};
   settleYear(state,-startingOneOff(p,includeChanges));
   const mi=mortgageInfo(p), di=debtInfo(p);
-  const out=[{age:p.age,capital:state.cash+state.inv-state.deficit-start.debt}];
+  settleYear(state,-scheduledOneOffAt(p,mi,di,p.age));
+  const out=[{age:p.age,capital:state.cash+state.inv-state.deficit-debtBalanceAtAge(p,p.age,di)}];
   const keptIncome=p.income*(1-p.workReduction);
   const realCashReturn=(1+p.cashRate)/(1+p.inflation)-1;
   for(let age=p.age;age<p.endAge;age++){
@@ -446,9 +464,7 @@ function simulatePath(p, realReturn, includeChanges=true){
     annualIncome+=monthlyIncomeChange*12;
     annualSpend=Math.max(0,annualSpend+monthlySpendChange*12);
     const effMortResidual=effectiveMortgageResidual(p,mi);
-    if(isFinite(mi.endAge)&&age===effectiveMortgageCutAge(p,mi)&&effMortResidual>0)oneOff+=effMortResidual;
-    if(p.houseReleaseAge>0&&age===p.houseReleaseAge&&p.houseRelease>0)oneOff-=p.houseRelease;
-    if(isFinite(di.endAge)&&age===debtCutAge(di)&&di.residual>0)oneOff+=di.residual;
+    oneOff+=scheduledOneOffAt(p,mi,di,age+1);
     settleYear(state,annualIncome-annualSpend-oneOff);
     out.push({age:age+1,capital:state.cash+state.inv-state.deficit-debtBalanceAtAge(p,age+1,di)});
   }
@@ -480,10 +496,11 @@ function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=nu
 
 function simulateReal(p, realReturn, mode='all'){
   const start=startingAssets(p);
-  let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
+  let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash,investSurplus:start.inv>0};
   settleYear(state,-startingOneOff(p,mode));
   const mi=mortgageInfo(p), di=debtInfo(p);
-  let min=state.cash+state.inv-state.deficit-start.debt,minAge=p.age,depletionAge=null;
+  settleYear(state,-scheduledOneOffAt(p,mi,di,p.age));
+  let min=state.cash+state.inv-state.deficit-debtBalanceAtAge(p,p.age,di),minAge=p.age,depletionAge=null;
   const keptIncome=p.income*(1-p.workReduction);
   const realCashReturn=(1+p.cashRate)/(1+p.inflation)-1;
   for(let age=p.age;age<p.endAge;age++){
@@ -507,9 +524,7 @@ function simulateReal(p, realReturn, mode='all'){
     annualIncome+=monthlyIncomeChange*12;
     annualSpend=Math.max(0,annualSpend+monthlySpendChange*12);
     const effMortResidual=effectiveMortgageResidual(p,mi);
-    if(isFinite(mi.endAge)&&age===effectiveMortgageCutAge(p,mi)&&effMortResidual>0)oneOff+=effMortResidual;
-    if(p.houseReleaseAge>0&&age===p.houseReleaseAge&&p.houseRelease>0)oneOff-=p.houseRelease;
-    if(isFinite(di.endAge)&&age===debtCutAge(di)&&di.residual>0)oneOff+=di.residual;
+    oneOff+=scheduledOneOffAt(p,mi,di,age+1);
     settleYear(state,annualIncome-annualSpend-oneOff);
     const total=state.cash+state.inv-state.deficit-debtBalanceAtAge(p,age+1,di);
     if(total<min){min=total;minAge=age+1;}
@@ -520,15 +535,21 @@ function simulateReal(p, realReturn, mode='all'){
 function assetShockPct(){const v=s('assetRisk');return v==='defensive'?.12:v==='equity'?.35:.25;}
 function simulateShock(p, realReturn, shockAge, shockPct){
   const start=startingAssets(p);
-  let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash};
+  let state={cash:start.cash,inv:start.inv,deficit:0,cashTarget:start.cash,investSurplus:start.inv>0};
   settleYear(state,-startingOneOff(p,'main'));
   const mi=mortgageInfo(p),di=debtInfo(p);
-  let min=state.cash+state.inv-state.deficit-start.debt,minAge=p.age,depletionAge=null;
+  settleYear(state,-scheduledOneOffAt(p,mi,di,p.age));
+  let min=state.cash+state.inv-state.deficit-debtBalanceAtAge(p,p.age,di),minAge=p.age,depletionAge=null;
   const keptIncome=p.income*(1-p.workReduction);
   const realCashReturn=(1+p.cashRate)/(1+p.inflation)-1;
   for(let age=p.age;age<p.endAge;age++){
     state.inv=Math.max(0,state.inv)*(1+realReturn)*Math.max(0,1-p.wealthTax-p.investmentCost);
-    if(age===shockAge)state.inv*=Math.max(0,1-shockPct);
+    if(age===shockAge){
+      state.inv*=Math.max(0,1-shockPct);
+      const shockTotal=state.cash+state.inv-state.deficit-debtBalanceAtAge(p,age,di);
+      if(shockTotal<min){min=shockTotal;minAge=age;}
+      if(shockTotal<0&&depletionAge===null)depletionAge=age;
+    }
     state.cash*=1+realCashReturn;
     let annualIncome=0;
     if(age<p.stopAge)annualIncome+=keptIncome*12;
@@ -547,9 +568,7 @@ function simulateShock(p, realReturn, shockAge, shockPct){
     annualIncome+=monthlyIncomeChange*12;
     annualSpend=Math.max(0,annualSpend+monthlySpendChange*12);
     const eff=effectiveMortgageResidual(p,mi);
-    if(isFinite(mi.endAge)&&age===effectiveMortgageCutAge(p,mi)&&eff>0)oneOff+=eff;
-    if(isFinite(di.endAge)&&age===debtCutAge(di)&&di.residual>0)oneOff+=di.residual;
-    if(p.houseReleaseAge>0&&age===p.houseReleaseAge&&p.houseRelease>0)oneOff-=p.houseRelease;
+    oneOff+=scheduledOneOffAt(p,mi,di,age+1);
     settleYear(state,annualIncome-annualSpend-oneOff);
     const total=state.cash+state.inv-state.deficit-debtBalanceAtAge(p,age+1,di);
     if(total<min){min=total;minAge=age+1;}if(total<0&&depletionAge===null)depletionAge=age+1;
@@ -589,7 +608,7 @@ function flowLabel(p,age,mi,di){
   const bits=[];
   if(age<p.stopAge) bits.push('werk');
   else bits.push('gestopt');
-  if(age>=p.aowAge) bits.push('AOW');
+  if(p.aow>0&&age>=p.aowAge) bits.push('AOW');
   if(p.pension>0&&age>=p.pensionAge) bits.push('pensioen');
   const pa=partnerTimelineAge(p,age);
   if(p.partnerIncome>0&&pa<p.partnerStopAge) bits.push('partnerinkomen');
@@ -600,7 +619,8 @@ function flowLabel(p,age,mi,di){
 }
 
 function buildCashflowPhases(p,mi,di){
-  const cuts=[p.age,p.endAge,p.stopAge,p.aowAge];
+  const cuts=[p.age,p.endAge,p.stopAge];
+  if(p.aow>0) cuts.push(p.aowAge);
   if(p.pension>0) cuts.push(p.pensionAge);
   if(p.partnerIncome>0) cuts.push(p.age+(p.partnerStopAge-p.partnerAge));
   if(p.partnerPension>0) cuts.push(p.age+(p.partnerPensionAge-p.partnerAge));
@@ -695,6 +715,11 @@ window.addFinancialChange=function(){
   const label=s('changeLabel').trim();
   const dir=s('changeDirection')==='minus'?-1:1;
   if(amount<=0)return false;
+  if(!Number.isInteger(start)||end!==null&&!Number.isInteger(end)){
+    const el=document.getElementById('changesList');
+    if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> gebruik hele leeftijden of hele kalenderjaren.</div>';
+    return false;
+  }
   if(start<p.age||start>=p.endAge){
     const el=document.getElementById('changesList');
     if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> vul een bedrag in en kies een moment tussen je huidige leeftijd en je eindleeftijd.</div>';
@@ -737,6 +762,9 @@ function planIssues(p){
   if(filled('pension')&&p.pension>0&&!filled('pensionAge'))missing.push('pensioenleeftijd');
   if(filled('stopAge')&&filled('age')&&p.stopAge<p.age)missing.push('stopmoment na je huidige leeftijd');
   if(filled('endAge')&&filled('age')&&p.endAge<=p.age)missing.push('eindleeftijd na je huidige leeftijd');
+  const ageFields=[['age','leeftijd'],['stopAge','stopmoment'],['endAge','eindleeftijd'],['aowAge','AOW-leeftijd'],['pensionAge','pensioenleeftijd'],['mortEndAge','hypotheek-einddatum'],['otherDebtEndAge','einddatum overige schuld'],['careAge','startleeftijd zorgkosten'],['houseReleaseAge','leeftijd woningaanpassing']];
+  if(window.partnerOn)ageFields.push(['partnerAge','leeftijd partner'],['partnerStopAge','stopmoment partner'],['partnerPensionAge','pensioenleeftijd partner']);
+  ageFields.forEach(([id,label])=>{if(filled(id)&&!Number.isInteger(Number(document.getElementById(id).value)))missing.push(label+' als heel getal');});
   return missing;
 }
 function rescueScenario(p){
@@ -760,17 +788,20 @@ function withExtraChanges(extra,fn){
 }
 window.applyRescue=function(){
   const type=s('rescueType');
-  rescue={type,age:n('rescueAge'),amount:n('rescueAmount'),monthly:n('rescueMonthly')};
+  rescue={type,age:Math.round(n('rescueAge')),amount:n('rescueAmount'),monthly:n('rescueMonthly')};
+  rescueDraft={...rescue};
   saveRescue();recalc();
 }
 window.setRescueType=function(type){
   const p=plan(),age=Math.max(p.stopAge,70);
-  rescue={type,age,amount:type==='expense'?300:type==='housing'?100000:500,monthly:type==='housing'?1000:0};
-  saveRescue();recalc();
+  rescueDraft={type,age,amount:type==='expense'?300:type==='housing'?100000:500,monthly:type==='housing'?1000:0};
+  rescue=null;saveRescue();
+  recalc();
 }
-window.clearRescue=function(){rescue=null;saveRescue();recalc();}
+window.clearRescue=function(){rescue=null;rescueDraft=null;saveRescue();recalc();}
 window.openRescueOptions=function(){
   rescueOptionsOpen=true;
+  if(!rescueDraft){const p=plan();rescueDraft={type:'income',age:Math.max(p.stopAge,70),amount:500,monthly:0};}
   recalc();
   setTimeout(()=>document.getElementById('rescueOptions')?.scrollIntoView({behavior:'smooth',block:'start'}),0);
 }
@@ -779,7 +810,8 @@ window.setReturnExample=function(rate){
   saveReturnExample();recalc();
 }
 function rescueControls(p){
-  const type=rescue?.type||'income',age=rescue?.age||Math.max(p.stopAge,70),amount=rescue?.amount||(type==='expense'?300:type==='housing'?100000:500),monthly=rescue?.monthly||1000;
+  const shown=rescueDraft||rescue;
+  const type=shown?.type||'income',age=shown?.age||Math.max(p.stopAge,70),amount=shown?.amount||(type==='expense'?300:type==='housing'?100000:500),monthly=shown?.monthly||1000;
   const isLater=type==='later',isHousing=type==='housing';
   const fields=isLater
     ? '<input id="rescueAmount" type="hidden" value="0"><div class="field wide"><label>Nieuwe stopleeftijd</label><input id="rescueAge" type="number" value="'+age+'"></div><input id="rescueMonthly" type="hidden" value="0">'
@@ -798,12 +830,18 @@ function updateChangeForm(){
   if(certainty)certainty.style.display=type==='receive'?'block':'none';
 }
 window.toggleCoverage=function(){const el=document.getElementById('coveragePanel');if(!el)return;if(el.style.display!=='none'){el.style.display='none';return;}const rows=[['Activa & vermogen',n('capital')>0?'↗ Dynamisch gevraagd':'✓ Direct / ≈ gebundeld','assetrisico verschijnt alleen bij belegd vermogen'],['Pensioen & uitkeringen','✓ Direct / ↗ dynamisch','AOW, pensioen, partner en inkomensveranderingen'],['Wonen & vastgoed','✓ Direct / ↗ dynamisch','woning, hypotheek en toekomstige wijzigingen'],['Levenskosten','≈ Gebundeld','detailkosten zitten in totale uitgaven'],['Mobiliteit','≈ Gebundeld / ↗ dynamisch','lopende kosten en toekomstige vervanging'],['Zorg & welzijn','✓ Direct / ↗ dynamisch','lopende en latere zorgkosten'],['Belastingen & kosten','✓ Advanced','vermogensheffing en beleggingskosten'],['Familie & nalatenschap','↗ Dynamisch','erfenis, schenking en eindvermogen'],['Inflatie & economie','✓ Direct / stress','inflatie, reëel rendement en nominale schuld'],['Risico & onvoorzien',n('capital')>0?'✓ Buffer + ↗ assetstress':'✓ Buffer / stress','buffer, scenario’s, crash en langleven']];el.innerHTML='<div class="note" style="margin-bottom:10px"><b>Onder de motorkap: 8 bouwstenen</b><br>vermogen · schulden · inkomsten · uitgaven · eenmalige gebeurtenissen · groei/indexatie · risico/exposure · regels/voorwaarden</div><div class="note" style="margin-bottom:8px"><b>Status</b> · ✓ meegerekend · ≈ gebundeld · ↗ alleen gevraagd indien relevant · ○ nog niet individueel gemodelleerd.</div>'+rows.map(r=>'<div class="kpi" style="margin-bottom:6px"><span><b>'+r[0]+'</b><br><small>'+r[2]+'</small></span><b style="font-size:12px">'+r[1]+'</b></div>').join('');el.style.display='block';}
-window.partnerOn=false;
+function savePartnerState(){try{history.replaceState({...history.state,geldcheckPartnerOn:window.partnerOn},'');}catch(_){}}
+function updatePartnerVisibility(){
+  document.getElementById('partnerFields')?.classList.toggle('on',window.partnerOn);
+  const b=document.getElementById('partnerToggleBtn');
+  if(b)b.textContent=window.partnerOn?'Partner verwijderen':'Partner toevoegen';
+}
 window.togglePartner=function(){
   window.partnerOn=!window.partnerOn;
-  document.getElementById('partnerFields')?.classList.toggle('on',window.partnerOn);
-  const b=[...document.querySelectorAll('.tinybtn')].find(x=>x.textContent.includes('Partner')||x.textContent.includes('verwijderen'));
-  if(b)b.textContent=window.partnerOn?'Partner verwijderen':'Partner toevoegen';
+  if(!window.partnerOn){
+    ['partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  }
+  savePartnerState();savePlanFields();updatePartnerVisibility();
   scheduleRecalc();
 }
 window.toggleDetails=function(force){
@@ -1142,7 +1180,7 @@ window.recalc=function(){
       <h2>Verloop van je vermogen</h2>
       <p class="sectionhint">Vergelijk je basisplan met het plan inclusief wat je later toevoegt.</p>
       <div class="returnpicker"><button type="button" class="returnpick ${returnExample===3?'active':''}" onclick="setReturnExample(3)">3%</button><button type="button" class="returnpick ${returnExample===5?'active':''}" onclick="setReturnExample(5)">5%</button><button type="button" class="returnpick ${returnExample===7?'active':''}" onclick="setReturnExample(7)">7% historisch voorbeeld</button>${returnExample!==null?'<button type="button" class="returnpick" onclick="setReturnExample(null)">Wis lijn</button>':''}</div>
-      ${exampleResult?'<div class="returninsight"><b>'+returnExample+'% nominaal is bij '+pct(p.inflation)+' inflatie ongeveer '+pct(exampleReal)+' reële groei.</b><br>In dit voorbeeld eindigt je financiële vermogen rond '+euro(exampleResult.end)+' op je '+p.endAge+'e. Alleen je belegde deel krijgt dit rendement; spaargeld blijft tegen jouw ingevulde spaarrente lopen.'+(p.cash>0?'<br>Je spaargeld groeit met '+pct(p.cashRate)+' rente en verandert na inflatie ongeveer '+pct(cashReal)+' per jaar in koopkracht.':'')+(returnExample===7?'<div class="note" style="margin-top:6px">7% is een historisch aandelenvoorbeeld, geen verwachting of garantie. <a href="https://www.msci.com/documents/10199/255599/msci-world-index.pdf" target="_blank" rel="noopener">Bron en risico’s</a>.</div>':'')+'</div>':''}
+      ${exampleResult?'<div class="returninsight"><b>'+returnExample+'% nominaal is bij '+pct(p.inflation)+' inflatie ongeveer '+pct(exampleReal)+' reële groei.</b><br>In dit voorbeeld eindigt je financiële vermogen rond '+euro(exampleResult.end)+' op je '+p.endAge+'e. Alleen je belegde deel krijgt dit rendement; spaargeld blijft tegen jouw ingevulde spaarrente lopen.'+(p.capital>0?'<br>Omdat je nu al belegt, wordt nieuw overschot boven je huidige cashbuffer in dit voorbeeld ook belegd.':'<br>Omdat je €0 belegd vermogen hebt ingevuld, blijft nieuw overschot in dit voorbeeld spaargeld.')+(p.cash>0?'<br>Je spaargeld groeit met '+pct(p.cashRate)+' rente en verandert na inflatie ongeveer '+pct(cashReal)+' per jaar in koopkracht.':'')+(returnExample===7?'<div class="note" style="margin-top:6px">7% is een historisch aandelenvoorbeeld, geen verwachting of garantie. <a href="https://www.msci.com/documents/10199/255599/msci-world-index.pdf" target="_blank" rel="noopener">Bron en risico’s</a>.</div>':'')+'</div>':''}
       <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}${rescueCase?'<span><i class="legendline rescue"></i>Mogelijke aanpassing</span>':''}${returnExample!==null?'<span><i class="legendline example"></i>'+returnExample+'% nominaal</span>':''}</div>
       <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers,pathRescue,pathExample)}</div>
       <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = mogelijke aanpassing bij 3% rendement':''}${returnExample!==null?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
@@ -1284,6 +1322,7 @@ PLAN_FIELD_IDS.forEach(id=>{
 document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
 updateChangeForm();
 updateDynamicQuestions();
+updatePartnerVisibility();
 renderChangesList();
 recalc();
 })();</script></body></html>
