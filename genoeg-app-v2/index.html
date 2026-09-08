@@ -949,7 +949,10 @@ window.recalc=function(){
   const real3=(1+.03)/(1+p.inflation)-1;
   const rescueCase=rescueScenario(p);
   const rescueAt3=rescueCase?withExtraChanges(rescueCase.extra,()=>simulateReal(rescueCase.plan,real3,'main')):null;
-  const chartReal=rescueCase?real3:Math.max(rr,(1/(1+p.inflation))-1);
+  // Keep the blue baseline on the return used by the headline answer. A rescue
+  // comparison must change only the plan, never the return assumption.
+  const chartFloorReal=(1/(1+p.inflation))-1;
+  const chartReal=isFinite(rr)?Math.max(rr,chartFloorReal):real3;
   const pathBase=simulatePath(p,chartReal,false);
   const pathNeeded=simulatePath(p,chartReal,true);
   const pathRescue=rescueCase?withExtraChanges(rescueCase.extra,()=>simulatePath(rescueCase.plan,chartReal,'main')):null;
@@ -1214,7 +1217,7 @@ window.recalc=function(){
       ${exampleResult?'<div class="returninsight"><b>'+returnExample+'% nominaal is bij '+pct(p.inflation)+' inflatie ongeveer '+pct(exampleReal)+' reële groei.</b><br>In dit voorbeeld eindigt je financiële vermogen rond '+euro(exampleResult.end)+' op je '+p.endAge+'e. Alleen je belegde deel krijgt dit rendement; spaargeld blijft tegen jouw ingevulde spaarrente lopen.'+(p.capital>0?'<br>Omdat je nu al belegt, wordt nieuw overschot boven je huidige cashbuffer in dit voorbeeld ook belegd.':'<br>Omdat je €0 belegd vermogen hebt ingevuld, blijft nieuw overschot in dit voorbeeld spaargeld.')+(p.cash>0?'<br>Je spaargeld groeit met '+pct(p.cashRate)+' rente en verandert na inflatie ongeveer '+pct(cashReal)+' per jaar in koopkracht.':'')+(returnExample===7?'<div class="note" style="margin-top:6px">7% is een historisch aandelenvoorbeeld, geen verwachting of garantie. <a href="https://www.msci.com/documents/10199/255599/msci-world-index.pdf" target="_blank" rel="noopener">Bron en risico’s</a>.</div>':'')+'</div>':''}
       <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}${rescueCase?'<span><i class="legendline rescue"></i>Mogelijke aanpassing</span>':''}${pathExample?'<span><i class="legendline example"></i>'+returnExample+'% nominaal</span>':''}</div>
       <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers,pathRescue,pathExample)}</div>
-      <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = mogelijke aanpassing bij 3% rendement':''}${pathExample?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
+      <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = aanpassing bij hetzelfde rendement als blauw':''}${pathExample?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
     </div>`,
 
     (!currentPlanAt3||rescueCase||rescueOptionsOpen)?`<div class="card" id="rescueOptions">
