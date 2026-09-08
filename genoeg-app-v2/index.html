@@ -499,10 +499,10 @@ function simulatePath(p, realReturn, includeChanges=true){
   }
   return out;
 }
-function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null,examplePath=null,buffer=0){
+function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null,examplePath=null,buffer=0,scalePaths=[]){
   const w=760,h=300,padL=56,padR=18,padT=18,padB=34;
   const xs=basePath.map(d=>d.age);
-  const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[]),...(rescuePath?rescuePath.map(d=>d.capital):[]),...(examplePath?examplePath.map(d=>d.capital):[])];
+  const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[]),...(rescuePath?rescuePath.map(d=>d.capital):[]),...(examplePath?examplePath.map(d=>d.capital):[]),...scalePaths.flatMap(path=>path.map(d=>d.capital))];
   let ymin=Math.min(0,...allYs),ymax=Math.max(1,...allYs);
   const range=Math.max(1,ymax-ymin);ymin-=range*.08;ymax+=range*.08;
   const x=a=>padL+(a-xs[0])/(xs[xs.length-1]-xs[0])*(w-padL-padR);
@@ -1011,6 +1011,7 @@ window.recalc=function(){
   const cashReal=(1+p.cashRate)/(1+p.inflation)-1;
   const pathExample=exampleReal===null||exampleUnavailable?null:simulatePath(p,exampleReal,'main');
   const exampleResult=exampleReal===null||exampleUnavailable?null:simulateReal(p,exampleReal,'main');
+  const comparisonScalePaths=p.capital>0?[3,5,7].map(rate=>simulatePath(p,(1+rate/100)/(1+p.inflation)-1,'main')):[];
   const earliest3=earliestAtNominal(p,.03);
   const currentAt3=simulateReal(p,real3,'main');
   const pathAt3=simulatePath(p,real3,'main');
@@ -1255,7 +1256,7 @@ window.recalc=function(){
       ${exampleUnavailable?'<div class="returninsight"><b>Je hebt €0 belegd. Daarom verandert deze lijn niet.</b><br>Vul een bedrag bij ‘Belegd vermogen’ in om te zien wat '+returnExample+'% rendement met je plan zou doen.</div>':''}
       ${exampleResult?'<div class="returnsummary"><b>'+returnExample+'% voorbeeld: ongeveer '+euro(exampleResult.end)+' op je '+p.endAge+'e.</b><details class="detailfold"><summary>Wat betekent deze lijn?</summary><div class="detailbody">'+returnExample+'% nominaal is bij '+pct(p.inflation)+' inflatie ongeveer '+pct(exampleReal)+' reële groei. Alleen je belegde deel krijgt dit rendement; spaargeld blijft tegen jouw ingevulde spaarrente lopen.'+(p.capital>0?'<br>Nieuw overschot boven je huidige cashbuffer wordt in dit voorbeeld ook belegd.':'<br>Omdat je €0 belegd vermogen hebt ingevuld, blijft nieuw overschot spaargeld.')+(p.cash>0?'<br>Je spaargeld groeit met '+pct(p.cashRate)+' rente en verandert na inflatie ongeveer '+pct(cashReal)+' per jaar in koopkracht.':'')+(returnExample===7?'<div class="note" style="margin-top:6px">Historisch aandelenvoorbeeld, geen verwachting of garantie. <a href="https://www.msci.com/documents/10199/255599/msci-world-index.pdf" target="_blank" rel="noopener">Bron en risico’s</a>.</div>':'')+'</div></details></div>':''}
       <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}${rescueCase?'<span><i class="legendline rescue"></i>Mogelijke aanpassing</span>':''}${pathExample?'<span><i class="legendline example"></i>'+returnExample+'% nominaal</span>':''}</div>
-      <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers,pathRescue,pathExample,p.endBuffer)}</div>
+      <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers,pathRescue,pathExample,p.endBuffer,comparisonScalePaths)}</div>
       <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = aanpassing bij hetzelfde rendement als blauw':''}${pathExample?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
     </div>`,
 
