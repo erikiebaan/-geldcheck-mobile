@@ -2,10 +2,10 @@
 <style>
 :root{--bg:#f6f4fb;--card:#fff;--ink:#171526;--muted:#747187;--g:#6550a8;--g2:#493783;--blue:#3978d4;--yellow:#f2c94c;--line:#dfdbea;--soft:#eef4ff;--soft2:#f8f7fc;--warn:#fff6cf;--danger:#b84b62}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;padding:0}
-main{max-width:760px;margin:auto;padding:18px 14px 110px}.appbar{position:sticky;top:0;z-index:50;background:rgba(246,244,251,.92);backdrop-filter:blur(18px);border-bottom:1px solid rgba(223,219,234,.75);padding:12px 16px}.appbarin{max-width:760px;margin:auto;display:flex;align-items:center;justify-content:space-between}.brand{font-weight:950;letter-spacing:-.03em}.brand small{display:block;font-size:11px;color:var(--muted);font-weight:700;letter-spacing:0}.editbtn{border:1px solid var(--line);background:white;color:var(--g);border-radius:999px;padding:9px 13px;font-weight:850}.bottomask{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}.bottomaskin{max-width:760px;margin:auto;display:flex;gap:8px}.bottomask input{flex:1;border:1px solid var(--line);border-radius:16px;padding:13px 14px;font-size:16px}.bottomask button{background:var(--blue);color:white;border-radius:16px;padding:0 16px;font-weight:900}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;margin-bottom:12px;box-shadow:0 8px 28px rgba(32,42,36,.035)}
+main{max-width:800px;margin:auto;padding:22px 18px 86px}.appbar{position:sticky;top:0;z-index:50;background:rgba(246,244,251,.94);backdrop-filter:blur(18px);border-bottom:1px solid rgba(223,219,234,.75);padding:12px 18px}.appbarin{max-width:800px;margin:auto;display:flex;align-items:center;justify-content:space-between}.brand{font-weight:950;letter-spacing:-.03em}.brand small{display:block;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:0}.editbtn{border:1px solid #baaee0;background:white;color:var(--g);border-radius:999px;padding:9px 14px;font-weight:850}.editbtn:hover,.editbtn:focus-visible{background:#f2eefc;border-color:var(--g)}.bottomask{position:fixed;right:18px;bottom:18px;z-index:60}.bottomaskin{display:flex;justify-content:flex-end;gap:8px}.bottomask input{display:none;width:min(520px,calc(100vw - 150px));border:1px solid #b9addb;box-shadow:0 10px 35px rgba(73,55,131,.18);border-radius:16px;padding:13px 14px;font-size:16px;background:#fff}.bottomask.open input{display:block}.bottomask button{background:var(--g);color:white;border-radius:999px;padding:12px 17px;font-weight:900;box-shadow:0 8px 24px rgba(73,55,131,.22)}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;margin-bottom:14px;box-shadow:0 8px 28px rgba(32,42,36,.035)}
 h1{font-size:44px;line-height:.98;letter-spacing:-.05em;margin:0 0 10px}h2{font-size:25px;letter-spacing:-.025em;margin:0 0 10px}p{color:var(--muted);line-height:1.5}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field label{display:block;font-size:12px;font-weight:800;color:var(--muted);margin:0 0 5px}.group{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}.group:first-child{margin-top:10px}.grouphead{display:flex;align-items:center;gap:9px;margin-bottom:10px}.groupicon{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-weight:900;background:var(--soft);color:var(--blue)}.grouphead h3{margin:0;font-size:18px}.grouphead p{margin:1px 0 0;font-size:12px}.optional{display:none}.optional.on{display:grid}.toggleline{display:flex;justify-content:space-between;align-items:center;padding:11px 0}.tinybtn{border:1px solid var(--line);background:#fff;color:var(--g);padding:8px 11px;border-radius:999px;font-size:13px}.warningbox{background:var(--warn);border:1px solid #ead88e;border-radius:16px;padding:12px 14px;margin-top:10px;font-size:13px;line-height:1.45}
-input,select{width:100%;border:1px solid var(--line);border-radius:14px;padding:13px;font:inherit;font-size:17px;background:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:14px;font-weight:700;color:#625e72;margin:0 0 6px}.group{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}.group:first-child{margin-top:10px}.grouphead{display:flex;align-items:center;gap:10px;margin-bottom:12px}.groupicon{width:7px;height:28px;border-radius:999px;font-size:0;background:var(--g)}.group:nth-of-type(2) .groupicon{background:var(--yellow)}.group:nth-of-type(3) .groupicon{background:#72c7a5}.grouphead h3{margin:0;font-size:19px}.grouphead p{margin:1px 0 0;font-size:13px}.optional{display:none}.optional.on{display:grid}.toggleline{display:flex;justify-content:space-between;align-items:center;padding:11px 0}.tinybtn{border:1px solid #cfc7e6;background:#fff;color:var(--g);padding:8px 12px;border-radius:999px;font-size:13px}.warningbox{background:var(--warn);border:1px solid #ead88e;border-radius:16px;padding:12px 14px;margin-top:10px;font-size:13px;line-height:1.45}
+input,select{width:100%;border:1px solid var(--line);border-radius:13px;padding:11px 13px;font:inherit;font-size:16px;background:#fff;min-height:46px}input:focus,select:focus{outline:3px solid rgba(101,80,168,.13);border-color:#9d8bd3}
 button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:16px}.primary{width:100%;background:var(--g);color:#fff}.ghost{background:#eeeae1}
 .hero{background:linear-gradient(145deg,#7257b5,#4e3d91);color:#fff;border:0;padding:26px}.hero p{color:#e9f2ee;margin-bottom:0} .hero .big{font-size:64px;font-weight:950;line-height:.88;letter-spacing:-.055em;margin:12px 0}.hero .sub{font-size:18px;font-weight:850;opacity:.96}
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kpi{border:1px solid var(--line);border-radius:18px;padding:14px;background:var(--soft2)}.kpi span{font-size:12px;color:var(--muted)}.kpi b{display:block;font-size:22px;margin-top:4px}
@@ -18,8 +18,8 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 .detailfold{margin-top:12px;border:1px solid var(--line);border-radius:16px;background:var(--soft2);padding:0 14px}.detailfold>summary{cursor:pointer;list-style:none;padding:13px 0;color:var(--g);font-weight:850}.detailfold>summary::-webkit-details-marker{display:none}.detailfold>summary:after{content:'＋';float:right}.detailfold[open]>summary:after{content:'−'}.detailbody{padding:0 0 14px}.returnsummary{background:#fffaf0;border:1px solid #eadca8;border-radius:16px;padding:13px 14px;line-height:1.45;margin-bottom:10px}.eventgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.eventitem{border:1px solid #ead88e;border-radius:15px;padding:12px 14px;background:var(--warn)}.eventitem b{display:block}.eventitem span{display:block;margin-top:3px;font-size:13px;color:var(--muted)}
 .phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
 .topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}.statusline.live .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(57,120,212,.14)}
-.storagebar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 10px;padding:13px 14px;border:1px solid #cfe3da;border-radius:16px;background:#f4fbf8}.storagebar b{display:block;font-size:14px}.storagebar span{display:block;margin-top:2px;font-size:12px;color:var(--muted)}.resetbtn{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--danger);padding:9px 11px;border-radius:999px;font-size:13px}
-@media(max-width:620px){main{padding-top:14px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid,.scenario-grid,.storygrid,.moneygrid,.optiongrid,.eventgrid{grid-template-columns:1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}.storagebar{align-items:flex-start;flex-direction:column}.resetbtn{width:100%}h1{font-size:44px}}
+.storagebar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 10px;padding:13px 14px;border:1px solid #cfe3da;border-radius:16px;background:#f4fbf8}.storagebar b{display:block;font-size:14px}.storagebar span{display:block;margin-top:2px;font-size:12px;color:var(--muted)}.resetbtn{flex:0 0 auto;border:0;background:transparent;color:var(--muted);padding:7px 4px;border-radius:8px;font-size:12px;text-decoration:underline;text-underline-offset:3px}.chartwrap{height:292px}.chartzero{stroke:#aaa5b2;stroke-dasharray:none;stroke-width:1}.chartbuffer{stroke:#d09a18;stroke-dasharray:6 5;stroke-width:1.4}.chartbuffertext{font-size:10px;fill:#8a6500;font-weight:800}.optiongrid{grid-template-columns:repeat(4,1fr)}.optioncard{cursor:pointer;text-align:left;transition:.15s ease}.optioncard:hover,.optioncard:focus-visible,.optioncard.active{transform:translateY(-1px);border-color:#5bab89;background:#eaf8f2;box-shadow:0 6px 18px rgba(29,155,104,.1)}.rescuebox{background:transparent;border:0;border-top:1px solid #cbe5da;border-radius:0;padding:14px 0 0}.phase .amount{font-size:19px;line-height:1.2}.attentionlist{display:grid;gap:9px}.attentionrow{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;background:#faf9fd;border:1px solid var(--line);border-radius:15px;padding:12px}.attentionnum{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eee9fa;color:var(--g);font-weight:900}.attentionrow p{margin:0;color:#4f4b5d;line-height:1.45}.housingreserve{background:transparent!important;border:0!important;border-left:4px solid var(--yellow)!important;border-radius:0!important;padding:4px 0 4px 10px!important;color:var(--muted)}
+@media(max-width:620px){main{padding:14px 10px 78px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid,.scenario-grid,.storygrid,.moneygrid,.eventgrid{grid-template-columns:1fr}.optiongrid{grid-template-columns:1fr 1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}.storagebar{align-items:flex-start;flex-direction:column}.resetbtn{width:auto}.bottomask{right:10px;bottom:10px}.bottomask.open{left:10px}.bottomask.open .bottomaskin{width:100%}.bottomask.open input{width:auto;flex:1}.chartwrap{height:270px}h1{font-size:40px}.card{padding:16px;border-radius:20px}}
 </style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Financiële kern v2</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
 <div class="topintro">
   <h1>Heb ik straks genoeg?</h1>
@@ -93,7 +93,8 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 
 <div class="group">
   <div class="grouphead"><div class="groupicon">±</div><div><h3>Veranderingen</h3><p>Geld dat later binnenkomt, eruit gaat of maandelijks verandert.</p></div></div>
-  <div class="grid">
+  <button type="button" class="tinybtn" id="changeFormToggle" onclick="toggleChangeForm()">+ Verandering toevoegen</button>
+  <div class="grid optional" id="changeFields" style="margin-top:12px">
     <div class="field"><label>Wat verandert?</label>
       <select id="changeType">
         <option value="receive">Eenmalig geld binnen</option>
@@ -114,7 +115,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
     <div class="field"><label>Omschrijving <span class="note">(optioneel)</span></label><input id="changeLabel" value="" placeholder="erfenis, auto, lijfrente…"></div>
     <div class="field" id="changeCertaintyField"><label>Hoe zeker is deze ontvangst?</label><select id="changeCertainty"><option value="uncertain">Nog onzeker</option><option value="certain">Zeker / toegezegd</option></select><div class="note">Een onzekere ontvangst verschijnt alleen in het paarse scenario en verlaagt je hoofdantwoord niet.</div></div>
   </div>
-  <button type="button" id="addChangeBtn" class="tinybtn" style="margin-top:10px" onclick="addFinancialChange()">+ Verandering toevoegen</button>
+  <button type="button" id="addChangeBtn" class="tinybtn" style="margin-top:10px" onclick="addFinancialChange()">Verandering bewaren</button>
   <div id="changesList" style="margin-top:10px"></div>
 </div>
 
@@ -144,12 +145,12 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
     <div class="field"><label>Netto bedrag dat uit woning vrijkomt</label><input id="houseRelease" type="number" value="" placeholder="€" placeholder="na aflossing hypotheek"></div>
   </div>
   <div id="advancedWarning" class="warningbox" style="display:none"></div>
-  <div class="inflationinsight" style="margin-top:14px">
+  <details class="detailfold"><summary>Hoe rekent Geldcheck?</summary><div class="detailbody">
     <b>200+ financiële factoren, zonder 200 vragen</b>
-    <p>Geldcheck bundelt detailposten slim: boodschappen, verzekeringen, vervoer en vrije tijd zitten bijvoorbeeld in je uitgaven; toekomstige erfenissen, auto's, verbouwingen of schenkingen voeg je toe bij Veranderingen. Alleen factoren die je uitkomst echt kunnen veranderen vragen we apart.</p>
-    <button type="button" class="tinybtn" style="margin-top:9px" onclick="toggleCoverage()">Bekijk wat is afgedekt</button>
+    <p>Veel detailposten zitten al in je totale uitgaven. Alleen uitzonderingen die de uitkomst echt kunnen veranderen vragen we apart.</p>
+    <button type="button" class="tinybtn" onclick="toggleCoverage()">Bekijk wat is afgedekt</button>
     <div id="coveragePanel" style="display:none;margin-top:10px"></div>
-  </div>
+  </div></details>
 </div>
 
 <div class="storagebar"><div><b>Automatisch opgeslagen op dit apparaat</b><span id="savedAt">Je invoer blijft bewaard als je later terugkomt.</span></div><button type="button" class="resetbtn" onclick="resetSavedPlan()">Nieuw plan / alles wissen</button></div>
@@ -159,7 +160,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 <div id="result"></div>
 
 
-</main><div class="bottomask"><div class="bottomaskin"><input id="ask" placeholder="Wat wil je veranderen?"><button onclick="applyAsk()">Pas aan</button></div></div>
+</main><div class="bottomask" id="bottomAsk"><div class="bottomaskin"><input id="ask" aria-label="Beschrijf wat je wilt aanpassen" placeholder="Bijv. € 500 extra inkomen vanaf 70"><button id="askButton" onclick="toggleQuickAdjust()">Snel aanpassen</button></div></div>
 <script src="../engine_v123.js"></script>
 <script src="../future_layer.js?v=0.1"></script>
 <script src="../future_bridge_v041.js?v=0.41"></script>
@@ -498,7 +499,7 @@ function simulatePath(p, realReturn, includeChanges=true){
   }
   return out;
 }
-function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null,examplePath=null){
+function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null,examplePath=null,buffer=0){
   const w=760,h=300,padL=56,padR=18,padT=18,padB=34;
   const xs=basePath.map(d=>d.age);
   const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[]),...(rescuePath?rescuePath.map(d=>d.capital):[]),...(examplePath?examplePath.map(d=>d.capital):[])];
@@ -515,11 +516,13 @@ function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=nu
   let labels='';const step=Math.max(1,Math.ceil((xs[xs.length-1]-xs[0])/6));
   for(let a=xs[0];a<=xs[xs.length-1];a+=step)labels+='<text class="chartaxis" x="'+x(a)+'" y="'+(h-8)+'" text-anchor="middle">'+a+'</text>';
   const z=(0>=ymin&&0<=ymax)?'<line class="chartzero" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(0)+'" y2="'+y(0)+'"/>':'';
+  const bufferLine=(buffer>=ymin&&buffer<=ymax)?'<line class="chartbuffer" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(buffer)+'" y2="'+y(buffer)+'"/><text class="chartbuffertext" x="'+(w-padR-4)+'" y="'+(y(buffer)-6)+'" text-anchor="end">Buffer '+euro(buffer)+'</text>':'';
   let marks='';
-  markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;marks+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+m.label+' '+Math.round(m.age)+'</text>';});
+  const combinedMarkers=[];markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach(m=>{const found=combinedMarkers.find(x=>Math.abs(x.age-m.age)<.01);if(found)found.label+=' + '+m.label;else combinedMarkers.push({...m});});
+  combinedMarkers.forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;marks+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+' '+Math.round(m.age)+'</text>';});
   let cmarks='';
   changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+54+(j%3)*16;cmarks+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});
-  return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+marks+cmarks+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+(rescuePath?'<polyline class="chartline rescue" points="'+rescuePts+'"/>':'')+(examplePath?'<polyline class="chartline example" points="'+examplePts+'"/>':'')+labels+'</svg>';
+  return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+bufferLine+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+marks+cmarks+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+(rescuePath?'<polyline class="chartline rescue" points="'+rescuePts+'"/>':'')+(examplePath?'<polyline class="chartline example" points="'+examplePts+'"/>':'')+labels+'</svg>';
 }
 
 function simulateReal(p, realReturn, mode='all'){
@@ -751,6 +754,11 @@ function renderChangesList(){
   if(!changes.length){el.innerHTML='<div class="note">Nog geen extra veranderingen toegevoegd.</div>';return;}
   el.innerHTML=changes.map((e,i)=>'<div class="kpi" style="margin-bottom:7px"><span>'+changeLabelText(e)+'</span><button type="button" class="tinybtn" style="margin-top:8px" onclick="removeFinancialChange('+i+')">Verwijder</button></div>').join('');
 }
+window.toggleChangeForm=function(force){
+  const fields=document.getElementById('changeFields'),button=document.getElementById('changeFormToggle');if(!fields||!button)return;
+  const open=typeof force==='boolean'?force:!fields.classList.contains('on');
+  fields.classList.toggle('on',open);button.textContent=open?'Sluiten':'+ Verandering toevoegen';
+}
 window.removeFinancialChange=function(i){
   changes.splice(i,1);saveFinancialChanges();renderChangesList();recalc();
 }
@@ -792,7 +800,7 @@ window.addFinancialChange=function(){
   saveFinancialChanges();
   document.getElementById('changeAmount').value=0;
   document.getElementById('changeLabel').value='';
-  renderChangesList();recalc();
+  renderChangesList();toggleChangeForm(false);recalc();
   return !duplicate;
 }
 window.finishDetails=function(){
@@ -866,7 +874,8 @@ function rescueControls(p){
   const fields=isLater
     ? '<input id="rescueAmount" type="hidden" value="0"><div class="field wide"><label>Nieuwe stopleeftijd</label><input id="rescueAge" type="number" value="'+age+'"></div><input id="rescueMonthly" type="hidden" value="0">'
     : '<div class="field"><label>'+(isHousing?'Netto vermogen dat vrijkomt':'Bedrag per maand')+'</label><input id="rescueAmount" type="number" min="0" value="'+amount+'"></div><div class="field"><label>Vanaf leeftijd</label><input id="rescueAge" type="number" value="'+age+'"></div>'+(isHousing?'<div class="field wide"><label>Nieuwe woonlast per maand</label><input id="rescueMonthly" type="number" min="0" value="'+monthly+'"></div>':'<input id="rescueMonthly" type="hidden" value="0">');
-  return '<div class="rescuebox"><div class="rescuegrid"><div class="field wide"><label>Welke mogelijkheid wil je bekijken?</label><select id="rescueType" onchange="setRescueType(this.value)"><option value="income" '+(type==='income'?'selected':'')+'>Iets blijven verdienen</option><option value="expense" '+(type==='expense'?'selected':'')+'>Minder uitgeven</option><option value="later" '+(type==='later'?'selected':'')+'>Later stoppen</option><option value="housing" '+(type==='housing'?'selected':'')+'>Goedkoper wonen</option></select></div>'+fields+'<div class="wide"><button type="button" class="primary" onclick="applyRescue()">Vergelijk met mijn plan</button>'+(rescue?' <button type="button" class="tinybtn" onclick="clearRescue()">Wis vergelijking</button>':'')+'</div></div></div>';
+  const choices=[['income','Iets verdienen'],['expense','Minder uitgeven'],['later','Later stoppen'],['housing','Goedkoper wonen']].map(x=>'<button type="button" class="optioncard '+(type===x[0]?'active':'')+'" onclick="setRescueType(\''+x[0]+'\')"><span>'+x[1]+'</span></button>').join('');
+  return '<div class="rescuebox"><div class="optiongrid" aria-label="Kies een mogelijke aanpassing">'+choices+'</div><div class="rescuegrid">'+fields+'<div class="wide"><button type="button" class="primary" onclick="applyRescue()">Vergelijk met mijn plan</button>'+(rescue?' <button type="button" class="tinybtn" onclick="clearRescue()">Wis vergelijking</button>':'')+'</div></div></div>';
 }
 function updateDynamicQuestions(){const f=document.getElementById('assetRiskField');if(f)f.style.display=n('capital')>0?'block':'none';}
 function updateMortgageForm(){
@@ -948,6 +957,7 @@ window.recalc=function(){
   }
   const mw=document.getElementById('mortWarning');
   if(mw){
+    mw.className='warningbox';
     if(p.mortType==='combination'&&p.mortResidualRaw>p.mortgage){
       mw.style.display='block';
       mw.innerHTML='<b>Controleer je combinatiehypotheek:</b> de ingevoerde restschuld '+euro(p.mortResidualRaw)+' kan niet groter zijn dan de totale hypotheek '+euro(p.mortgage)+'. Voor de berekening is maximaal de totale hypotheek gebruikt.';
@@ -956,6 +966,7 @@ window.recalc=function(){
       mw.innerHTML='<b>Belangrijk:</b> rond je '+(isFinite(mi.endAge)?mi.endAge.toFixed(1).replace('.',','):'?')+'e staat nog '+euro(effectiveMortResidual)+' hypotheek open. Dat bedrag telt mee als toekomstige aflossing.';
     } else if(p.homeValue>0){
       mw.style.display='block';
+      mw.className='warningbox housingreserve';
       mw.innerHTML='<b>Woningwaarde '+euro(p.homeValue)+':</b> zichtbaar als reserve, maar niet automatisch als besteedbaar vermogen meegerekend.';
     } else mw.style.display='none';
   }
@@ -1060,7 +1071,7 @@ window.recalc=function(){
     if(isFinite(di.endAge)&&di.residual>0&&Math.round(x.start)===debtCutAge(di)) oneOffAtStart+=di.residual;
     return {
       age:x.age,
-      amount:x.net>=0?('+'+euro(x.net)+'/mnd'):euro(-x.net)+'/mnd uit vermogen',
+      amount:x.net>=0?('+'+euro(x.net)+'<span class="note"> /mnd over</span>'):euro(-x.net)+'<span class="note"> /mnd uit vermogen</span>',
       desc:x.desc,
       oneOff:oneOffAtStart
     };
@@ -1201,7 +1212,7 @@ window.recalc=function(){
   }
 
   const topRisks=riskCandidates.sort((a,b)=>b.score-a.score).slice(0,3);
-  const risksHtml=topRisks.map((r,i)=>(i+1)+'. '+r.text).join('\n\n');
+  const risksHtml='<div class="attentionlist">'+topRisks.map((r,i)=>'<div class="attentionrow"><span class="attentionnum">'+(i+1)+'</span><p>'+esc(r.text)+'</p></div>').join('')+'</div>';
   const scenarioCard=(rate,tag,sim,kind='')=>{
     const scenarioGap=Math.max(0,p.endBuffer-sim.min,Math.max(p.endBuffer,p.endTarget)-sim.end);
     const intact=scenarioGap<=0;
@@ -1244,7 +1255,7 @@ window.recalc=function(){
       ${exampleUnavailable?'<div class="returninsight"><b>Je hebt €0 belegd. Daarom verandert deze lijn niet.</b><br>Vul een bedrag bij ‘Belegd vermogen’ in om te zien wat '+returnExample+'% rendement met je plan zou doen.</div>':''}
       ${exampleResult?'<div class="returnsummary"><b>'+returnExample+'% voorbeeld: ongeveer '+euro(exampleResult.end)+' op je '+p.endAge+'e.</b><details class="detailfold"><summary>Wat betekent deze lijn?</summary><div class="detailbody">'+returnExample+'% nominaal is bij '+pct(p.inflation)+' inflatie ongeveer '+pct(exampleReal)+' reële groei. Alleen je belegde deel krijgt dit rendement; spaargeld blijft tegen jouw ingevulde spaarrente lopen.'+(p.capital>0?'<br>Nieuw overschot boven je huidige cashbuffer wordt in dit voorbeeld ook belegd.':'<br>Omdat je €0 belegd vermogen hebt ingevuld, blijft nieuw overschot spaargeld.')+(p.cash>0?'<br>Je spaargeld groeit met '+pct(p.cashRate)+' rente en verandert na inflatie ongeveer '+pct(cashReal)+' per jaar in koopkracht.':'')+(returnExample===7?'<div class="note" style="margin-top:6px">Historisch aandelenvoorbeeld, geen verwachting of garantie. <a href="https://www.msci.com/documents/10199/255599/msci-world-index.pdf" target="_blank" rel="noopener">Bron en risico’s</a>.</div>':'')+'</div></details></div>':''}
       <div class="chartlegend"><span><i class="legendline base"></i>Basisplan</span>${changes.length?'<span><i class="legendline changed"></i>Inclusief veranderingen</span>':''}${rescueCase?'<span><i class="legendline rescue"></i>Mogelijke aanpassing</span>':''}${pathExample?'<span><i class="legendline example"></i>'+returnExample+'% nominaal</span>':''}</div>
-      <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers,pathRescue,pathExample)}</div>
+      <div class="chartwrap">${chartSvg(pathBase,changes.length?pathNeeded:null,markers,changeMarkers,pathRescue,pathExample,p.endBuffer)}</div>
       <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = aanpassing bij hetzelfde rendement als blauw':''}${pathExample?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
     </div>`,
 
@@ -1265,9 +1276,10 @@ window.recalc=function(){
       <h2>Je hebt mogelijkheden</h2>
       <p>${gapAt3>0?'Bij 3% rendement mist je plan ongeveer <b>'+euro(gapAt3)+'</b> op het kwetsbaarste moment. Kies één aanpassing of combineer kleinere stappen.':rescueCase?'Je gekozen aanpassing brengt je plan bij 3% binnen de gewenste buffer.':'Je plan werkt al bij 3%. Je kunt hieronder vrijblijvend een aanpassing vergelijken.'}</p>
       ${gapAt3>0?'<div class="optiongrid">'
-        +(earliest3!==null?'<div class="optioncard"><span>Later stoppen</span><b>Rond je '+earliest3+'e</b><small>in plaats van je '+Math.round(p.stopAge)+'e</small></div>':'<div class="optioncard"><span>Later stoppen</span><b>Niet genoeg</b><small>alleen later stoppen lost dit niet op</small></div>')
-        +(neededIncomeAt3!==null?'<div class="optioncard"><span>Iets blijven verdienen</span><b>'+euro(neededIncomeAt3)+'/mnd</b><small>vanaf je '+adjustmentStart+'e</small></div>':'<div class="optioncard"><span>Iets blijven verdienen</span><b>Combinatie nodig</b><small>extra inkomen alleen is niet genoeg</small></div>')
-        +(neededExpenseAt3!==null?'<div class="optioncard"><span>Minder uitgeven</span><b>'+euro(neededExpenseAt3)+'/mnd</b><small>vanaf je '+adjustmentStart+'e</small></div>':'<div class="optioncard"><span>Minder uitgeven</span><b>Combinatie nodig</b><small>minder uitgeven alleen is niet genoeg</small></div>')
+        +(earliest3!==null?'<button type="button" class="optioncard" onclick="setRescueType(\'later\')"><span>Later stoppen</span><b>Rond je '+earliest3+'e</b><small>in plaats van je '+Math.round(p.stopAge)+'e</small></button>':'<button type="button" class="optioncard" onclick="setRescueType(\'later\')"><span>Later stoppen</span><b>Niet genoeg</b><small>alleen later stoppen lost dit niet op</small></button>')
+        +(neededIncomeAt3!==null?'<button type="button" class="optioncard" onclick="setRescueType(\'income\')"><span>Iets blijven verdienen</span><b>'+euro(neededIncomeAt3)+'/mnd</b><small>vanaf je '+adjustmentStart+'e</small></button>':'<button type="button" class="optioncard" onclick="setRescueType(\'income\')"><span>Iets blijven verdienen</span><b>Combinatie nodig</b><small>extra inkomen alleen is niet genoeg</small></button>')
+        +(neededExpenseAt3!==null?'<button type="button" class="optioncard" onclick="setRescueType(\'expense\')"><span>Minder uitgeven</span><b>'+euro(neededExpenseAt3)+'/mnd</b><small>vanaf je '+adjustmentStart+'e</small></button>':'<button type="button" class="optioncard" onclick="setRescueType(\'expense\')"><span>Minder uitgeven</span><b>Combinatie nodig</b><small>minder uitgeven alleen is niet genoeg</small></button>')
+        +'<button type="button" class="optioncard" onclick="setRescueType(\'housing\')"><span>Goedkoper wonen</span><b>Zelf invullen</b><small>vergelijk verkoop en nieuwe woonlast</small></button>'
         +'</div>':''}
       ${rescueCase?'<div class="storylead"><b>'+(rescueWorks?'Met '+esc(rescueCase.label)+' blijft je buffer bij 3% intact.':'Met '+esc(rescueCase.label)+' wordt het tekort kleiner, maar is nog een extra stap nodig.')+'</b></div>':''}
       ${rescueControls(p)}
@@ -1343,11 +1355,18 @@ window.applyAsk=function(){
   });
   if(added.length!==changes.length-changesBefore)changes.splice(changesBefore,changes.length-changesBefore,...added);
   const msg=changesText.length?'Aangepast: '+changesText.join(' · '):'Ik kon deze zin nog niet goed begrijpen. Pas je gegevens aan via Mijn gegevens.';
-  if(changesText.length){ const b=document.querySelector('.bottomask button'); if(b){const old=b.textContent;b.textContent='✓';setTimeout(()=>b.textContent=old,1000);} }
+  if(changesText.length){ const b=document.getElementById('askButton'); if(b){b.textContent='✓ Aangepast';setTimeout(()=>{b.textContent='Pas aan';},1000);} }
   if(changes.length!==changesBefore)saveFinancialChanges();
   recalc();
 }
 window.quick=function(t){document.getElementById('ask').value=t;applyAsk()}
+window.toggleQuickAdjust=function(){
+  const box=document.getElementById('bottomAsk'),input=document.getElementById('ask'),button=document.getElementById('askButton');
+  if(!box||!input||!button)return;
+  if(!box.classList.contains('open')){box.classList.add('open');button.textContent='Pas aan';setTimeout(()=>input.focus(),0);return;}
+  if(input.value.trim()){applyAsk();return;}
+  box.classList.remove('open');button.textContent='Snel aanpassen';
+}
 
 let recalcTimer=null;
 function scheduleRecalc(){
