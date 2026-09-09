@@ -845,7 +845,9 @@ function withExtraChanges(extra,fn){
   try{changes=[...changes,...extra];return fn();}finally{changes=original;}
 }
 window.applyRescue=function(){
-  const type=s('rescueType');
+  // The visual choice buttons replaced the old select. Keep the selected
+  // draft type when the comparison is applied.
+  const type=s('rescueType')||rescueDraft?.type||rescue?.type||'income';
   rescue={type,age:Math.round(n('rescueAge')),amount:n('rescueAmount'),monthly:n('rescueMonthly')};
   rescueDraft={...rescue};
   saveRescue();recalc();
