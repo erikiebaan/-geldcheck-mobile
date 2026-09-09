@@ -192,7 +192,14 @@ function saveFinancialChanges(){
   persistPlan();
 }
 let changes=loadFinancialChanges();
-let rescue=savedValue('rescue',savedValue('geldcheckRescue',null));
+function normalizeSavedRescue(value){
+  if(!value||typeof value!=='object')return null;
+  const validTypes=['income','expense','later','housing'];
+  return {...value,type:validTypes.includes(value.type)?value.type:'income'};
+}
+const storedRescue=savedValue('rescue',savedValue('geldcheckRescue',null));
+let rescue=normalizeSavedRescue(storedRescue);
+const rescueNeedsMigration=!!storedRescue&&JSON.stringify(storedRescue)!==JSON.stringify(rescue);
 let rescueDraft=rescue?{...rescue}:null;
 let rescueOptionsOpen=false;
 let returnExample=[3,5,7].includes(Number(savedValue('returnExample',savedValue('geldcheckReturnExample',null))))?Number(savedValue('returnExample',savedValue('geldcheckReturnExample',null))):null;
@@ -502,7 +509,7 @@ function simulatePath(p, realReturn, includeChanges=true){
 function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null,examplePath=null,buffer=0,scalePaths=[]){
   const w=760,h=300,padL=56,padR=18,padT=18,padB=34;
   const xs=basePath.map(d=>d.age);
-  const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[]),...(rescuePath?rescuePath.map(d=>d.capital):[]),...(examplePath?examplePath.map(d=>d.capital):[]),...scalePaths.flatMap(path=>path.map(d=>d.capital))];
+  const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[]),...(rescuePath?rescuePath.map(d=>d.capital):[]),...(examplePath?examplePath.map(d=>d.capital):[]),...scalePaths.flatMap(path=>path.map(d=>d.capital)),Number.isFinite(buffer)?buffer:0];
   let ymin=Math.min(0,...allYs),ymax=Math.max(1,...allYs);
   const range=Math.max(1,ymax-ymin);ymin-=range*.08;ymax+=range*.08;
   const x=a=>padL+(a-xs[0])/(xs[xs.length-1]-xs[0])*(w-padL-padR);
@@ -805,7 +812,8 @@ window.addFinancialChange=function(){
 }
 window.finishDetails=function(){
   window.validationRequested=true;
-  if(Math.max(0,n('changeAmount'))>0){
+  const changeFormOpen=document.getElementById('changeFields')?.classList.contains('on');
+  if(changeFormOpen&&Math.max(0,n('changeAmount'))>0){
     window.addFinancialChange();
     if(Math.max(0,n('changeAmount'))>0)return;
   }else recalc();
@@ -1013,7 +1021,7 @@ window.recalc=function(){
   const cashReal=(1+p.cashRate)/(1+p.inflation)-1;
   const pathExample=exampleReal===null||exampleUnavailable?null:simulatePath(p,exampleReal,'main');
   const exampleResult=exampleReal===null||exampleUnavailable?null:simulateReal(p,exampleReal,'main');
-  const comparisonScalePaths=p.capital>0?[3,5,7].map(rate=>simulatePath(p,(1+rate/100)/(1+p.inflation)-1,'main')):[];
+  const comparisonScalePaths=p.capital>0&&returnExample!==null?[3,5,7].map(rate=>simulatePath(p,(1+rate/100)/(1+p.inflation)-1,'main')):[];
   const earliest3=earliestAtNominal(p,.03);
   const currentAt3=simulateReal(p,real3,'main');
   const pathAt3=simulatePath(p,real3,'main');
@@ -1403,5 +1411,5 @@ const advancedButton=document.getElementById('advancedBtn');if(advancedButton)ad
 renderChangesList();
 recalc();
 showSavedTime(savedPlan?.updatedAt);
-if(!savedPlan&&(history.state?.geldcheckPlanFields||history.state?.geldcheckFinancialChanges))persistPlan();
+if(rescueNeedsMigration||(!savedPlan&&(history.state?.geldcheckPlanFields||history.state?.geldcheckFinancialChanges)))persistPlan();
 })();</script></body></html>
