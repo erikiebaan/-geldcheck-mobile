@@ -821,16 +821,59 @@ window.finishDetails=function(){
 }
 function planIssues(p){
   const missing=[];
+  const addIssue=label=>{if(!missing.includes(label))missing.push(label);};
   [['age','leeftijd'],['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['capital','belegd vermogen'],['stopAge','stopmoment'],['aow','AOW-bedrag'],['pension','pensioenbedrag'],['endAge','eindleeftijd'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname']]
-    .forEach(([id,label])=>{if(!filled(id))missing.push(label);});
-  if(filled('aow')&&p.aow>0&&!filled('aowAge'))missing.push('AOW-leeftijd');
-  if(filled('pension')&&p.pension>0&&!filled('pensionAge'))missing.push('pensioenleeftijd');
-  if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))missing.push('aflossingsvrije deel van je combinatiehypotheek');
-  if(filled('stopAge')&&filled('age')&&p.stopAge<p.age)missing.push('stopmoment na je huidige leeftijd');
-  if(filled('endAge')&&filled('age')&&p.endAge<=p.age)missing.push('eindleeftijd na je huidige leeftijd');
-  const ageFields=[['age','leeftijd'],['stopAge','stopmoment'],['endAge','eindleeftijd'],['aowAge','AOW-leeftijd'],['pensionAge','pensioenleeftijd'],['mortEndAge','hypotheek-einddatum'],['otherDebtEndAge','einddatum overige schuld'],['careAge','startleeftijd zorgkosten'],['houseReleaseAge','leeftijd woningaanpassing']];
-  if(window.partnerOn)ageFields.push(['partnerAge','leeftijd partner'],['partnerStopAge','stopmoment partner'],['partnerPensionAge','pensioenleeftijd partner']);
-  ageFields.forEach(([id,label])=>{if(filled(id)&&!Number.isInteger(Number(document.getElementById(id).value)))missing.push(label+' als heel getal');});
+    .forEach(([id,label])=>{if(!filled(id))addIssue(label);});
+  if(filled('aow')&&p.aow>0&&!filled('aowAge'))addIssue('AOW-leeftijd');
+  if(filled('pension')&&p.pension>0&&!filled('pensionAge'))addIssue('pensioenleeftijd');
+  if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))addIssue('aflossingsvrije deel van je combinatiehypotheek');
+  if(filled('stopAge')&&filled('age')&&p.stopAge<p.age)addIssue('stopmoment na je huidige leeftijd');
+  if(filled('endAge')&&filled('age')&&p.endAge<=p.age)addIssue('eindleeftijd na je huidige leeftijd');
+
+  const numericFields=[
+    ['age','leeftijd'],['stopAge','stopmoment'],['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['cashRate','rente op cash'],['capital','belegd vermogen'],
+    ['otherDebt','overige schuld'],['otherDebtRate','rente overige schuld'],['otherDebtPayment','betaling overige schuld'],['otherDebtEndAge','einddatum overige schuld'],
+    ['workReduction','minder werken'],['aowAge','AOW-leeftijd'],['aow','AOW-bedrag'],['pensionAge','pensioenleeftijd'],['pension','pensioenbedrag'],
+    ['endAge','eindleeftijd'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname'],['homeValue','woningwaarde'],['mortgage','hypotheekschuld'],
+    ['mortPayment','hypotheekbetaling'],['mortRate','hypotheekrente'],['mortEndAge','hypotheek-einddatum'],['mortResidual','aflossingsvrij deel'],
+    ['endTarget','gewenst eindvermogen'],['pensionIndex','pensioenindexatie'],['aowIndex','AOW-indexatie'],['wealthTax','vermogensheffing'],['investmentCost','beleggingskosten'],
+    ['careAge','startleeftijd zorgkosten'],['careMonthly','extra zorgkosten'],['houseReleaseAge','leeftijd woningaanpassing'],['houseRelease','bedrag uit woning']
+  ];
+  if(window.partnerOn)numericFields.push(['partnerAge','leeftijd partner'],['partnerIncome','partnerinkomen'],['partnerStopAge','stopmoment partner'],['partnerPensionAge','pensioenleeftijd partner'],['partnerPension','partnerpensioen']);
+  numericFields.forEach(([id,label])=>{
+    if(!filled(id))return;
+    const value=Number(document.getElementById(id).value);
+    if(!Number.isFinite(value)||Math.abs(value)>1e12)addIssue(label+' als geldig getal');
+  });
+  const nonNegativeFields=[
+    ['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['capital','belegd vermogen'],['otherDebt','overige schuld'],['otherDebtRate','rente overige schuld'],['otherDebtPayment','betaling overige schuld'],
+    ['workReduction','minder werken'],['aow','AOW-bedrag'],['pension','pensioenbedrag'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname'],['homeValue','woningwaarde'],['mortgage','hypotheekschuld'],
+    ['mortPayment','hypotheekbetaling'],['mortRate','hypotheekrente'],['mortResidual','aflossingsvrij deel'],['endTarget','gewenst eindvermogen'],['wealthTax','vermogensheffing'],['investmentCost','beleggingskosten'],
+    ['careMonthly','extra zorgkosten'],['houseRelease','bedrag uit woning']
+  ];
+  if(window.partnerOn)nonNegativeFields.push(['partnerIncome','partnerinkomen'],['partnerPension','partnerpensioen']);
+  nonNegativeFields.forEach(([id,label])=>{if(filled(id)&&Number(document.getElementById(id).value)<0)addIssue(label+' van minimaal 0');});
+  [['workReduction','minder werken'],['inflation','inflatie-aanname'],['otherDebtRate','rente overige schuld'],['mortRate','hypotheekrente'],['wealthTax','vermogensheffing'],['investmentCost','beleggingskosten']]
+    .forEach(([id,label])=>{if(filled(id)&&Number(document.getElementById(id).value)>100)addIssue(label+' van maximaal 100%');});
+  [['cashRate','rente op cash'],['pensionIndex','pensioenindexatie'],['aowIndex','AOW-indexatie']]
+    .forEach(([id,label])=>{if(filled(id)){const value=Number(document.getElementById(id).value);if(value< -100||value>100)addIssue(label+' tussen -100% en 100%');}});
+
+  const ageFields=[['age','leeftijd',false],['stopAge','stopmoment',false],['endAge','eindleeftijd',false],['aowAge','AOW-leeftijd',false],['pensionAge','pensioenleeftijd',false],['mortEndAge','hypotheek-einddatum',true],['otherDebtEndAge','einddatum overige schuld',true],['careAge','startleeftijd zorgkosten',false],['houseReleaseAge','leeftijd woningaanpassing',false]];
+  if(window.partnerOn)ageFields.push(['partnerAge','leeftijd partner',false],['partnerStopAge','stopmoment partner',false],['partnerPensionAge','pensioenleeftijd partner',false]);
+  ageFields.forEach(([id,label,allowsYear])=>{
+    if(!filled(id))return;
+    const raw=Number(document.getElementById(id).value),age=allowsYear?normalizeAge(raw,p.age):raw;
+    if(!Number.isInteger(raw))addIssue(label+' als heel getal');
+    else if(!Number.isFinite(age)||age<0||age>120)addIssue(label+' tussen 0 en 120 jaar');
+  });
+
+  if(window.partnerOn&&(p.partnerIncome>0||p.partnerPension>0)&&!filled('partnerAge'))addIssue('leeftijd partner');
+  if(window.partnerOn&&p.partnerIncome>0&&!filled('partnerStopAge'))addIssue('stopmoment partner');
+  if(window.partnerOn&&p.partnerPension>0&&!filled('partnerPensionAge'))addIssue('pensioenleeftijd partner');
+  if(p.careMonthly>0&&!filled('careAge'))addIssue('startleeftijd zorgkosten');
+  if(filled('careAge')&&!filled('careMonthly'))addIssue('bedrag extra zorgkosten');
+  if(p.houseRelease>0&&!filled('houseReleaseAge'))addIssue('leeftijd woningaanpassing');
+  if(filled('houseReleaseAge')&&!filled('houseRelease'))addIssue('netto bedrag dat uit woning vrijkomt');
   return missing;
 }
 function rescueScenario(p){
@@ -944,7 +987,7 @@ window.recalc=function(){
     const breakdown=document.getElementById('sumCapitalBreakdown');
     if(breakdown)breakdown.textContent='';
     if(result)result.innerHTML=window.validationRequested
-      ? '<div class="card"><h2>Nog onvoldoende gegevens</h2><p>Vul nog in: <b>'+issues.map(esc).join(', ')+'</b>. Daarna kan Geldcheck een betrouwbare uitkomst geven.</p><button type="button" class="primary" onclick="toggleDetails(true)">Aanvullen</button></div>'
+      ? '<div class="card"><h2>Nog onvoldoende gegevens</h2><p>Controleer of vul aan: <b>'+issues.map(esc).join(', ')+'</b>. Daarna kan Geldcheck een betrouwbare uitkomst geven.</p><button type="button" class="primary" onclick="toggleDetails(true)">Aanvullen</button></div>'
       : '<div class="card mutedcard"><h2>Vul eerst je basisgegevens in</h2><p>Je Geldcheck verschijnt zodra de noodzakelijke gegevens compleet zijn.</p></div>';
     return;
   }
@@ -1128,11 +1171,10 @@ window.recalc=function(){
 
   if(effectiveMortResidual>0&&isFinite(mi.endAge)){
     const atEnd=pathAt3.find(x=>x.age===effectiveMortgageCutAge(p,mi));
-    const availableAboveBuffer=Math.max(0,(atEnd?.capital||0)-p.endBuffer);
-    const residualShortfall=Math.max(0,effectiveMortResidual-availableAboveBuffer);
-    if(residualShortfall>0)riskCandidates.push({
-      score:Math.min(95,30+residualShortfall/startNet*180),
-      text:'Rond je '+mortgageEnd+'e is de hypotheekrestschuld '+euro(effectiveMortResidual)+'. Bij 3% rendement is daarvan na behoud van je buffer nog ongeveer '+euro(residualShortfall)+' niet gedekt.'
+    const bufferGapAfterPayment=atEnd?Math.max(0,p.endBuffer-atEnd.capital):0;
+    if(bufferGapAfterPayment>0)riskCandidates.push({
+      score:Math.min(95,30+bufferGapAfterPayment/startNet*180),
+      text:'Rond je '+mortgageEnd+'e wordt de hypotheekrestschuld van '+euro(effectiveMortResidual)+' afgelost. Direct daarna ligt je vermogen bij 3% rendement ongeveer '+euro(bufferGapAfterPayment)+' onder je gekozen buffer.'
     });
   }
 
