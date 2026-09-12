@@ -1370,18 +1370,24 @@ window.recalc=function(){
 
 function setField(id,val){document.getElementById(id).value=val}
 function parseMoney(s){let m=s.match(/(?:€\s*)?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?/i);if(!m)return null;let v=parseFloat(m[1].replace(',','.'));if(m[2])v*=1000;return v}
+function parseQuickAmount(raw,scale){
+  const value=String(raw).trim(),suffix=Boolean(scale);
+  if(!suffix&&/^[0-9]{1,3}[\.,][0-9]{3}$/.test(value))return Number(value.replace(/[\.,]/g,''));
+  const parsed=Number(value.replace(',','.'));
+  return suffix?parsed*1000:parsed;
+}
 window.applyAsk=function(){
   const raw=document.getElementById('ask').value.trim();if(!raw)return;
   const s=raw.toLowerCase();let changesText=[];
   const changesBefore=changes.length;
-  let m,incomeAdded=false;
+  let m,incomeAdded=false,directChange=false,rejectedChange=false;
   if((m=s.match(/(?:€\s*)?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?\s*(?:euro\s*)?(?:(?:per maand|p\/m|maand)\s*)?(?:extra\s*)?(?:inkomen|verdienen|bijverdienen).*?vanaf\s*(?:mijn\s*)?([0-9]{1,3})(?:.*?tot\s*([0-9]{1,3}))?/i))){
-    let amt=Number(m[1].replace(/[\.,]/g,''));if(m[2])amt*=1000;
+    const amt=parseQuickAmount(m[1],m[2]);
     changes.push({kind:'income',label:'extra werkinkomen',monthly:amt,startAge:Number(m[3]),endAge:m[4]?Number(m[4]):null});
     changesText.push('extra inkomen +'+euro(amt)+'/mnd vanaf '+m[3]+(m[4]?' tot '+m[4]:''));incomeAdded=true;
   }
   if((m=s.match(/([0-9]+)\s*(?:euro|€)?\s*(?:per maand|p\/m|maand)\s*(?:meer|extra)\s*(?:uitgeven|uitgaven|kosten|lasten)/i))){
-    setField('spend',n('spend')+Number(m[1]));changesText.push('uitgaven +'+euro(Number(m[1]))+' p/m');
+    setField('spend',n('spend')+Number(m[1]));changesText.push('uitgaven +'+euro(Number(m[1]))+' p/m');directChange=true;
   }
   if((m=s.match(/(?:wereldreis|reis).*?([0-9\.]+)\s*(k|duizend)?[^0-9]+(?:op|als ik)\s*(?:mijn\s*)?([0-9]{2})/i))){
     let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;
@@ -1402,24 +1408,25 @@ window.applyAsk=function(){
     changes.push({kind:'expense',label:'lagere lasten',monthly:-amt,startAge:Number(m[1]),endAge:null});
     changesText.push('lasten -'+euro(amt)+'/mnd vanaf '+m[1]);
   }
-  if((m=s.match(/([0-9\.]+)\s*(k|duizend)?\s*(?:euro|€)?\s*nalaten/i))){let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;setField('endBuffer',amt);changesText.push('eindvermogen '+euro(amt))}
-  if((m=s.match(/(?:stoppen|stop)\s*(?:op|met)\s*([0-9]{2})/i))){setField('stopAge',Number(m[1]));changesText.push('volledig stoppen op '+m[1])}
-  if((m=s.match(/(?:tot|t\/m)\s*([0-9]{2})\s*(?:genoeg|geld|leven|jaar)?/i))){setField('endAge',Number(m[1]));changesText.push('genoeg tot '+m[1])}
-  if((m=s.match(/([0-9]{1,2})%\s*(?:minder werken|afbouwen)/i))){setField('workReduction',Number(m[1]));changesText.push(m[1]+'% minder werken')}
+  if((m=s.match(/([0-9\.]+)\s*(k|duizend)?\s*(?:euro|€)?\s*nalaten/i))){let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;setField('endBuffer',amt);changesText.push('eindvermogen '+euro(amt));directChange=true}
+  if((m=s.match(/(?:stoppen|stop)\s*(?:op|met)\s*([0-9]{2})/i))){setField('stopAge',Number(m[1]));changesText.push('volledig stoppen op '+m[1]);directChange=true}
+  if((m=s.match(/(?:tot|t\/m)\s*([0-9]{2})\s*(?:genoeg|geld|leven|jaar)?/i))){setField('endAge',Number(m[1]));changesText.push('genoeg tot '+m[1]);directChange=true}
+  if((m=s.match(/([0-9]{1,2})%\s*(?:minder werken|afbouwen)/i))){setField('workReduction',Number(m[1]));changesText.push(m[1]+'% minder werken');directChange=true}
   const p=plan();
   const added=changes.slice(changesBefore).filter(e=>{
     const start=e.kind==='oneoff'?e.age:e.startAge;
     return Number.isFinite(start)&&start>=p.age&&start<p.endAge&&
       (e.kind==='oneoff'||e.endAge===null||(Number.isFinite(e.endAge)&&e.endAge>start));
   });
-  if(added.length!==changes.length-changesBefore)changes.splice(changesBefore,changes.length-changesBefore,...added);
+  if(added.length!==changes.length-changesBefore){rejectedChange=true;changes.splice(changesBefore,changes.length-changesBefore,...added);}
+  const applied=directChange||changes.length>changesBefore;
   const b=document.getElementById('askButton'),input=document.getElementById('ask');
-  if(changesText.length){
+  if(applied){
     if(b){b.textContent='✓ Aangepast';setTimeout(()=>{b.textContent='Pas aan';},1000);}
     if(input)input.value='';
     persistPlan();
   }else if(b){
-    b.textContent='Niet begrepen';
+    b.textContent=rejectedChange?'Buiten je plan':'Niet begrepen';
     setTimeout(()=>{b.textContent='Pas aan';},1600);
   }
   recalc();
