@@ -523,13 +523,15 @@ function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=nu
   let labels='';const step=Math.max(1,Math.ceil((xs[xs.length-1]-xs[0])/6));
   for(let a=xs[0];a<=xs[xs.length-1];a+=step)labels+='<text class="chartaxis" x="'+x(a)+'" y="'+(h-8)+'" text-anchor="middle">'+a+'</text>';
   const z=(0>=ymin&&0<=ymax)?'<line class="chartzero" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(0)+'" y2="'+y(0)+'"/>':'';
-  const bufferLine=(buffer>=ymin&&buffer<=ymax)?'<line class="chartbuffer" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(buffer)+'" y2="'+y(buffer)+'"/><text class="chartbuffertext" x="'+(w-padR-4)+'" y="'+(y(buffer)-6)+'" text-anchor="end">Buffer '+euro(buffer)+'</text>':'';
-  let marks='';
+  const hasBuffer=buffer>=ymin&&buffer<=ymax,bufferY=hasBuffer?Math.max(padT+14,y(buffer)-14):0;
+  const bufferRule=hasBuffer?'<line class="chartbuffer" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(buffer)+'" y2="'+y(buffer)+'"/>':'';
+  const bufferBadge=hasBuffer?'<rect x="'+(w-padR-136)+'" y="'+(bufferY-13)+'" width="132" height="19" rx="9.5" fill="#fff8dc" stroke="#e2bd50"/><text class="chartbuffertext" x="'+(w-padR-10)+'" y="'+bufferY+'" text-anchor="end">Buffer '+euro(buffer)+'</text>':'';
+  let markerRules='',markerLabels='';
   const combinedMarkers=[];markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach(m=>{const found=combinedMarkers.find(x=>Math.abs(x.age-m.age)<.01);if(found)found.label+=' + '+m.label;else combinedMarkers.push({...m});});
-  combinedMarkers.forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;marks+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+' '+Math.round(m.age)+'</text>';});
-  let cmarks='';
-  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+54+(j%3)*16;cmarks+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/><text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});
-  return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+bufferLine+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+marks+cmarks+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+(rescuePath?'<polyline class="chartline rescue" points="'+rescuePts+'"/>':'')+(examplePath?'<polyline class="chartline example" points="'+examplePts+'"/>':'')+labels+'</svg>';
+  combinedMarkers.forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;markerRules+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/>';markerLabels+='<text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+' '+Math.round(m.age)+'</text>';});
+  let changeRules='',changeLabels='';
+  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+54+(j%3)*16;changeRules+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/>';changeLabels+='<text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});
+  return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+bufferRule+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+markerRules+changeRules+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+(rescuePath?'<polyline class="chartline rescue" points="'+rescuePts+'"/>':'')+(examplePath?'<polyline class="chartline example" points="'+examplePts+'"/>':'')+bufferBadge+markerLabels+changeLabels+labels+'</svg>';
 }
 
 function simulateReal(p, realReturn, mode='all'){
