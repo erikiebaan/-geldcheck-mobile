@@ -2,7 +2,7 @@
 <style>
 :root{--bg:#f6f4fb;--card:#fff;--ink:#171526;--muted:#747187;--g:#6550a8;--g2:#493783;--blue:#3978d4;--yellow:#f2c94c;--line:#dfdbea;--soft:#eef4ff;--soft2:#f8f7fc;--warn:#fff6cf;--danger:#b84b62}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;padding:0}
-main{max-width:800px;margin:auto;padding:22px 18px 86px}.appbar{position:sticky;top:0;z-index:50;background:rgba(246,244,251,.94);backdrop-filter:blur(18px);border-bottom:1px solid rgba(223,219,234,.75);padding:12px 18px}.appbarin{max-width:800px;margin:auto;display:flex;align-items:center;justify-content:space-between}.brand{font-weight:950;letter-spacing:-.03em}.brand small{display:block;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:0}.editbtn{border:1px solid #baaee0;background:white;color:var(--g);border-radius:999px;padding:9px 14px;font-weight:850}.editbtn:hover,.editbtn:focus-visible{background:#f2eefc;border-color:var(--g)}.bottomask{position:fixed;right:18px;bottom:18px;z-index:60}.bottomaskin{display:flex;justify-content:flex-end;gap:8px}.bottomask input{display:none;width:min(520px,calc(100vw - 150px));border:1px solid #b9addb;box-shadow:0 10px 35px rgba(73,55,131,.18);border-radius:16px;padding:13px 14px;font-size:16px;background:#fff}.bottomask.open input{display:block}.bottomask button{background:var(--g);color:white;border-radius:999px;padding:12px 17px;font-weight:900;box-shadow:0 8px 24px rgba(73,55,131,.22)}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;margin-bottom:14px;box-shadow:0 8px 28px rgba(32,42,36,.035)}
+main{max-width:800px;margin:auto;padding:22px 18px 86px}.appbar{position:sticky;top:0;z-index:50;background:rgba(246,244,251,.94);backdrop-filter:blur(18px);border-bottom:1px solid rgba(223,219,234,.75);padding:12px 18px}.appbarin{max-width:800px;margin:auto;display:flex;align-items:center;justify-content:space-between}.brand{font-weight:950;letter-spacing:-.03em}.brand small{display:block;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:0}.editbtn{border:1px solid #baaee0;background:white;color:var(--g);border-radius:999px;padding:9px 14px;font-weight:850}.editbtn:hover,.editbtn:focus-visible{background:#f2eefc;border-color:var(--g)}.bottomask{position:fixed;right:18px;bottom:18px;z-index:60}.bottomaskin{display:flex;justify-content:flex-end;gap:8px}.bottomask input{display:none;width:min(520px,calc(100vw - 150px));border:1px solid #b9addb;box-shadow:0 10px 35px rgba(73,55,131,.18);border-radius:16px;padding:13px 14px;font-size:16px;background:#fff}.bottomask.open input{display:block}.bottomask button{background:var(--g);color:white;border-radius:999px;padding:12px 17px;font-weight:900;box-shadow:0 8px 24px rgba(73,55,131,.22)}.askfeedback{display:none;max-width:620px;margin:7px 0 0 auto;padding:9px 12px;border:1px solid #ead88e;border-radius:12px;background:#fff8dc;color:#5e5125;font-size:12px;line-height:1.35;box-shadow:0 8px 24px rgba(73,55,131,.12)}.askfeedback.on{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:20px;margin-bottom:14px;box-shadow:0 8px 28px rgba(32,42,36,.035)}
 h1{font-size:44px;line-height:.98;letter-spacing:-.05em;margin:0 0 10px}h2{font-size:25px;letter-spacing:-.025em;margin:0 0 10px}p{color:var(--muted);line-height:1.5}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:14px;font-weight:700;color:#625e72;margin:0 0 6px}.group{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}.group:first-child{margin-top:10px}.grouphead{display:flex;align-items:center;gap:10px;margin-bottom:12px}.groupicon{width:7px;height:28px;border-radius:999px;font-size:0;background:var(--g)}.group:nth-of-type(2) .groupicon{background:var(--yellow)}.group:nth-of-type(3) .groupicon{background:#72c7a5}.grouphead h3{margin:0;font-size:19px}.grouphead p{margin:1px 0 0;font-size:13px}.optional{display:none}.optional.on{display:grid}.toggleline{display:flex;justify-content:space-between;align-items:center;padding:11px 0}.tinybtn{border:1px solid #cfc7e6;background:#fff;color:var(--g);padding:8px 12px;border-radius:999px;font-size:13px}.warningbox{background:var(--warn);border:1px solid #ead88e;border-radius:16px;padding:12px 14px;margin-top:10px;font-size:13px;line-height:1.45}
 input,select{width:100%;border:1px solid var(--line);border-radius:13px;padding:11px 13px;font:inherit;font-size:16px;background:#fff;min-height:46px}input:focus,select:focus{outline:3px solid rgba(101,80,168,.13);border-color:#9d8bd3}
@@ -160,7 +160,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 <div id="result"></div>
 
 
-</main><div class="bottomask" id="bottomAsk"><div class="bottomaskin"><input id="ask" aria-label="Beschrijf wat je wilt aanpassen" placeholder="Bijv. € 500 extra inkomen vanaf 70"><button id="askButton" onclick="toggleQuickAdjust()">Snel aanpassen</button></div></div>
+</main><div class="bottomask" id="bottomAsk"><div class="bottomaskin"><input id="ask" aria-label="Beschrijf wat je wilt aanpassen" placeholder="Bijv. € 500 extra inkomen vanaf 70"><button id="askButton" onclick="toggleQuickAdjust()">Snel aanpassen</button></div><div id="askFeedback" class="askfeedback" aria-live="polite"></div></div>
 <script src="../engine_v123.js"></script>
 <script src="../future_layer.js?v=0.1"></script>
 <script src="../future_bridge_v041.js?v=0.41"></script>
@@ -1381,58 +1381,62 @@ window.applyAsk=function(){
   const s=raw.toLowerCase();let changesText=[];
   const changesBefore=changes.length;
   const originalStopAge=document.getElementById('stopAge').value,originalEndAge=document.getElementById('endAge').value;
-  let m,incomeAdded=false,timedChangeAdded=false,otherDirectChange=false,changedStopAge=false,changedEndAge=false,rejectedChange=false;
+  let m,incomeAdded=false,timedChangeAdded=false,otherDirectChange=false,changedStopAge=false,changedEndAge=false,rejectedChange=false,rejectedReasons=[];
   if((m=s.match(/(?:€\s*)?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?\s*(?:euro\s*)?(?:(?:per maand|p\/m|maand)\s*)?(?:extra\s*)?(?:inkomen|verdienen|bijverdienen).*?vanaf\s*(?:mijn\s*)?([0-9]{1,3})(?:.*?tot\s*([0-9]{1,3}))?/i))){
     const amt=parseQuickAmount(m[1],m[2]);
     changes.push({kind:'income',label:'extra werkinkomen',monthly:amt,startAge:Number(m[3]),endAge:m[4]?Number(m[4]):null});
     changesText.push('extra inkomen +'+euro(amt)+'/mnd vanaf '+m[3]+(m[4]?' tot '+m[4]:''));incomeAdded=true;timedChangeAdded=true;
   }
-  if((m=s.match(/([0-9]+)\s*(?:euro|€)?\s*(?:per maand|p\/m|maand)\s*(?:meer|extra)\s*(?:uitgeven|uitgaven|kosten|lasten)/i))){
-    setField('spend',n('spend')+Number(m[1]));changesText.push('uitgaven +'+euro(Number(m[1]))+' p/m');otherDirectChange=true;
+  if((m=s.match(/(?:€\s*)?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?\s*(?:euro\s*)?(?:per maand|p\/m|maand)\s*(?:meer|extra)\s*(?:uitgeven|uitgaven|kosten|lasten)/i))){
+    const amt=parseQuickAmount(m[1],m[2]),tail=s.slice((m.index||0)+m[0].length),startMatch=tail.match(/\bvanaf\s*(?:mijn\s*)?([0-9]{1,3})/i),endMatch=tail.match(/\b(?:tot|t\/m)\s*([0-9]{1,3})/i),startAge=startMatch?Number(startMatch[1]):null,endAge=endMatch?Number(endMatch[1]):null;
+    if(startAge!==null){changes.push({kind:'expense',label:'extra lasten',monthly:amt,startAge,endAge});changesText.push('uitgaven +'+euro(amt)+'/mnd vanaf '+startAge+(endAge?' tot '+endAge:''));timedChangeAdded=true;}
+    else{setField('spend',n('spend')+amt);changesText.push('uitgaven +'+euro(amt)+' p/m');otherDirectChange=true;}
   }
-  if((m=s.match(/(?:wereldreis|reis).*?([0-9\.]+)\s*(k|duizend)?[^0-9]+(?:op|als ik)\s*(?:mijn\s*)?([0-9]{2})/i))){
-    let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;
+  if((m=s.match(/(?:wereldreis|reis).*?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?[^0-9]+(?:op|als ik)\s*(?:mijn\s*)?([0-9]{1,3})/i))){
+    const amt=parseQuickAmount(m[1],m[2]);
     changes.push({kind:'oneoff',label:'wereldreis',amount:amt,age:Number(m[3])});changesText.push('wereldreis '+euro(amt)+' op '+m[3]);
   }
-  if((m=s.match(/(?:krijg|ontvang|erfenis).*?([0-9\.]+)\s*(k|duizend)?[^0-9]+(?:op|vanaf|als ik)\s*(?:mijn\s*)?([0-9]{2})/i))){
-    let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;
+  if((m=s.match(/(?:krijg|ontvang|erfenis).*?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?[^0-9]+(?:op|vanaf|als ik)\s*(?:mijn\s*)?([0-9]{1,3})/i))){
+    const amt=parseQuickAmount(m[1],m[2]);
     changes.push({kind:'oneoff',label:'eenmalige ontvangst',amount:-amt,age:Number(m[3]),certainty:'uncertain'});
     changesText.push('ontvangst +'+euro(amt)+' op '+m[3]);
   }
-  if(!incomeAdded&&(m=s.match(/vanaf\s*([0-9]{2}).*?(?:werk|werken).*?([0-9\.]+)\s*(k|duizend)?\s*(?:netto\s*)?(?:per maand|p\/m|maand)(?:.*?tot\s*([0-9]{2}))?/i))){
-    let amt=Number(m[2].replace('.',''));if(m[3])amt*=1000;
+  if(!incomeAdded&&(m=s.match(/vanaf\s*([0-9]{1,3}).*?(?:werk|werken).*?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?\s*(?:netto\s*)?(?:per maand|p\/m|maand)(?:.*?tot\s*([0-9]{1,3}))?/i))){
+    const amt=parseQuickAmount(m[2],m[3]);
     changes.push({kind:'income',label:'extra werkinkomen',monthly:amt,startAge:Number(m[1]),endAge:m[4]?Number(m[4]):null});
     changesText.push('extra inkomen +'+euro(amt)+'/mnd vanaf '+m[1]+(m[4]?' tot '+m[4]:''));timedChangeAdded=true;
   }
-  if((m=s.match(/vanaf\s*([0-9]{2}).*?([0-9\.]+)\s*(k|duizend)?\s*(?:euro|€)?\s*(?:per maand|p\/m|maand).*?(?:minder uitgaven|lagere lasten|minder kosten)/i))){
-    let amt=Number(m[2].replace('.',''));if(m[3])amt*=1000;
+  if((m=s.match(/vanaf\s*([0-9]{1,3}).*?([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?\s*(?:euro|€)?\s*(?:per maand|p\/m|maand).*?(?:minder uitgaven|lagere lasten|minder kosten)/i))){
+    const amt=parseQuickAmount(m[2],m[3]);
     const tail=s.slice((m.index||0)+m[0].length),endMatch=tail.match(/^\s*(?:tot|t\/m)\s*([0-9]{1,3})/i),endAge=endMatch?Number(endMatch[1]):null;
     changes.push({kind:'expense',label:'lagere lasten',monthly:-amt,startAge:Number(m[1]),endAge});
     changesText.push('lasten -'+euro(amt)+'/mnd vanaf '+m[1]+(endAge?' tot '+endAge:''));timedChangeAdded=true;
   }
-  if((m=s.match(/([0-9\.]+)\s*(k|duizend)?\s*(?:euro|€)?\s*nalaten/i))){let amt=Number(m[1].replace('.',''));if(m[2])amt*=1000;setField('endBuffer',amt);changesText.push('eindvermogen '+euro(amt));otherDirectChange=true}
+  if((m=s.match(/([0-9]+(?:[\.,][0-9]+)?)\s*(k|duizend)?\s*(?:euro|€)?\s*nalaten/i))){const amt=parseQuickAmount(m[1],m[2]);setField('endBuffer',amt);changesText.push('eindvermogen '+euro(amt));otherDirectChange=true}
   if((m=s.match(/(?:stoppen|stop)\s*(?:op|met)\s*([0-9]{2})/i))){setField('stopAge',Number(m[1]));changesText.push('volledig stoppen op '+m[1]);changedStopAge=true}
   const explicitPlanEnd=s.match(/(?:genoeg|leven|plan)\s+tot\s*([0-9]{1,3})/i);
   if((m=explicitPlanEnd||(!timedChangeAdded&&s.match(/(?:tot|t\/m)\s*([0-9]{2})\s*(?:genoeg|geld|leven|jaar)?/i)))){setField('endAge',Number(m[1]));changesText.push('genoeg tot '+m[1]);changedEndAge=true}
   if((m=s.match(/([0-9]{1,2})%\s*(?:minder werken|afbouwen)/i))){setField('workReduction',Number(m[1]));changesText.push(m[1]+'% minder werken');otherDirectChange=true}
   const currentAge=n('age'),proposedStopAge=n('stopAge'),proposedEndAge=n('endAge');
-  if(changedStopAge&&(!Number.isInteger(proposedStopAge)||proposedStopAge<currentAge||proposedStopAge>120)){setField('stopAge',originalStopAge);changedStopAge=false;rejectedChange=true;}
-  if(changedEndAge&&(!Number.isInteger(proposedEndAge)||proposedEndAge<=currentAge||proposedEndAge>120)){setField('endAge',originalEndAge);changedEndAge=false;rejectedChange=true;}
+  if(changedStopAge&&(!Number.isInteger(proposedStopAge)||proposedStopAge<currentAge||proposedStopAge>120)){setField('stopAge',originalStopAge);changedStopAge=false;rejectedChange=true;rejectedReasons.push('stopmoment ligt buiten je plan');}
+  if(changedEndAge&&(!Number.isInteger(proposedEndAge)||proposedEndAge<=currentAge||proposedEndAge>120)){setField('endAge',originalEndAge);changedEndAge=false;rejectedChange=true;rejectedReasons.push('eindleeftijd ligt buiten je plan');}
   const p=plan();
   const added=changes.slice(changesBefore).filter(e=>{
     const start=e.kind==='oneoff'?e.age:e.startAge;
     return Number.isFinite(start)&&start>=p.age&&start<p.endAge&&
       (e.kind==='oneoff'||e.endAge===null||(Number.isFinite(e.endAge)&&e.endAge>start));
   });
-  if(added.length!==changes.length-changesBefore){rejectedChange=true;changes.splice(changesBefore,changes.length-changesBefore,...added);}
+  if(added.length!==changes.length-changesBefore){rejectedChange=true;rejectedReasons.push('een verandering ligt buiten je plan');changes.splice(changesBefore,changes.length-changesBefore,...added);}
   const applied=otherDirectChange||changedStopAge||changedEndAge||changes.length>changesBefore;
-  const b=document.getElementById('askButton'),input=document.getElementById('ask');
+  const b=document.getElementById('askButton'),input=document.getElementById('ask'),feedback=document.getElementById('askFeedback');
   if(applied){
     if(b){b.textContent=rejectedChange?'⚠ Deels aangepast':'✓ Aangepast';setTimeout(()=>{b.textContent='Pas aan';},rejectedChange?1800:1000);}
+    if(feedback){feedback.textContent=rejectedChange?'Wel aangepast, maar niet verwerkt: '+[...new Set(rejectedReasons)].join(' · ')+'.':'';feedback.classList.toggle('on',rejectedChange);}
     if(input)input.value='';
     persistPlan();
   }else if(b){
     b.textContent=rejectedChange?'Buiten je plan':'Niet begrepen';
+    if(feedback){feedback.textContent=rejectedChange?'Niet verwerkt: '+[...new Set(rejectedReasons)].join(' · ')+'.':'Ik kon deze opdracht niet verwerken.';feedback.classList.add('on');}
     setTimeout(()=>{b.textContent='Pas aan';},1600);
   }
   recalc();
