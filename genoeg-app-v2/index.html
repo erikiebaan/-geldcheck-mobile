@@ -204,11 +204,13 @@ let rescueDraft=rescue?{...rescue}:null;
 let rescueOptionsOpen=false;
 let returnExample=[3,5,7].includes(Number(savedValue('returnExample',savedValue('geldcheckReturnExample',null))))?Number(savedValue('returnExample',savedValue('geldcheckReturnExample',null))):null;
 const PLAN_FIELD_IDS=['age','stopAge','income','spend','cash','cashRate','capital','assetRisk','otherDebt','otherDebtRate','otherDebtPayment','otherDebtEndAge','workReduction','aowAge','aow','pensionAge','pension','partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','endAge','endBuffer','inflation','homeValue','mortgage','mortRate','mortPayment','mortType','mortEndAge','mortResidual','endTarget','pensionIndex','aowIndex','wealthTax','investmentCost','careAge','careMonthly','houseReleaseAge','houseRelease'];
+const YEAR_OR_AGE_IDS=['mortEndAge','otherDebtEndAge'];
 function loadPlanFields(){
   try{
     const stored=savedValue('fields',savedValue('geldcheckPlanFields',null));
     if(!stored||typeof stored!=='object')return;
-    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id)){el.value=stored[id];if(savedPlan?.touched?.includes(id))el.dataset.touched='1';}});
+    const savedYear=new Date(savedPlan?.updatedAt||'').getFullYear();
+    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id)){el.value=stored[id];if(savedPlan?.touched?.includes(id))el.dataset.touched='1';if(YEAR_OR_AGE_IDS.includes(id)&&Number(stored[id])>1900)el.dataset.yearBase=String(savedPlan?.yearBases?.[id]||savedYear||new Date().getFullYear());}});
   }catch(_){}
 }
 function savedTimeText(value){
@@ -219,9 +221,9 @@ function savedTimeText(value){
 function showSavedTime(value){const el=document.getElementById('savedAt');if(el)el.textContent=savedTimeText(value);}
 function persistPlan(){
   try{
-    const fields={},touched=[];
-    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el){fields[id]=el.value;if(el.dataset.touched==='1')touched.push(id);}});
-    const snapshot={version:2,updatedAt:new Date().toISOString(),fields,touched,changes,partnerOn:!!window.partnerOn,rescue,returnExample,advancedOn:!!window.advancedOn};
+    const fields={},touched=[],yearBases={};
+    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el){fields[id]=el.value;if(el.dataset.touched==='1')touched.push(id);if(YEAR_OR_AGE_IDS.includes(id)&&Number(el.value)>1900)yearBases[id]=Number(el.dataset.yearBase)||new Date().getFullYear();}});
+    const snapshot={version:2,updatedAt:new Date().toISOString(),fields,touched,yearBases,changes,partnerOn:!!window.partnerOn,rescue,returnExample,advancedOn:!!window.advancedOn};
     localStorage.setItem(PLAN_STORAGE_KEY,JSON.stringify(snapshot));
     history.replaceState({...history.state,geldcheckPlanFields:fields,geldcheckFinancialChanges:changes,geldcheckPartnerOn:!!window.partnerOn,geldcheckRescue:rescue,geldcheckReturnExample:returnExample},'');
     sessionStorage.removeItem(CHANGES_STORAGE_KEY);
@@ -254,11 +256,12 @@ function optionalRate(id,fallback){
   return raw===''?fallback:(Number(raw.replace(',','.'))||0)/100;
 }
 
-function normalizeAge(v,currentAge){
+function normalizeAge(v,currentAge,fieldId=''){
   if(!v)return 0;
   if(v>1900){
-    const currentYear=new Date().getFullYear();
-    return currentAge+(v-currentYear);
+    const el=fieldId?document.getElementById(fieldId):null;
+    const referenceYear=Number(el?.dataset?.yearBase)||new Date().getFullYear();
+    return currentAge+(v-referenceYear);
   }
   return v;
 }
@@ -272,7 +275,7 @@ function plan(){
     age,stopAge:n('stopAge'),income:Math.max(0,n('income')),spend:Math.max(0,n('spend')),
     cash:Math.max(0,n('cash')),cashRate:n('cashRate')/100,capital:Math.max(0,n('capital')),otherDebt:Math.max(0,n('otherDebt')),
     otherDebtRate:Math.max(0,n('otherDebtRate')/100),otherDebtPayment:Math.max(0,n('otherDebtPayment')),
-    otherDebtEndAge:normalizeAge(n('otherDebtEndAge'),age),
+    otherDebtEndAge:normalizeAge(n('otherDebtEndAge'),age,'otherDebtEndAge'),
     workReduction:Math.min(1,Math.max(0,workReductionRaw)),workReductionRaw,
     aowAge:n('aowAge'),aow:Math.max(0,n('aow')),pensionAge:n('pensionAge'),pension:Math.max(0,n('pension')),
     partnerAge:window.partnerOn?(n('partnerAge')||age):age,
@@ -288,7 +291,7 @@ function plan(){
     careAge:n('careAge'),careMonthly:Math.max(0,n('careMonthly')),
     houseReleaseAge:n('houseReleaseAge'),houseRelease:Math.max(0,n('houseRelease')),
     homeValue:Math.max(0,n('homeValue')),mortgage,mortRate:Math.max(0,n('mortRate')/100),mortPayment:Math.max(0,n('mortPayment')),
-    mortType:s('mortType'),mortEndAge:normalizeAge(n('mortEndAge'),age),
+    mortType:s('mortType'),mortEndAge:normalizeAge(n('mortEndAge'),age,'mortEndAge'),
     mortResidual:Math.min(mortgage,mortResidualRaw),mortResidualRaw
   };
 }
@@ -529,8 +532,8 @@ function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=nu
   let markerRules='',markerLabels='';
   const combinedMarkers=[];markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach(m=>{const found=combinedMarkers.find(x=>Math.abs(x.age-m.age)<.01);if(found)found.label+=' + '+m.label;else combinedMarkers.push({...m});});
   combinedMarkers.forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;markerRules+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/>';markerLabels+='<text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+' '+Math.round(m.age)+'</text>';});
-  let changeRules='',changeLabels='';
-  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach((m,j)=>{const xx=x(m.age),ty=padT+54+(j%3)*16;changeRules+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/>';changeLabels+='<text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});
+  let changeRules='',changeLabels='';const changeDepth={};
+  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach(m=>{const xx=x(m.age),key=Number(m.age).toFixed(4),depth=changeDepth[key]||0,ty=padT+54+depth*16;changeDepth[key]=depth+1;changeRules+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/>';changeLabels+='<text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});
   return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+bufferRule+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+markerRules+changeRules+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+(rescuePath?'<polyline class="chartline rescue" points="'+rescuePts+'"/>':'')+(examplePath?'<polyline class="chartline example" points="'+examplePts+'"/>':'')+bufferBadge+markerLabels+changeLabels+labels+'</svg>';
 }
 
@@ -829,6 +832,7 @@ function planIssues(p){
   if(filled('aow')&&p.aow>0&&!filled('aowAge'))addIssue('AOW-leeftijd');
   if(filled('pension')&&p.pension>0&&!filled('pensionAge'))addIssue('pensioenleeftijd');
   if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))addIssue('aflossingsvrije deel van je combinatiehypotheek');
+  if(p.mortgage>0&&(!filled('mortEndAge')||p.mortEndAge<=p.age))addIssue('hypotheek-einddatum na je huidige leeftijd');
   if(filled('stopAge')&&filled('age')&&p.stopAge<p.age)addIssue('stopmoment na je huidige leeftijd');
   if(filled('endAge')&&filled('age')&&p.endAge<=p.age)addIssue('eindleeftijd na je huidige leeftijd');
 
@@ -864,7 +868,7 @@ function planIssues(p){
   if(window.partnerOn)ageFields.push(['partnerAge','leeftijd partner',false],['partnerStopAge','stopmoment partner',false],['partnerPensionAge','pensioenleeftijd partner',false]);
   ageFields.forEach(([id,label,allowsYear])=>{
     if(!filled(id))return;
-    const raw=Number(document.getElementById(id).value),age=allowsYear?normalizeAge(raw,p.age):raw;
+    const raw=Number(document.getElementById(id).value),age=allowsYear?normalizeAge(raw,p.age,id):raw;
     if(!Number.isInteger(raw))addIssue(label+' als heel getal');
     else if(!Number.isFinite(age)||age<0||age>120)addIssue(label+' tussen 0 en 120 jaar');
   });
@@ -1469,8 +1473,9 @@ PLAN_FIELD_IDS.forEach(id=>{
         el.addEventListener('input',()=>{el.dataset.touched='1';scheduleRecalc();});
         el.addEventListener('change',()=>{el.dataset.touched='1';scheduleRecalc();});
       } else {
-        el.addEventListener('input',scheduleRecalc);
-        el.addEventListener('change',scheduleRecalc);
+        const changed=()=>{if(YEAR_OR_AGE_IDS.includes(id))delete el.dataset.yearBase;scheduleRecalc();};
+        el.addEventListener('input',changed);
+        el.addEventListener('change',changed);
       }
     }
   });
