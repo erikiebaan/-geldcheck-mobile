@@ -19,7 +19,8 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
 .phasegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.phase{background:var(--soft);border:1px solid #d9e4f8;border-radius:18px;padding:14px}.phase .age{font-size:12px;color:var(--muted);font-weight:800}.phase .amount{font-size:21px;font-weight:900;margin:6px 0 3px}.phase .desc{font-size:13px;color:var(--muted);line-height:1.35}
 .topintro{padding:8px 4px 2px;margin-bottom:10px}.topintro p{max-width:700px}.sectionhint{font-size:13px;color:var(--muted);margin-top:-4px}.details{display:none}.details.open{display:block}.summaryrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.summarypill{background:var(--soft2);border:1px solid var(--line);border-radius:16px;padding:12px}.summarypill span{display:block;font-size:11px;color:var(--muted)}.summarypill b{display:block;margin-top:3px;font-size:16px}.statusline{display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px;color:var(--muted)}.dot{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 4px rgba(242,201,76,.18)}.statusline.live .dot{background:var(--blue);box-shadow:0 0 0 4px rgba(57,120,212,.14)}
 .storagebar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 10px;padding:13px 14px;border:1px solid #cfe3da;border-radius:16px;background:#f4fbf8}.storagebar b{display:block;font-size:14px}.storagebar span{display:block;margin-top:2px;font-size:12px;color:var(--muted)}.resetbtn{flex:0 0 auto;border:0;background:transparent;color:var(--muted);padding:7px 4px;border-radius:8px;font-size:12px;text-decoration:underline;text-underline-offset:3px}.chartwrap{height:292px}.chartzero{stroke:#aaa5b2;stroke-dasharray:none;stroke-width:1}.chartbuffer{stroke:#d09a18;stroke-dasharray:6 5;stroke-width:1.4}.chartbuffertext{font-size:10px;fill:#8a6500;font-weight:800}.optiongrid{grid-template-columns:repeat(4,1fr)}.optioncard{cursor:pointer;text-align:left;transition:.15s ease}.optioncard:hover,.optioncard:focus-visible,.optioncard.active{transform:translateY(-1px);border-color:#5bab89;background:#eaf8f2;box-shadow:0 6px 18px rgba(29,155,104,.1)}.rescuebox{background:transparent;border:0;border-top:1px solid #cbe5da;border-radius:0;padding:14px 0 0}.phase .amount{font-size:19px;line-height:1.2}.attentionlist{display:grid;gap:9px}.attentionrow{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;background:#faf9fd;border:1px solid var(--line);border-radius:15px;padding:12px}.attentionnum{width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:#eee9fa;color:var(--g);font-weight:900}.attentionrow p{margin:0;color:#4f4b5d;line-height:1.45}.housingreserve{background:transparent!important;border:0!important;border-left:4px solid var(--yellow)!important;border-radius:0!important;padding:4px 0 4px 10px!important;color:var(--muted)}
-@media(max-width:620px){main{padding:14px 10px 78px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid,.scenario-grid,.storygrid,.moneygrid,.eventgrid{grid-template-columns:1fr}.optiongrid{grid-template-columns:1fr 1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}.storagebar{align-items:flex-start;flex-direction:column}.resetbtn{width:auto}.bottomask{right:10px;bottom:10px}.bottomask.open{left:10px}.bottomask.open .bottomaskin{width:100%}.bottomask.open input{width:auto;flex:1}.chartwrap{height:270px}h1{font-size:40px}.card{padding:16px;border-radius:20px}}
+.result-dashboard{width:min(1180px,calc(100vw - 36px));margin-left:50%;transform:translateX(-50%);display:grid;gap:12px}.result-dashboard>.card,.result-main-grid>.card,.result-bottom-grid>.card{margin:0}.result-dashboard .card{border-radius:20px;padding:16px}.result-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:24px;background:linear-gradient(135deg,#6d55ae,#4a3882)}.result-hero-copy{max-width:760px}.result-hero .big{font-size:58px}.result-hero-status{min-width:210px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22)}.result-hero-status span{display:block;font-size:12px;color:#eee9fb}.result-hero-status b{display:block;margin-top:5px;font-size:18px}.result-main-grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(300px,.75fr);gap:12px;align-items:stretch}.result-main-grid>*,.result-bottom-grid>*{min-width:0}.result-chart-card .chartwrap{height:250px}.result-chart-card h2,.result-scenario-card h2,.result-bottom-grid h2{font-size:21px}.result-chart-card .returnpicker{margin:8px 0}.result-chart-card .returnpick{padding:7px 10px}.result-chart-card .returnsummary,.result-chart-card .returninsight{padding:9px 11px;margin-bottom:7px;font-size:13px}.result-chart-card .returnsummary .detailfold{display:none}.result-chart-card .note{margin:6px 0 0;line-height:1.35}.result-scenario-card .scenario-grid{grid-template-columns:1fr;margin-top:10px}.result-scenario-card .scenario-card{min-height:0;padding:12px}.result-scenario-card .scenario-state{margin-top:7px}.action-summary{margin-top:10px;padding:13px;border:1px solid #bfe6d5;border-radius:16px;background:#effaf6}.action-summary span{display:block;font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em}.action-summary b{display:block;margin:4px 0 7px;font-size:18px;line-height:1.2}.action-summary button{padding:7px 10px;border:1px solid #91cdb4;background:#fff;color:#237457;border-radius:999px;font-size:12px}.result-bottom-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:12px}.result-phases-card .phasegrid{gap:7px}.result-phases-card .phase{padding:10px;border-radius:14px}.result-phases-card .phase .amount{font-size:16px}.result-phases-card .eventgrid{margin-top:7px}.result-phases-card .eventitem{padding:8px 10px}.result-risks-card .attentionlist{gap:6px}.result-risks-card .attentionrow{grid-template-columns:26px 1fr;padding:8px;border-radius:12px}.result-risks-card .attentionnum{width:24px;height:24px;border-radius:8px;font-size:12px}.result-risks-card .attentionrow p{font-size:12px;line-height:1.35}.result-proof{margin:0!important;background:#fff}.result-proof>summary{padding:12px 2px}.proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.proof-grid .detailfold{margin-top:0}.result-mobile-hint{display:none}
+@media(max-width:760px){main{padding:14px 10px 78px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid,.scenario-grid,.storygrid,.moneygrid,.eventgrid{grid-template-columns:1fr}.optiongrid{grid-template-columns:1fr 1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}.storagebar{align-items:flex-start;flex-direction:column}.resetbtn{width:auto}.bottomask{right:10px;bottom:10px}.bottomask.open{left:10px}.bottomask.open .bottomaskin{width:100%}.bottomask.open input{width:auto;flex:1}.chartwrap{height:270px}h1{font-size:40px}.card{padding:16px;border-radius:20px}.result-dashboard{width:100%;margin-left:0;transform:none}.result-hero{grid-template-columns:1fr;gap:10px}.result-hero .big{font-size:52px}.result-hero-status{min-width:0}.result-main-grid,.result-bottom-grid,.proof-grid{grid-template-columns:1fr}.result-chart-card .chartwrap{height:265px}.result-phases-card .phasegrid{grid-template-columns:1fr 1fr}.result-main-grid{display:flex;flex-direction:column}.result-scenario-card{order:-1}.result-mobile-hint{display:block}}
 </style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Financiële kern v2</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
 <div class="topintro">
   <h1>Heb ik straks genoeg?</h1>
@@ -135,7 +136,7 @@ button{border:0;border-radius:16px;padding:15px 18px;font-weight:900;font-size:1
   </div>
   <div id="advancedFields" class="grid optional">
     <div class="field"><label>Gewenst eindvermogen / nalatenschap</label><input id="endTarget" type="number" value="" placeholder="€"></div>
-    <div class="field"><label>Pensioen indexatie % p/j</label><input id="pensionIndex" type="number" step="0.1" value="" autocomplete="off" placeholder="leeg = inflatie"><div class="note">Leeg = groeit mee met inflatie. Vul 0 in als je bewust géén indexatie wilt.</div></div>
+    <div class="field"><label>Pensioenindexatie % p/j (jij + partner)</label><input id="pensionIndex" type="number" step="0.1" value="" autocomplete="off" placeholder="leeg = inflatie"><div class="note">Geldt ook voor het gecombineerde partnerbedrag. Leeg = groeit mee met inflatie; vul 0 in voor géén indexatie.</div></div>
     <div class="field"><label>AOW indexatie % p/j</label><input id="aowIndex" type="number" step="0.1" value="" autocomplete="off" placeholder="leeg = inflatie"><div class="note">Leeg = groeit mee met inflatie. Vul 0 in als je bewust géén indexatie wilt.</div></div>
     <div class="field"><label>Vermogensheffing % p/j</label><input id="wealthTax" type="number" step="0.1" value="" placeholder="%"></div>
     <div class="field"><label>Beleggingskosten % p/j</label><input id="investmentCost" type="number" step="0.1" value="" placeholder="%"></div>
@@ -210,7 +211,8 @@ function loadPlanFields(){
     const stored=savedValue('fields',savedValue('geldcheckPlanFields',null));
     if(!stored||typeof stored!=='object')return;
     const savedYear=new Date(savedPlan?.updatedAt||'').getFullYear();
-    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id)){el.value=stored[id];if(savedPlan?.touched?.includes(id))el.dataset.touched='1';if(YEAR_OR_AGE_IDS.includes(id)&&Number(stored[id])>1900)el.dataset.yearBase=String(savedPlan?.yearBases?.[id]||savedYear||new Date().getFullYear());}});
+    const savedAge=Number(stored.age)||0;
+    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id)){el.value=stored[id];if(savedPlan?.touched?.includes(id))el.dataset.touched='1';if(YEAR_OR_AGE_IDS.includes(id)&&Number(stored[id])>1900){el.dataset.yearBase=String(savedPlan?.yearBases?.[id]||savedYear||new Date().getFullYear());el.dataset.ageBase=String(savedPlan?.ageBases?.[id]??savedAge);}}});
   }catch(_){}
 }
 function savedTimeText(value){
@@ -221,9 +223,10 @@ function savedTimeText(value){
 function showSavedTime(value){const el=document.getElementById('savedAt');if(el)el.textContent=savedTimeText(value);}
 function persistPlan(){
   try{
-    const fields={},touched=[],yearBases={};
-    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el){fields[id]=el.value;if(el.dataset.touched==='1')touched.push(id);if(YEAR_OR_AGE_IDS.includes(id)&&Number(el.value)>1900)yearBases[id]=Number(el.dataset.yearBase)||new Date().getFullYear();}});
-    const snapshot={version:2,updatedAt:new Date().toISOString(),fields,touched,yearBases,changes,partnerOn:!!window.partnerOn,rescue,returnExample,advancedOn:!!window.advancedOn};
+    const fields={},touched=[],yearBases={},ageBases={};
+    const currentAge=Number(document.getElementById('age')?.value)||0;
+    PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el){fields[id]=el.value;if(el.dataset.touched==='1')touched.push(id);if(YEAR_OR_AGE_IDS.includes(id)&&Number(el.value)>1900){yearBases[id]=Number(el.dataset.yearBase)||new Date().getFullYear();ageBases[id]=Number(el.dataset.ageBase)||currentAge;el.dataset.yearBase=String(yearBases[id]);el.dataset.ageBase=String(ageBases[id]);}}});
+    const snapshot={version:2,updatedAt:new Date().toISOString(),fields,touched,yearBases,ageBases,changes,partnerOn:!!window.partnerOn,rescue,returnExample,advancedOn:!!window.advancedOn};
     localStorage.setItem(PLAN_STORAGE_KEY,JSON.stringify(snapshot));
     history.replaceState({...history.state,geldcheckPlanFields:fields,geldcheckFinancialChanges:changes,geldcheckPartnerOn:!!window.partnerOn,geldcheckRescue:rescue,geldcheckReturnExample:returnExample},'');
     sessionStorage.removeItem(CHANGES_STORAGE_KEY);
@@ -261,7 +264,8 @@ function normalizeAge(v,currentAge,fieldId=''){
   if(v>1900){
     const el=fieldId?document.getElementById(fieldId):null;
     const referenceYear=Number(el?.dataset?.yearBase)||new Date().getFullYear();
-    return currentAge+(v-referenceYear);
+    const referenceAge=Number(el?.dataset?.ageBase)||currentAge;
+    return referenceAge+(v-referenceYear);
   }
   return v;
 }
@@ -491,7 +495,7 @@ function simulatePath(p, realReturn, includeChanges=true){
     if(age>=p.pensionAge)annualIncome+=indexedRealMonthly(p.pension,p.pensionAge,age,p.pensionIndex,p.inflation)*12;
     const pa=partnerTimelineAge(p,age);
     if(p.partnerIncome>0&&pa<p.partnerStopAge)annualIncome+=p.partnerIncome*12;
-    if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
+    if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=indexedRealMonthly(p.partnerPension,p.partnerPensionAge,pa,p.pensionIndex,p.inflation)*12;
 
     let annualSpend=annualSpendAt(p,age,mi,di), oneOff=0, monthlyIncomeChange=0, monthlySpendChange=0;
     if(includeChanges) changes.forEach(e=>{
@@ -532,8 +536,9 @@ function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=nu
   let markerRules='',markerLabels='';
   const combinedMarkers=[];markers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach(m=>{const found=combinedMarkers.find(x=>Math.abs(x.age-m.age)<.01);if(found)found.label+=' + '+m.label;else combinedMarkers.push({...m});});
   combinedMarkers.forEach((m,j)=>{const xx=x(m.age),ty=padT+12+(j%3)*14;markerRules+='<line class="chartmark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/>';markerLabels+='<text class="chartmarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+' '+Math.round(m.age)+'</text>';});
-  let changeRules='',changeLabels='';const changeDepth={};
-  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach(m=>{const xx=x(m.age),key=Number(m.age).toFixed(4),depth=changeDepth[key]||0,ty=padT+54+depth*16;changeDepth[key]=depth+1;changeRules+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/>';changeLabels+='<text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});
+  let changeRules='',changeLabels='';const changesByAge={};
+  changeMarkers.filter(m=>m.age>=xs[0]&&m.age<=xs[xs.length-1]).forEach(m=>{const key=Number(m.age).toFixed(4);(changesByAge[key]||(changesByAge[key]=[])).push(m);});
+  Object.values(changesByAge).forEach(group=>{const xx=x(group[0].age),visible=group.slice(0,6);changeRules+='<line class="changemark" x1="'+xx+'" x2="'+xx+'" y1="'+padT+'" y2="'+(h-padB)+'"/>';visible.forEach((m,depth)=>{const ty=padT+54+depth*16;changeLabels+='<text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">'+esc(m.label)+'</text>';});if(group.length>visible.length){const ty=padT+54+visible.length*16;changeLabels+='<text class="changemarktext" x="'+(xx+4)+'" y="'+ty+'">+'+(group.length-visible.length)+' andere veranderingen</text>';}});
   return '<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Vermogensverloop basisplan en plan inclusief veranderingen">'+grid+z+bufferRule+'<polygon class="chartfill" points="'+baseArea+'"/>'+(changedPath?'<polygon class="chartfill changed" points="'+changedArea+'"/>':'')+markerRules+changeRules+'<polyline class="chartline base" points="'+basePts+'"/>'+(changedPath?'<polyline class="chartline changed" points="'+changedPts+'"/>':'')+(rescuePath?'<polyline class="chartline rescue" points="'+rescuePts+'"/>':'')+(examplePath?'<polyline class="chartline example" points="'+examplePts+'"/>':'')+bufferBadge+markerLabels+changeLabels+labels+'</svg>';
 }
 
@@ -555,7 +560,7 @@ function simulateReal(p, realReturn, mode='all'){
     if(age>=p.pensionAge)annualIncome+=indexedRealMonthly(p.pension,p.pensionAge,age,p.pensionIndex,p.inflation)*12;
     const pa=partnerTimelineAge(p,age);
     if(p.partnerIncome>0&&pa<p.partnerStopAge)annualIncome+=p.partnerIncome*12;
-    if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
+    if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=indexedRealMonthly(p.partnerPension,p.partnerPensionAge,pa,p.pensionIndex,p.inflation)*12;
 
     let annualSpend=annualSpendAt(p,age,mi,di),oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
     changes.forEach(e=>{
@@ -600,7 +605,7 @@ function simulateShock(p, realReturn, shockAge, shockPct){
     if(age>=p.pensionAge)annualIncome+=indexedRealMonthly(p.pension,p.pensionAge,age,p.pensionIndex,p.inflation)*12;
     const pa=partnerTimelineAge(p,age);
     if(p.partnerIncome>0&&pa<p.partnerStopAge)annualIncome+=p.partnerIncome*12;
-    if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=p.partnerPension*12;
+    if(p.partnerPension>0&&pa>=p.partnerPensionAge)annualIncome+=indexedRealMonthly(p.partnerPension,p.partnerPensionAge,pa,p.pensionIndex,p.inflation)*12;
     let annualSpend=annualSpendAt(p,age,mi,di),oneOff=0,monthlyIncomeChange=0,monthlySpendChange=0;
     changes.forEach(e=>{
       if(!changeIncluded(e,'main'))return;
@@ -632,7 +637,7 @@ function monthlyFlowAt(p, age, mi, di){
   if(age>=p.pensionAge) income+=indexedRealMonthly(p.pension,p.pensionAge,age,p.pensionIndex,p.inflation);
   const pa=partnerTimelineAge(p,age);
   if(p.partnerIncome>0&&pa<p.partnerStopAge) income+=p.partnerIncome;
-  if(p.partnerPension>0&&pa>=p.partnerPensionAge) income+=p.partnerPension;
+  if(p.partnerPension>0&&pa>=p.partnerPensionAge) income+=indexedRealMonthly(p.partnerPension,p.partnerPensionAge,pa,p.pensionIndex,p.inflation);
 
   let spend=Math.max(0,p.spend);
   if(age>=effectiveMortgageCutAge(p,mi)) spend=Math.max(0,spend-p.mortPayment);
@@ -1294,10 +1299,20 @@ window.recalc=function(){
     ...changes.filter(e=>e.kind==='oneoff').map(e=>({title:'Op '+e.age,detail:e.amount<0?euro(Math.abs(e.amount))+' komt binnen'+(e.certainty!=='certain'?' · onzeker scenario':''):euro(e.amount)+' eenmalig uit vermogen'}))
   ];
   const oneOffItems=withdrawalItems.slice(cashflowPhases.length);
+  const directAction=currentPlanAt3
+    ? 'Geen aanpassing nodig bij 3%'
+    : neededIncomeAt3!==null
+      ? euro(neededIncomeAt3)+'/mnd blijven verdienen vanaf je '+adjustmentStart+'e'
+      : earliest3!==null
+        ? 'Stoppen rond je '+earliest3+'e'
+        : neededExpenseAt3!==null
+          ? euro(neededExpenseAt3)+'/mnd minder uitgeven vanaf je '+adjustmentStart+'e'
+          : 'Een combinatie van kleinere stappen';
 
   result.innerHTML = [
-    `<div class="card hero">
-      <div class="sub">${headline}</div>
+    `<section class="result-dashboard">`,
+    `<div class="card hero result-hero">
+      <div class="result-hero-copy"><div class="sub">${headline}</div>
       <div class="big">${isBufferTimingProblem?euro(bufferShortfall):(isStructuralProblem?euro(Math.max(0,targetEnd-e30.end)):(isFinite(nominal)?pct(Math.max(0,nominal)):'—'))}</div>
       <p>${isBufferTimingProblem
         ? 'tijdelijk tekort ten opzichte van je gekozen buffer van '+euro(p.endBuffer)+'. Meer gemiddeld rendement lost dit vroege buffermoment niet op.'
@@ -1305,10 +1320,12 @@ window.recalc=function(){
           ? 'structureel tekort op je einddoel, ook binnen de hoge-rendementstest.'
           : isFinite(nominal)&&nominal<=0.00001
             ? 'Bij 0% nominaal beleggingsrendement blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e. Inflatie blijft wel invloed houden op je koopkracht.'
-            : 'nominaal rendement per jaar. Daarmee blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e.'+(gapAt3>0?' Bij het voorzichtige 3%-scenario is een aanpassing nodig.':' Ook bij het voorzichtige 3%-scenario blijft je buffer intact.')}</p>
+            : 'nominaal rendement per jaar. Daarmee blijft je buffer van '+euro(p.endBuffer)+' intact tot je '+p.endAge+'e.'+(gapAt3>0?' Bij het voorzichtige 3%-scenario is een aanpassing nodig.':' Ook bij het voorzichtige 3%-scenario blijft je buffer intact.')}</p></div>
+      <div class="result-hero-status"><span>Stevigheid bij 3%</span><b>${gapAt3>0?euro(gapAt3)+' tekort':'Buffer blijft intact'}</b><span style="margin-top:8px">Doel</span><b>tot je ${p.endAge}e · buffer ${euro(p.endBuffer)}</b></div>
     </div>`,
 
-    `<div class="card">
+    `<div class="result-main-grid">`,
+    `<div class="card result-chart-card">
       <h2>Verloop van je vermogen</h2>
       <p class="sectionhint">Vergelijk je basisplan met het plan inclusief wat je later toevoegt.</p>
       <div class="returnpicker"><button type="button" class="returnpick ${returnExample===3?'active':''}" onclick="setReturnExample(3)">3%</button><button type="button" class="returnpick ${returnExample===5?'active':''}" onclick="setReturnExample(5)">5%</button><button type="button" class="returnpick ${returnExample===7?'active':''}" onclick="setReturnExample(7)">7% historisch voorbeeld</button>${returnExample!==null?'<button type="button" class="returnpick" onclick="setReturnExample(null)">'+(exampleUnavailable?'Wis keuze':'Wis lijn')+'</button>':''}</div>
@@ -1319,20 +1336,22 @@ window.recalc=function(){
       <p class="note">BLAUW = basisplan · PAARS = inclusief veranderingen${rescueCase?' · GROEN = aanpassing bij hetzelfde rendement als blauw':''}${pathExample?' · GOUD = gekozen rendementsvoorbeeld':''}. STOPPEN · AOW · PENSIOEN · HYPOTHEEK · VERANDERINGEN zijn gemarkeerd. Je buffer mag nergens onder ${euro(p.endBuffer)} komen.</p>
     </div>`,
 
-    `<div class="card">
+    `<div class="card result-scenario-card">
       <h2>Als rendement tegenvalt${rescueCase?' in je basisplan':''}</h2>
       <p class="sectionhint">3% is het voorzichtige planningsscenario. 0% laat alleen zien wat er gebeurt in een langdurige extreme situatie zonder tussentijds bijsturen.${rescueCase?' De 3%-kaart vergelijkt ook je groene aanpassing; de andere stresstests blijven je basisplan tonen.':''}</p>
       <div class="scenario-grid">
         ${comparisonScenarioCard||scenarioCard('3%','Voorzichtig plan',e3)}
         ${scenarioCard('5%','Gunstiger verloop',e5)}
       </div>
+      <div class="action-summary"><span>${currentPlanAt3?'Conclusie':'Meest directe aanpassing'}</span><b>${directAction}</b><button type="button" onclick="document.getElementById('planOptions')?.setAttribute('open','');document.getElementById('planOptions')?.scrollIntoView({behavior:'smooth',block:'start'})">${currentPlanAt3?'Toch vergelijken':'Bekijk alternatieven'}</button></div>
       <details class="detailfold"><summary>Bekijk extreme stresstests</summary><div class="detailbody"><div class="scenario-grid">
         ${scenarioCard('0%','Extreme stresstest',e0,'stress')}
         ${p.capital>0?scenarioCard('3% + schok','Beleggingen −'+Math.round(assetShockPct()*100)+'% bij stoppen',shock3,'stress'):'<div class="scenario-card stress"><div class="scenario-top"><span class="scenario-rate">Schok</span><span class="scenario-tag">€0 belegd</span></div><div class="scenario-state">Niet van toepassing</div><div class="scenario-value">Je hebt geen belegd vermogen ingevuld, dus er is niets waarop de beleggingsschok kan worden toegepast.</div></div>'}
       </div><p class="note">De schok raakt alleen het belegde vermogen op het moment dat je stopt; cash wordt niet geraakt. Een stresstest is geen voorspelling.</p></div></details>
     </div>`,
+    `</div>`,
 
-    (!currentPlanAt3||rescueCase||rescueOptionsOpen)?`<div class="card" id="rescueOptions">
+    (!currentPlanAt3||rescueCase||rescueOptionsOpen)?`<details class="card detailfold result-proof" id="planOptions" ${rescueOptionsOpen?'open':''}><summary>Mogelijke aanpassingen vergelijken</summary><div class="detailbody" id="rescueOptions">
       <h2>Je hebt mogelijkheden</h2>
       <p>${gapAt3>0?'Bij 3% rendement mist je plan ongeveer <b>'+euro(gapAt3)+'</b> op het kwetsbaarste moment. Kies één aanpassing of combineer kleinere stappen.':rescueCase?'Je gekozen aanpassing brengt je plan bij 3% binnen de gewenste buffer.':'Je plan werkt al bij 3%. Je kunt hieronder vrijblijvend een aanpassing vergelijken.'}</p>
       ${gapAt3>0?'<div class="optiongrid">'
@@ -1343,9 +1362,10 @@ window.recalc=function(){
         +'</div>':''}
       ${rescueCase?'<div class="storylead"><b>'+(rescueWorks?'Met '+esc(rescueCase.label)+' blijft je buffer bij 3% intact.':'Met '+esc(rescueCase.label)+' wordt het tekort kleiner, maar is nog een extra stap nodig.')+'</b></div>':''}
       ${rescueControls(p)}
-    </div>`:`<div class="card"><h2>Je hebt ruimte</h2><p>Ook bij 3% rendement blijft je gekozen buffer intact.</p><button type="button" class="tinybtn" onclick="openRescueOptions()">Toch een aanpassing vergelijken</button></div>`,
+    </div></details>`:`<details class="card detailfold result-proof" id="planOptions"><summary>Vrijblijvend een aanpassing vergelijken</summary><div class="detailbody"><p>Ook bij 3% rendement blijft je gekozen buffer intact.</p><button type="button" class="tinybtn" onclick="openRescueOptions()">Toch een aanpassing vergelijken</button></div></details>`,
 
-    `<div class="card">
+    `<div class="result-bottom-grid">`,
+    `<div class="card result-phases-card">
       <h2>Zo verloopt je plan</h2>
       ${rescueCase?'<p class="sectionhint">Hieronder staat je basisplan. De groene aanpassing zie je in de grafiek en 3%-kaart.</p>':''}
       <div class="phasegrid">${phaseCards.map(x=>`<div class="phase"><div class="age">${x.age}</div><div class="amount">${x.amount}</div><div class="desc">${x.desc}</div></div>`).join('')}</div>
@@ -1353,12 +1373,13 @@ window.recalc=function(){
       <details class="detailfold"><summary>Bekijk bedragen per fase</summary><div class="detailbody"><div class="storygrid">${cashflowPhases.map(x=>'<div class="storyitem">Van '+x.start+' tot '+x.end+': inkomen '+euro(x.income)+'/mnd, uitgaven '+euro(x.spend)+'/mnd. '+(x.net>=0?'Je houdt '+euro(x.net)+'/mnd over.':'Je gebruikt '+euro(-x.net)+'/mnd uit vermogen.')+'</div>').join('')}</div>${changes.length?'<p class="note">Meegenomen veranderingen: '+eventsTxt+'.</p>':''}</div></details>
     </div>`,
 
-    `<div class="card">
+    `<div class="card result-risks-card">
       <h2>Belangrijkste aandachtspunten${rescueCase?' in je basisplan':''}</h2>
       <div class="answer">${risksHtml}</div>
     </div>`,
+    `</div>`,
 
-    `<details class="card detailfold">
+    `<details class="card detailfold result-proof">
       <summary>Bekijk financiële details</summary>
       <div class="detailbody"><div class="kpis">
         <div class="kpi"><span>Bij 3% rendement</span><b>${currentPlanAt3?('stoppen op '+Math.round(p.stopAge)+' werkt'):(earliest3!==null?'stoppen rond '+earliest3:'aanpassing nodig')}</b></div>
@@ -1369,7 +1390,8 @@ window.recalc=function(){
         <div class="kpi"><span>Restschuld einddatum</span><b>${euro(effectiveMortResidual)}</b></div>
         ${p.otherDebt>0?`<div class="kpi"><span>Overige schuld</span><b>${euro(p.otherDebt)}</b></div><div class="kpi"><span>Rente / betaling schuld</span><b>${pct(p.otherDebtRate)} / ${euro(p.otherDebtPayment)}/mnd</b></div>`:''}
       </div>${mortgageInflationInsight}<p class="note">Geldcheck bundelt 200+ financiële factoren in vermogen, inkomen, uitgaven, wonen en veranderingen. Alleen materiële uitzonderingen worden apart gevraagd.</p></div>
-    </details>`
+    </details>`,
+    `</section>`
   ].join('');
 
 };
@@ -1473,7 +1495,7 @@ PLAN_FIELD_IDS.forEach(id=>{
         el.addEventListener('input',()=>{el.dataset.touched='1';scheduleRecalc();});
         el.addEventListener('change',()=>{el.dataset.touched='1';scheduleRecalc();});
       } else {
-        const changed=()=>{if(YEAR_OR_AGE_IDS.includes(id))delete el.dataset.yearBase;scheduleRecalc();};
+        const changed=()=>{if(YEAR_OR_AGE_IDS.includes(id)){delete el.dataset.yearBase;delete el.dataset.ageBase;}scheduleRecalc();};
         el.addEventListener('input',changed);
         el.addEventListener('change',changed);
       }
