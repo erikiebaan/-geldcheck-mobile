@@ -524,7 +524,7 @@ function simulatePath(p, realReturn, includeChanges=true){
   return out;
 }
 function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null,examplePath=null,buffer=0,scalePaths=[]){
-  const w=760,h=300,padL=56,padR=18,padT=18,padB=34;
+  const w=760,h=300,padL=90,padR=18,padT=18,padB=34;
   const xs=basePath.map(d=>d.age);
   const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[]),...(rescuePath?rescuePath.map(d=>d.capital):[]),...(examplePath?examplePath.map(d=>d.capital):[]),...scalePaths.flatMap(path=>path.map(d=>d.capital)),Number.isFinite(buffer)?buffer:0];
   let ymin=Math.min(0,...allYs),ymax=Math.max(1,...allYs);
