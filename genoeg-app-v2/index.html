@@ -1515,7 +1515,8 @@ window.toggleMobilePlan=function(button){
   if(!dashboard)return;
   const expanded=dashboard.classList.toggle('mobile-expanded');
   mobilePlanExpanded=expanded;
-  if(button)button.textContent=expanded?'Verberg volledig plan':'Bekijk volledig plan';
+  const toggleButton=button||dashboard.querySelector('.mobile-decision .mobile-primary');
+  if(toggleButton)toggleButton.textContent=expanded?'Verberg volledig plan':'Bekijk volledig plan';
   if(!expanded)dashboard.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
