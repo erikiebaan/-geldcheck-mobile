@@ -124,7 +124,7 @@ body.has-results:not(.editing-plan) .appbar{background:rgba(249,248,252,.9);box-
       <div class="detailbody grid">
         <div class="field"><label>Scenario vanaf jouw leeftijd</label><input id="survivorAge" type="number" value="" placeholder="bijv. 72"><div class="note">Vanaf dit moment vallen het inkomen en pensioen van je partner weg.</div></div>
         <div class="field"><label>Nabestaandenpensioen netto p/m</label><input id="survivorPension" type="number" min="0" value="" placeholder="€ p/m"></div>
-        <div class="field"><label>Huishoudelijke uitgaven dalen met (%)</label><input id="survivorExpenseReduction" type="number" min="0" max="100" value="" placeholder="bijv. 25"></div>
+        <div class="field"><label>Huishoudelijke uitgaven dalen met (%)</label><input id="survivorExpenseReduction" type="number" min="0" max="100" value="" placeholder="bijv. 25"><div class="note">Hypotheek, schuldaflossing en apart ingevulde zorgkosten blijven doorlopen.</div></div>
         <div class="field"><label>Eenmalige verzekering / uitkering</label><input id="survivorInsurance" type="number" min="0" value="" placeholder="€"></div>
         <p class="note" style="grid-column:1/-1;margin:0">Dit verandert je hoofdantwoord niet. Geldcheck toont hiermee alleen een afzonderlijke, conservatieve stresstest.</p>
       </div>
@@ -643,9 +643,12 @@ function simulateReal(p, realReturn, mode='all', scenario=null){
     annualIncome+=monthlyIncomeChange*12;
     annualSpend=Math.max(0,annualSpend+monthlySpendChange*12);
     if(survivorActive&&scenario.expenseReduction>0){
-      // The mortgage is a fixed contract payment, even when household costs fall.
-      const fixedMortgage=age<effectiveMortgageCutAge(p,mi)?Math.min(annualSpend,Math.max(0,p.mortPayment*12)):0;
-      annualSpend=fixedMortgage+(annualSpend-fixedMortgage)*(1-scenario.expenseReduction);
+      // Contract payments and separately entered care costs do not fall with household spending.
+      const fixedMortgage=age<effectiveMortgageCutAge(p,mi)?Math.max(0,p.mortPayment*12):0;
+      const fixedDebt=age<debtCutAge(di)?Math.max(0,p.otherDebtPayment*12):0;
+      const fixedCare=p.careAge>0&&age>=p.careAge?Math.max(0,p.careMonthly*12):0;
+      const fixedCosts=Math.min(annualSpend,fixedMortgage+fixedDebt+fixedCare);
+      annualSpend=fixedCosts+(annualSpend-fixedCosts)*(1-scenario.expenseReduction);
     }
     if(scenario?.kind==='incomeLoss'&&age===scenario.age)annualIncome=Math.max(0,annualIncome-scenario.monthly*12);
     if(scenario?.kind==='survivor'&&scenario.insurance>0&&age+1===scenario.age)oneOff-=scenario.insurance;
