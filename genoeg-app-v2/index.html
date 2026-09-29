@@ -505,13 +505,28 @@ function partnerTimelineAge(p,userAge){
   return p.partnerAge+(userAge-p.age);
 }
 
+function annualMortgageNominalAt(p,age){
+  const payment=Math.max(0,p.mortPayment);
+  if(p.mortType!=='linear'||p.mortgage<=0)return payment*12;
+  const rate=p.mortRate/12;
+  const principal=Math.max(0,payment-p.mortgage*rate);
+  let total=0;
+  const firstMonth=Math.max(0,Math.round((age-p.age)*12));
+  for(let month=firstMonth;month<firstMonth+12;month++){
+    const balance=Math.max(0,p.mortgage-principal*month);
+    if(balance<=0)break;
+    total+=Math.min(balance,principal)+balance*rate;
+  }
+  return total;
+}
+
 function annualSpendAt(p,age,mi,di){
   let spend=Math.max(0,p.spend*12);
   const mortgageNominal=Math.max(0,p.mortPayment*12);
   const debtNominal=Math.max(0,p.otherDebtPayment*12);
   // Het ingevoerde uitgavenbedrag bevat beide betalingen tegen de waarde van nu.
-  // Een lopend contract blijft nominaal gelijk; na het einde vervalt het volledig.
-  spend=Math.max(0,spend-mortgageNominal+(age<effectiveMortgageCutAge(p,mi)?nominalToToday(p,mortgageNominal,age):0));
+  // Lineair: vaste aflossing, dalende rente. Andere hypotheekvormen houden de ingevoerde betaling.
+  spend=Math.max(0,spend-mortgageNominal+(age<effectiveMortgageCutAge(p,mi)?nominalToToday(p,annualMortgageNominalAt(p,age),age):0));
   spend=Math.max(0,spend-debtNominal+(age<debtCutAge(di)?nominalToToday(p,debtNominal,age):0));
   if(p.careAge>0&&age>=p.careAge)spend+=p.careMonthly*12;
   return spend;
@@ -666,7 +681,7 @@ function simulateReal(p, realReturn, mode='all', scenario=null){
     annualSpend=Math.max(0,annualSpend+monthlySpendChange*12);
     if(survivorActive&&scenario.expenseReduction>0){
       // Contract payments and separately entered care costs do not fall with household spending.
-      const fixedMortgage=age<effectiveMortgageCutAge(p,mi)?nominalToToday(p,Math.max(0,p.mortPayment*12),age):0;
+      const fixedMortgage=age<effectiveMortgageCutAge(p,mi)?nominalToToday(p,annualMortgageNominalAt(p,age),age):0;
       const fixedDebt=age<debtCutAge(di)?nominalToToday(p,Math.max(0,p.otherDebtPayment*12),age):0;
       const fixedCare=p.careAge>0&&age>=p.careAge?Math.max(0,p.careMonthly*12):0;
       const fixedCosts=Math.min(annualSpend,fixedMortgage+fixedDebt+fixedCare);
@@ -795,29 +810,36 @@ function buildCashflowPhases(p,mi,di){
     if(end<=start) continue;
     const flow=monthlyFlowAt(p,start,mi,di);
     const endFlow=monthlyFlowAt(p,end-1,mi,di);
-    let minNet=flow.net;
-    for(let age=start+1;age<end;age++)minNet=Math.min(minNet,monthlyFlowAt(p,age,mi,di).net);
+    let minNet=flow.net,minNetAge=start;
+    for(let age=start+1;age<end;age++){
+      const net=monthlyFlowAt(p,age,mi,di).net;
+      if(net<minNet){minNet=net;minNetAge=age;}
+    }
     out.push({
       start,end,
       age:start+'–'+end,
       income:flow.income,
       spend:flow.spend,
       net:flow.net,
-      endIncome:endFlow.income,endSpend:endFlow.spend,endNet:endFlow.net,minNet,
+      endIncome:endFlow.income,endSpend:endFlow.spend,endNet:endFlow.net,minNet,minNetAge,
       desc:flowLabel(p,start,mi,di)
     });
   }
   return out;
 }
 function phaseNetLabel(net){return net>=0?'+'+euro(net)+' over':euro(-net)+' uit vermogen';}
+function phaseHasInnerDip(x){return x.minNet<Math.min(x.net,x.endNet)-.5;}
 function phaseNetRange(x){
   const start=phaseNetLabel(x.net);
-  return Math.abs(x.net-x.endNet)<.5?start:start+' → '+phaseNetLabel(x.endNet);
+  const endpoints=Math.abs(x.net-x.endNet)<.5?start:start+' → '+phaseNetLabel(x.endNet);
+  return endpoints+(phaseHasInnerDip(x)?' · laagste '+phaseNetLabel(x.minNet)+' rond '+x.minNetAge:'');
 }
 function phaseNetShort(x){
-  if(Math.abs(x.net-x.endNet)<.5)return euro(Math.abs(x.net))+(x.net>=0?' over':' uit');
-  if((x.net>=0)===(x.endNet>=0))return euro(Math.abs(x.net))+' → '+euro(Math.abs(x.endNet))+(x.net>=0?' over':' uit');
-  return euro(Math.abs(x.net))+(x.net>=0?' over':' uit')+' → '+euro(Math.abs(x.endNet))+(x.endNet>=0?' over':' uit');
+  let text;
+  if(Math.abs(x.net-x.endNet)<.5)text=euro(Math.abs(x.net))+(x.net>=0?' over':' uit');
+  else if((x.net>=0)===(x.endNet>=0))text=euro(Math.abs(x.net))+' → '+euro(Math.abs(x.endNet))+(x.net>=0?' over':' uit');
+  else text=euro(Math.abs(x.net))+(x.net>=0?' over':' uit')+' → '+euro(Math.abs(x.endNet))+(x.endNet>=0?' over':' uit');
+  return text+(phaseHasInnerDip(x)?' · laagste '+euro(Math.abs(x.minNet))+(x.minNet>=0?' over':' uit'):'');
 }
 
 function requiredReal(p){
@@ -959,6 +981,8 @@ function planIssues(p){
   if(filled('pension')&&p.pension>0&&!filled('pensionAge'))addIssue('pensioenleeftijd');
   if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))addIssue('aflossingsvrije deel van je combinatiehypotheek');
   if(p.mortgage>0&&(!filled('mortEndAge')||p.mortEndAge<=p.age))addIssue('hypotheek-einddatum na je huidige leeftijd');
+  if(p.mortgage>0&&p.mortType==='linear'&&p.mortPayment<=p.mortgage*p.mortRate/12)
+    addIssue('lineaire hypotheekbetaling hoger dan de maandelijkse rente, zodat je ook aflost');
   if(p.mortgage>0&&p.mortEndAge>p.age&&p.mortType!=='interestOnly'){
     const natural=mortgageInfo({...p,mortEndAge:0});
     if(Number.isFinite(natural.endAge)&&natural.endAge<p.mortEndAge-1/12-1e-8)
@@ -1258,7 +1282,7 @@ window.recalc=function(){
   const cashflowPhases=buildCashflowPhases(p,mi,di);
   let phases=cashflowPhases.map(x=>{
     const varying=Math.abs(x.net-x.endNet)>=.5;
-    return 'Van '+x.start+' tot '+x.end+': '+x.desc+'. '+(varying?'Het maandbedrag gaat van '+phaseNetLabel(x.net)+' naar '+phaseNetLabel(x.endNet)+' (koopkracht van vandaag).':'Per maand '+phaseNetLabel(x.net)+'.');
+    return 'Van '+x.start+' tot '+x.end+': '+x.desc+'. '+(varying?'Het maandbedrag gaat van '+phaseNetLabel(x.net)+' naar '+phaseNetLabel(x.endNet)+' (koopkracht van vandaag).':'Per maand '+phaseNetLabel(x.net)+'.')+(phaseHasInnerDip(x)?' Tussendoor is het laagste bedrag '+phaseNetLabel(x.minNet)+' rond je '+x.minNetAge+'e.':'');
   });
 
   const effMortResidualNarr=effectiveMortgageResidual(p,mi);
@@ -1311,14 +1335,14 @@ window.recalc=function(){
   });
   const mortgageEnd=isFinite(mi.endAge)?effectiveMortgageCutAge(p,mi).toString():'onbekend';
   const mortgageYearsForInsight=Math.max(0,Math.min(p.endAge,(isFinite(mi.endAge)?effectiveMortgageCutAge(p,mi):p.endAge))-p.age);
-  const mortgageRealLater=(p.mortPayment>0&&p.inflation>0)?p.mortPayment/Math.pow(1+p.inflation,mortgageYearsForInsight):p.mortPayment;
+  const mortgageRealLater=(p.mortPayment>0&&p.inflation>0)?annualMortgageNominalAt(p,p.age+Math.max(0,mortgageYearsForInsight-1))/12/Math.pow(1+p.inflation,Math.max(0,mortgageYearsForInsight-1)):p.mortPayment;
   const mortgageInflationInsight=(p.mortgage>0&&p.mortPayment>0&&p.inflation>0)
-    ? '<div class="inflationinsight"><b>Inflatie werkt hier óók in je voordeel</b><p>Je hypotheekbetaling van '+euro(p.mortPayment)+'/mnd is een nominale contractlast en stijgt niet automatisch mee met de algemene inflatie. Bij '+pct(p.inflation)+' inflatie voelt dezelfde betaling over '+Math.round(mortgageYearsForInsight)+' jaar in koopkracht van vandaag als ongeveer <strong>'+euro(mortgageRealLater)+'/mnd</strong>. Je gewone leefkosten zijn wél inflatiegevoelig; een vaste nominale schuld wordt daardoor reëel steeds lichter.</p></div>'
+    ? '<div class="inflationinsight"><b>Inflatie en je hypotheek</b><p>'+(p.mortType==='linear'?'Je eerste maandbetaling is '+euro(p.mortPayment)+'. Bij een lineaire hypotheek blijft de aflossing gelijk en daalt de rente met de schuld.':'Je hypotheekbetaling van '+euro(p.mortPayment)+'/mnd blijft tijdens deze hypotheekfase nominaal gelijk.')+' In het laatste berekende hypotheekjaar, rond je '+Math.max(p.age,mortgageEnd-1)+'e, is de gemiddelde betaling bij '+pct(p.inflation)+' inflatie ongeveer <strong>'+euro(mortgageRealLater)+'/mnd in koopkracht van vandaag</strong>.</p></div>'
     : '';
   const mortgageRisk=isFinite(mi.endAge)
     ? (effectiveMortResidual>0
         ? 'Rond leeftijd '+mortgageEnd+' eindigt deze hypotheekfase. Dan staat nog '+euro(effectiveMortResidual)+' nominaal open; die toekomstige aflossing is omgerekend naar koopkracht van vandaag.'
-        : 'Rond leeftijd '+mortgageEnd+' is de hypotheek volgens deze invoer afgelost. Daarna valt '+euro(p.mortPayment)+'/mnd uit je uitgaven.')
+        : 'Rond leeftijd '+mortgageEnd+' is de hypotheek volgens deze invoer afgelost. Daarna vervalt de hypotheekbetaling'+(p.mortType==='linear'?' (die tot dan toe daalt door afnemende rente)':' van '+euro(p.mortPayment)+'/mnd')+'.')
     : 'Er is nog geen bruikbare hypotheek-einddatum ingevuld.';
 
   const riskCandidates=[];
@@ -1558,7 +1582,7 @@ window.recalc=function(){
     `<div class="result-bottom-grid">`,
     `<div class="card result-phases-card">
       <h2>Zo verloopt je plan</h2>
-      <p class="sectionhint">Maandbedragen hieronder zijn in koopkracht van vandaag. Vaste hypotheek- en schuldbetalingen blijven op je bankafschrift nominaal gelijk.</p>
+      <p class="sectionhint">Maandbedragen hieronder zijn in koopkracht van vandaag. Bij lineair daalt de nominale hypotheekbetaling; andere contractbetalingen blijven hier gelijk.</p>
       ${rescueCase?'<p class="sectionhint">Hieronder staat je basisplan. De groene aanpassing zie je in de grafiek en 3%-kaart.</p>':''}
       <div class="phasegrid">${phaseCards.map(x=>`<div class="phase"><div class="age">${x.age}</div><div class="amount">${x.amount}</div><div class="desc">${x.desc}</div></div>`).join('')}</div>
       ${oneOffItems.length?'<div class="eventgrid">'+oneOffItems.map(x=>'<div class="eventitem"><b>'+x.title+'</b><span>'+x.detail+'</span></div>').join('')+'</div>':''}
