@@ -1043,6 +1043,7 @@ function planIssues(p){
   if(filled('careAge')&&!filled('careMonthly'))addIssue('bedrag extra zorgkosten');
   if(p.houseRelease>0&&!filled('houseReleaseAge'))addIssue('leeftijd woningaanpassing');
   if(filled('houseReleaseAge')&&!filled('houseRelease'))addIssue('netto bedrag dat uit woning vrijkomt');
+  if(filled('houseReleaseAge')&&(p.houseReleaseAge<p.age||p.houseReleaseAge>p.endAge))addIssue('woningaanpassing binnen de looptijd van je plan');
   if(p.lockedCapital>0&&!filled('lockedCapitalAge'))addIssue('leeftijd waarop later vermogen beschikbaar komt');
   if(filled('lockedCapitalAge')&&!filled('lockedCapital'))addIssue('bedrag dat later beschikbaar komt');
   if(p.lockedCapitalAge>0&&(p.lockedCapitalAge<p.age||p.lockedCapitalAge>p.endAge))addIssue('beschikbaar vermogen binnen de looptijd van je plan');
