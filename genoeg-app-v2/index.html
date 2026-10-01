@@ -947,6 +947,11 @@ window.addFinancialChange=function(){
     if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> “tot” moet later zijn dan “vanaf”.</div>';
     return false;
   }
+  if((type==='income'||type==='expense')&&end!==null&&end>120){
+    const el=document.getElementById('changesList');
+    if(el)el.innerHTML='<div class="warningbox"><b>Controleer:</b> kies een eindleeftijd van maximaal 120 jaar.</div>';
+    return false;
+  }
   let candidate;
   if(type==='receive') candidate={kind:'oneoff',label:label||'eenmalige ontvangst',amount:-amount,age:start,unit,certainty:s('changeCertainty')==='certain'?'certain':'uncertain'};
   else if(type==='pay') candidate={kind:'oneoff',label:label||'eenmalige uitgave',amount:amount,age:start,unit};
@@ -1674,7 +1679,7 @@ window.applyAsk=function(){
     const start=e.kind==='oneoff'?e.age:e.startAge;
     const amount=e.kind==='oneoff'?Math.abs(Number(e.amount)):Math.abs(Number(e.monthly));
     return Number.isFinite(amount)&&amount>0&&amount<=MAX_FINANCIAL_INPUT&&Number.isFinite(start)&&start>=p.age&&(e.kind==='oneoff'?start<=p.endAge:start<p.endAge)&&
-      (e.kind==='oneoff'||e.endAge===null||(Number.isFinite(e.endAge)&&e.endAge>start));
+      (e.kind==='oneoff'||e.endAge===null||(Number.isFinite(e.endAge)&&e.endAge>start&&e.endAge<=120));
   });
   if(added.length!==changes.length-changesBefore){rejectedChange=true;rejectedReasons.push('bedrag of leeftijd van een verandering is ongeldig');changes.splice(changesBefore,changes.length-changesBefore,...added);}
   const applied=otherDirectChange||changedStopAge||changedEndAge||changes.length>changesBefore;
