@@ -1037,6 +1037,11 @@ function planIssues(p){
   if(window.partnerOn&&(p.partnerIncome>0||p.partnerPension>0)&&!filled('partnerAge'))addIssue('leeftijd partner');
   if(window.partnerOn&&p.partnerIncome>0&&!filled('partnerStopAge'))addIssue('stopmoment partner');
   if(window.partnerOn&&p.partnerPension>0&&!filled('partnerPensionAge'))addIssue('pensioenleeftijd partner');
+  if(filled('age')&&p.age===0)addIssue('leeftijd tussen 1 en 120 jaar');
+  if(p.aow>0&&filled('aowAge')&&p.aowAge===0)addIssue('AOW-leeftijd tussen 1 en 120 jaar');
+  if(p.pension>0&&filled('pensionAge')&&p.pensionAge===0)addIssue('pensioenleeftijd tussen 1 en 120 jaar');
+  if(window.partnerOn&&(p.partnerIncome>0||p.partnerPension>0)&&filled('partnerAge')&&Number(document.getElementById('partnerAge').value)===0)addIssue('leeftijd partner tussen 1 en 120 jaar');
+  if(window.partnerOn&&p.partnerPension>0&&filled('partnerPensionAge')&&p.partnerPensionAge===0)addIssue('pensioenleeftijd partner tussen 1 en 120 jaar');
   if(window.partnerOn&&p.partnerIncome>0&&filled('partnerAge')&&filled('partnerStopAge')&&p.partnerStopAge<p.partnerAge)addIssue('stopmoment partner na de huidige partnerleeftijd');
   if(window.partnerOn&&(p.survivorPension>0||p.survivorExpenseReduction>0||p.survivorInsurance>0)&&!filled('survivorAge'))addIssue('leeftijd voor de nabestaandencheck');
   if(p.careMonthly>0&&!filled('careAge'))addIssue('startleeftijd zorgkosten');
