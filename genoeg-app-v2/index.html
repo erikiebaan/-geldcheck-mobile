@@ -1028,6 +1028,7 @@ window.finishDetails=function(){
     window.addFinancialChange();
     if(Math.max(0,n('changeAmount'))>0)return;
   }else recalc();
+  if(planIssues(plan()).length)return;
   toggleDetails(false);
 }
 function planIssues(p){
