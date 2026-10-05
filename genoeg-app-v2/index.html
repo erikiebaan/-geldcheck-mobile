@@ -1038,6 +1038,8 @@ function planIssues(p){
     .forEach(([id,label])=>{if(!filled(id))addIssue(label);});
   if(filled('aow')&&p.aow>0&&!filled('aowAge'))addIssue('AOW-leeftijd');
   if(filled('pension')&&p.pension>0&&!filled('pensionAge'))addIssue('pensioenleeftijd');
+  if(p.mortgage<=0&&p.mortPayment>0)addIssue('hypotheekschuld bij je hypotheekbetaling');
+  if(p.otherDebt<=0&&p.otherDebtPayment>0)addIssue('overige schuld bij je schuldbetaling');
   if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))addIssue('aflossingsvrije deel van je combinatiehypotheek');
   if(p.mortgage>0&&(!filled('mortEndAge')||p.mortEndAge<=p.age))addIssue('hypotheek-einddatum na je huidige leeftijd');
   if(p.mortgage>0&&p.mortType==='linear'&&p.mortPayment<=p.mortgage*p.mortRate/12)
