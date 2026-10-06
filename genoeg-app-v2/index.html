@@ -282,7 +282,7 @@ function loadFinancialChanges(){
     const legacy=JSON.parse(sessionStorage.getItem(CHANGES_STORAGE_KEY)||'[]');
     const stored=savedValue('changes',savedValue('geldcheckFinancialChanges',legacy));
     if(!Array.isArray(stored))return [];
-    const valid=stored.filter(validFinancialChange);
+    const valid=stored.filter(validFinancialChange).map(e=>e.kind==='oneoff'?{...e,amount:Number(e.amount),age:Number(e.age)}:e);
     return valid.filter((e,i)=>valid.findIndex(x=>JSON.stringify(x)===JSON.stringify(e))===i);
   }catch(_){return [];}
 }
