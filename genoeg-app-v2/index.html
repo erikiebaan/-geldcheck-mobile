@@ -1122,7 +1122,10 @@ function planIssues(p){
 function rescueScenario(p){
   if(!rescue)return null;
   const q={...p}, extra=[];
-  const age=Math.max(p.age,Math.min(p.endAge-1,Number(rescue.age)||p.stopAge));
+  const age=Number(rescue.age);
+  const minAge=rescue.type==='later'?Math.max(p.age,p.stopAge):p.age;
+  const maxAge=rescue.type==='later'||rescue.type==='housing'?p.endAge:p.endAge-1;
+  if(!Number.isInteger(age)||age<minAge||age>maxAge)return null;
   const amount=Math.max(0,Number(rescue.amount)||0);
   if(rescue.type==='income')extra.push({kind:'income',label:'mogelijk bijverdienen',monthly:amount,startAge:age,endAge:null});
   else if(rescue.type==='expense')extra.push({kind:'expense',label:'mogelijk lagere uitgaven',monthly:-amount,startAge:age,endAge:null});
@@ -1144,7 +1147,10 @@ window.applyRescue=function(){
   const type=s('rescueType')||rescueDraft?.type||rescue?.type||'income';
   const next=normalizeSavedRescue({type,age:Math.round(n('rescueAge')),amount:n('rescueAmount'),monthly:n('rescueMonthly'),unit:s('rescueUnit')||rescueDraft?.unit||rescue?.unit});
   const warning=document.getElementById('rescueWarning');
-  if(!next){if(warning){warning.style.display='block';warning.textContent='Vul geldige bedragen en een leeftijd van maximaal 120 jaar in.';}return;}
+  const p=plan();
+  const minAge=type==='later'?Math.max(p.age,p.stopAge):p.age;
+  const maxAge=type==='later'||type==='housing'?p.endAge:p.endAge-1;
+  if(!next||next.age<minAge||next.age>maxAge){if(warning){warning.style.display='block';warning.textContent='Kies een leeftijd binnen je plan ('+minAge+'–'+maxAge+').';}return;}
   rescue=next;
   rescueDraft={...rescue};
   saveRescue();recalc();
@@ -1168,7 +1174,7 @@ window.setReturnExample=function(rate){
 }
 function rescueControls(p){
   const shown=rescueDraft||rescue;
-  const type=shown?.type||'income',age=Math.max(p.age,Math.min(p.endAge-1,Number(shown?.age)||Math.max(p.stopAge,70))),amount=shown?.amount||(type==='expense'?300:type==='housing'?100000:500),monthly=shown?.monthly||1000,unit=shown?.unit||p.houseReleaseUnit;
+  const type=shown?.type||'income',minAge=type==='later'?Math.max(p.age,p.stopAge):p.age,maxAge=type==='later'||type==='housing'?p.endAge:p.endAge-1,age=Math.max(minAge,Math.min(maxAge,Number(shown?.age)||Math.max(p.stopAge,70))),amount=shown?.amount||(type==='expense'?300:type==='housing'?100000:500),monthly=shown?.monthly||1000,unit=shown?.unit||p.houseReleaseUnit;
   const isLater=type==='later',isHousing=type==='housing';
   const fields=isLater
     ? '<input id="rescueAmount" type="hidden" value="0"><div class="field wide"><label>Nieuwe stopleeftijd</label><input id="rescueAge" type="number" value="'+age+'"></div><input id="rescueMonthly" type="hidden" value="0">'
