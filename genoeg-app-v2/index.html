@@ -301,7 +301,10 @@ let changes=loadFinancialChanges();
 function normalizeSavedRescue(value){
   if(!value||typeof value!=='object')return null;
   const validTypes=['income','expense','later','housing'];
-  return {...value,type:validTypes.includes(value.type)?value.type:'income'};
+  const age=Number(value.age),amount=Number(value.amount),monthly=Number(value.monthly??0);
+  if(!Number.isFinite(age)||age<0||age>120||!Number.isFinite(amount)||amount<0||amount>MAX_FINANCIAL_INPUT||!Number.isFinite(monthly)||monthly<0||monthly>MAX_FINANCIAL_INPUT)return null;
+  const unit=value.unit==='nominal'||value.unit==='today'?value.unit:undefined;
+  return {...value,type:validTypes.includes(value.type)?value.type:'income',age:Math.round(age),amount,monthly,unit};
 }
 const storedRescue=savedValue('rescue',savedValue('geldcheckRescue',null));
 let rescue=normalizeSavedRescue(storedRescue);
@@ -1139,7 +1142,10 @@ window.applyRescue=function(){
   // The visual choice buttons replaced the old select. Keep the selected
   // draft type when the comparison is applied.
   const type=s('rescueType')||rescueDraft?.type||rescue?.type||'income';
-  rescue={type,age:Math.round(n('rescueAge')),amount:n('rescueAmount'),monthly:n('rescueMonthly'),unit:s('rescueUnit')||rescueDraft?.unit||rescue?.unit};
+  const next=normalizeSavedRescue({type,age:Math.round(n('rescueAge')),amount:n('rescueAmount'),monthly:n('rescueMonthly'),unit:s('rescueUnit')||rescueDraft?.unit||rescue?.unit});
+  const warning=document.getElementById('rescueWarning');
+  if(!next){if(warning){warning.style.display='block';warning.textContent='Vul geldige bedragen en een leeftijd van maximaal 120 jaar in.';}return;}
+  rescue=next;
   rescueDraft={...rescue};
   saveRescue();recalc();
 }
@@ -1162,13 +1168,13 @@ window.setReturnExample=function(rate){
 }
 function rescueControls(p){
   const shown=rescueDraft||rescue;
-  const type=shown?.type||'income',age=shown?.age||Math.max(p.stopAge,70),amount=shown?.amount||(type==='expense'?300:type==='housing'?100000:500),monthly=shown?.monthly||1000,unit=shown?.unit||p.houseReleaseUnit;
+  const type=shown?.type||'income',age=Math.max(p.age,Math.min(p.endAge-1,Number(shown?.age)||Math.max(p.stopAge,70))),amount=shown?.amount||(type==='expense'?300:type==='housing'?100000:500),monthly=shown?.monthly||1000,unit=shown?.unit||p.houseReleaseUnit;
   const isLater=type==='later',isHousing=type==='housing';
   const fields=isLater
     ? '<input id="rescueAmount" type="hidden" value="0"><div class="field wide"><label>Nieuwe stopleeftijd</label><input id="rescueAge" type="number" value="'+age+'"></div><input id="rescueMonthly" type="hidden" value="0">'
     : '<div class="field"><label>'+(isHousing?'Netto vermogen dat vrijkomt':'Bedrag per maand')+'</label><input id="rescueAmount" type="number" min="0" value="'+amount+'"></div><div class="field"><label>Vanaf leeftijd</label><input id="rescueAge" type="number" value="'+age+'"></div>'+(isHousing?'<div class="field wide"><label>Bedrag uitgedrukt in</label><select id="rescueUnit"><option value="nominal" '+(unit==='nominal'?'selected':'')+'>Nominale euro’s op die datum</option><option value="today" '+(unit!=='nominal'?'selected':'')+'>Koopkracht van vandaag</option></select></div><div class="field wide"><label>Nieuwe woonlast per maand</label><input id="rescueMonthly" type="number" min="0" value="'+monthly+'"></div>':'<input id="rescueMonthly" type="hidden" value="0">');
   const choices=[['income','Iets verdienen'],['expense','Minder uitgeven'],['later','Later stoppen'],['housing','Goedkoper wonen']].map(x=>'<button type="button" class="optioncard '+(type===x[0]?'active':'')+'" onclick="setRescueType(\''+x[0]+'\')"><span>'+x[1]+'</span></button>').join('');
-  return '<div class="rescuebox"><div class="optiongrid" aria-label="Kies een mogelijke aanpassing">'+choices+'</div><div class="rescuegrid">'+fields+'<div class="wide"><button type="button" class="primary" onclick="applyRescue()">Vergelijk met mijn plan</button>'+(rescue?' <button type="button" class="tinybtn" onclick="clearRescue()">Wis vergelijking</button>':'')+'</div></div></div>';
+  return '<div class="rescuebox"><div class="optiongrid" aria-label="Kies een mogelijke aanpassing">'+choices+'</div><div class="rescuegrid"><div id="rescueWarning" class="warningbox wide" style="display:none"></div>'+fields+'<div class="wide"><button type="button" class="primary" onclick="applyRescue()">Vergelijk met mijn plan</button>'+(rescue?' <button type="button" class="tinybtn" onclick="clearRescue()">Wis vergelijking</button>':'')+'</div></div></div>';
 }
 function updateDynamicQuestions(){const f=document.getElementById('assetRiskField');if(f)f.style.display=n('capital')>0?'block':'none';}
 function updateMortgageForm(){
