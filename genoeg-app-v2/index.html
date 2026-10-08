@@ -301,10 +301,11 @@ let changes=loadFinancialChanges();
 function normalizeSavedRescue(value){
   if(!value||typeof value!=='object')return null;
   const validTypes=['income','expense','later','housing'];
+  if(!validTypes.includes(value.type))return null;
   const age=Number(value.age),amount=Number(value.amount),monthly=Number(value.monthly??0);
   if(!Number.isFinite(age)||age<0||age>120||!Number.isFinite(amount)||amount<0||amount>MAX_FINANCIAL_INPUT||!Number.isFinite(monthly)||monthly<0||monthly>MAX_FINANCIAL_INPUT)return null;
   const unit=value.unit==='nominal'||value.unit==='today'?value.unit:undefined;
-  return {...value,type:validTypes.includes(value.type)?value.type:'income',age:Math.round(age),amount,monthly,unit};
+  return {...value,type:value.type,age:Math.round(age),amount,monthly,unit};
 }
 const storedRescue=savedValue('rescue',savedValue('geldcheckRescue',null));
 let rescue=normalizeSavedRescue(storedRescue);
