@@ -1047,6 +1047,7 @@ function planIssues(p){
   if(p.mortgage<=0&&p.mortPayment>0)addIssue('hypotheekschuld bij je hypotheekbetaling');
   if(p.otherDebt<=0&&p.otherDebtPayment>0)addIssue('overige schuld bij je schuldbetaling');
   if(p.mortPayment+p.otherDebtPayment>p.spend+1e-8)addIssue('uitgaven p/m van minimaal '+euro(p.mortPayment+p.otherDebtPayment)+' voor je hypotheek- en schuldbetalingen');
+  if(p.mortgage>0&&!['annuity','linear','interestOnly','combination'].includes(p.mortType))addIssue('hypotheekvorm als geldige keuze');
   if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))addIssue('aflossingsvrije deel van je combinatiehypotheek');
   if(p.mortgage>0&&(!filled('mortEndAge')||p.mortEndAge<=p.age))addIssue('hypotheek-einddatum na je huidige leeftijd');
   if(p.mortgage>0&&p.mortType==='linear'&&p.mortPayment<=p.mortgage*p.mortRate/12)
