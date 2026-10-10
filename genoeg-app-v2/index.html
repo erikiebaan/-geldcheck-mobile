@@ -395,7 +395,7 @@ function plan(){
   const mortgage=Math.max(0,n('mortgage'));
   const mortResidualRaw=Math.max(0,n('mortResidual'));
   const workReductionRaw=n('workReduction')/100;
-  const surplusMode=s('surplusMode')||'auto';
+  const surplusMode=s('surplusMode');
   const surplusInvestPct=surplusMode==='save'?0:surplusMode==='split'?.5:surplusMode==='invest'?1:(n('capital')>0?1:0);
   return {
     age,stopAge:n('stopAge'),income:Math.max(0,n('income')),spend:Math.max(0,n('spend')),
@@ -1055,6 +1055,7 @@ function planIssues(p){
   if(p.houseRelease>0&&!['nominal','today'].includes(p.houseReleaseUnit))addIssue('waardering woningbedrag als geldige keuze');
   if(p.lockedCapital>0&&!['nominal','today'].includes(p.lockedCapitalUnit))addIssue('waardering later vermogen als geldige keuze');
   if(window.partnerOn&&p.survivorInsurance>0&&!['nominal','today'].includes(p.survivorInsuranceUnit))addIssue('waardering nabestaandenuitkering als geldige keuze');
+  if(!['auto','save','split','invest'].includes(p.surplusMode))addIssue('bestemming toekomstige overschotten als geldige keuze');
   if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))addIssue('aflossingsvrije deel van je combinatiehypotheek');
   if(p.mortgage>0&&(!filled('mortEndAge')||p.mortEndAge<=p.age))addIssue('hypotheek-einddatum na je huidige leeftijd');
   if(p.mortgage>0&&p.mortType==='linear'&&p.mortPayment<=p.mortgage*p.mortRate/12)
