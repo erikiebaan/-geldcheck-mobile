@@ -355,9 +355,12 @@ function savePlanFields(){
 function saveRescue(){persistPlan();}
 function saveReturnExample(){persistPlan();}
 loadPlanFields();
-window.partnerOn=typeof savedValue('partnerOn',savedValue('geldcheckPartnerOn',null))==='boolean'
-  ? savedValue('partnerOn',savedValue('geldcheckPartnerOn',false))
-  : ['partnerIncome','partnerStopAge','partnerPensionAge','partnerPension'].some(id=>filledValue(id));
+const storedPartnerOn=savedValue('partnerOn',savedValue('geldcheckPartnerOn',null));
+window.partnerOn=storedPartnerOn===true||storedPartnerOn==='true'
+  ? true
+  : storedPartnerOn===false||storedPartnerOn==='false'
+    ? false
+    : ['partnerIncome','partnerStopAge','partnerPensionAge','partnerPension'].some(id=>filledValue(id));
 window.validationRequested=false;
 
 const n=id=>Number(document.getElementById(id)?.value)||0;
