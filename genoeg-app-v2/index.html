@@ -1664,7 +1664,7 @@ window.recalc=function(){
       <div class="vd ${currentPlanAt3?'ok':'warn'}">${currentPlanAt3?'Dit lukt binnen het 3%-scenario':'Bij 3% is een aanpassing nodig'}</div>
       <div class="row"><span>Laagste vermogen bij 3%</span><b>${euro(e3.min)}</b></div>
       <div class="row"><span>Vermogen op je ${p.endAge}e bij 3%</span><b>${euro(e3.end)}</b></div>
-      <div class="row"><span>Benodigd nominaal rendement</span><b>${answerValue}</b></div>
+      <div class="row"><span>${isBufferTimingProblem?'Tijdelijk buffertekort':isStructuralProblem?'Tekort op je einddoel':'Benodigd nominaal rendement'}</span><b>${answerValue}</b></div>
       <div class="row"><span>Je gekozen buffer</span><b>${euro(p.endBuffer)}</b></div>
       <div style="margin-top:14px"><b>${directAction}</b>${suggestedComparison?`<br><button type="button" class="decision-compare" onclick="compareSuggestedRescue('${suggestedComparison.type}',${suggestedComparison.age},${suggestedComparison.amount});toggleMobilePlan()">Vergelijk deze aanpassing →</button>`:''}</div>
       <button type="button" class="mobile-primary" onclick="toggleMobilePlan(this)">${mobilePlanExpanded?'Terug naar overzicht':'Bekijk volledig plan & grafiek →'}</button>
