@@ -40,6 +40,70 @@ button{cursor:pointer;font-weight:650}button:focus-visible,summary:focus-visible
 @media(max-width:560px){main,body.has-results:not(.editing-plan) main{padding:20px 12px 30px}.appbar,body.has-results:not(.editing-plan) .appbar{padding:16px 14px 0}.brand small{font-size:10px}.editbtn{font-size:13px;padding:8px 13px}.card,#gegevens,.result-dashboard .card{padding:22px 18px}.result-dashboard .mobile-decision{padding:22px 18px!important}.mobile-decision-head{margin-bottom:18px}.mobile-decision-head h2{font-size:17px}.mobile-answer{display:flex;align-items:stretch;flex-direction:column;gap:16px;padding-bottom:20px}.decision-copy h3{font-size:27px;line-height:1.2}.decision-copy p{font-size:14px;margin-top:10px;line-height:1.6}.mobile-answer-main{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 16px;padding:14px 16px;border-radius:12px}.mobile-answer-main span{font-size:13px}.mobile-answer-main b{grid-column:2;grid-row:1/3;font-size:40px;line-height:1.2;margin:0;max-width:170px}.mobile-answer-main small{font-size:12px}.decision-action{display:block;padding:18px 0;margin-bottom:2px}.decision-action b{font-size:16px}.decision-compare{max-width:none;margin-top:12px;font-size:13px;display:inline-flex;text-align:center;padding:10px 14px}.overview-chart-heading{padding-top:18px}.overview-chart-heading h3{font-size:17px}.mobile-scenarios{gap:6px;margin-top:14px}.mobile-scenario{padding:11px 9px;min-height:82px;border-radius:10px}.mobile-scenario span{font-size:11px}.mobile-scenario b{font-size:13px;margin-top:6px;line-height:1.4}.overview-chart-result{margin:16px 0 10px}.overview-chart-result b{font-size:19px;white-space:normal}.overview-chart-result>span{font-size:12px;line-height:1.5}.mobile-chart-legend{font-size:12px;gap:8px;margin:10px 0}.mobile-mini-chart{aspect-ratio:auto;height:190px;padding:0;background:#fff;border:0;border-radius:0;overflow:visible}.mobile-mini-chart svg{overflow:visible}.mobile-mini-chart .chartaxis{font-size:23px}.mobile-mini-chart .chartbuffertext{font-size:17px}.mobile-mini-chart .yaxis:nth-of-type(2n){display:none}.mobile-mini-chart .chartline{stroke-width:4.5}.overview-chart-foot{display:block;font-size:11px;line-height:1.5}.overview-chart-foot>span{display:block}.overview-chart-foot>span:last-child{text-align:left;margin-top:4px}.mobile-keypoint{display:block;margin-top:18px;padding-top:15px;font-size:13px}.mobile-keypoint b{display:block;margin-bottom:4px}.mobile-decision-actions{margin-top:16px}.input-section{padding:22px 0}.input-section-heading{margin-bottom:18px;gap:11px}.input-section-heading h3{font-size:21px}.input-section-heading p{font-size:13px}.grid,.ui-fold .grid{gap:17px 12px}.field label{font-size:13px}.ui-goal .grid{grid-template-columns:1fr 1fr}.ui-goal .field:last-child{max-width:none}.storagebar{display:block;margin-top:0}.storagebar .resetbtn{padding-left:0;margin-top:7px}.optiongrid{grid-template-columns:1fr 1fr}.result-chart-card .chartwrap{height:260px}.result-hero-status{min-width:0}}
 @media(max-width:350px){.grid,.ui-goal .grid{grid-template-columns:1fr}.ui-goal .field:last-child{grid-column:auto}.mobile-scenarios{grid-template-columns:1fr}.mobile-scenario{min-height:0}.mobile-answer-main{grid-template-columns:1fr}.mobile-answer-main b{grid-column:1;grid-row:auto;margin:6px 0;max-width:none}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style><style id="rainbow-design">
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14213d;--mut:#5b6577;--line:#e2e6ee;--acc:#1f6feb;--ok:#13795b;--bad:#b42318;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1420;--card:#172033;--ink:#e8edf7;--mut:#9aa6bd;--line:#26324a;--acc:#5b9bff;--ok:#3ecf9b;--bad:#ff8a80;--warn:#fbbf24}}
+:root[data-theme="dark"]{--bg:#0e1420;--card:#172033;--ink:#e8edf7;--mut:#9aa6bd;--line:#26324a;--acc:#5b9bff;--ok:#3ecf9b;--bad:#ff8a80;--warn:#fbbf24}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+h1{font-size:22px;margin:6px 0 4px}p.sub{color:var(--mut);margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:3px}
+input,select{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit}
+.full{grid-column:1/-1}.tog{display:flex;gap:8px;align-items:center;margin:12px 0 4px}.tog input{width:auto}
+#hyp{display:none;margin-top:8px}#hyp.on{display:grid}
+.big{font-size:30px;font-weight:700;line-height:1.15;margin:2px 0 6px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:15px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.mut{color:var(--mut);font-size:13px}
+input[type=range]{padding:0;accent-color:var(--acc)}
+details{margin-top:6px}summary{cursor:pointer;color:var(--acc);font-size:14px}
+ul{margin:6px 0 0;padding-left:18px}li{margin:4px 0}
+body{letter-spacing:-.005em}
+main{padding-top:28px}
+h1{font-size:24px;letter-spacing:-.02em;line-height:1.2}
+.card{box-shadow:0 1px 2px rgba(10,20,40,.06),0 10px 28px rgba(10,20,40,.07);border-radius:18px;padding:20px}
+.big{font-size:32px;letter-spacing:-.02em}
+.age{color:var(--acc)}
+.vd{font-weight:600;font-size:17px;margin:2px 0 8px;line-height:1.3}.vd.ok{color:var(--ok)}.vd.warn{color:var(--warn)}
+input,select{border-radius:12px;padding:12px}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut);margin:7px 0 0}
+.chk input{width:18px;height:18px;min-width:18px;padding:0;margin:0;flex:none;accent-color:var(--acc)}.chk{align-items:flex-start}
+.hero{display:flex;gap:10px;margin:14px 0 4px}
+.pill{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:11px 14px}
+.pill span{display:block;font-size:12px;color:var(--mut)}
+.pill b{font-size:20px;letter-spacing:-.01em}
+@media(max-width:380px){.grid{grid-template-columns:1fr}.pill b{font-size:18px}.big{font-size:28px}}
+
+/* regenboog-testversie */
+body{background-image:linear-gradient(180deg,rgba(255,89,94,.10),rgba(255,202,58,.08) 25%,rgba(138,201,38,.08) 50%,rgba(25,130,196,.09) 75%,rgba(106,76,147,.12))!important;background-attachment:fixed}
+h1{background:linear-gradient(90deg,#ff595e,#ff924c,#e6a800,#5fa800,#1982c4,#6a4c93);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.card{position:relative;overflow:hidden;padding-top:22px}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;background:linear-gradient(90deg,#ff595e,#ff924c,#ffca3a,#8ac926,#1982c4,#6a4c93)}
+.age{background:linear-gradient(90deg,#ff595e,#ff924c,#e6a800,#5fa800,#1982c4,#6a4c93);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.hero .pill:nth-child(1){background:linear-gradient(135deg,rgba(255,89,94,.18),rgba(255,146,76,.18));border-color:rgba(255,89,94,.45)}
+.hero .pill:nth-child(2){background:linear-gradient(135deg,rgba(138,201,38,.20),rgba(25,130,196,.18));border-color:rgba(25,130,196,.45)}
+input[type=range]{-webkit-appearance:none;appearance:none;height:12px;border-radius:8px;background:linear-gradient(90deg,#ff595e,#ff924c,#ffca3a,#8ac926,#1982c4,#6a4c93);padding:0;border:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;border:4px solid #6a4c93;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:4px solid #6a4c93}
+input:focus,select:focus{outline:2px solid #1982c4;outline-offset:1px}
+.grid>div:nth-child(1) label{color:#d6393e}.grid>div:nth-child(2) label{color:#d9742a}.grid>div:nth-child(3) label{color:#b38900}.grid>div:nth-child(4) label{color:#4f8f00}.grid>div:nth-child(5) label{color:#1982c4}.grid>div:nth-child(6) label{color:#6a4c93}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .grid>div:nth-child(n) label{filter:brightness(1.35)}}
+.beta{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(90deg,#ff595e,#ff924c,#8ac926,#1982c4,#6a4c93);padding:3px 10px;border-radius:999px;margin-bottom:8px}
+
+/* Integrate the supplied visual design with the retained financial controls. */
+:root{--muted:var(--mut);--g:var(--acc);--g2:var(--acc);--blue:#1982c4;--gold:#b45309;color-scheme:light}
+body{font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif!important}
+main,body.has-results:not(.editing-plan) main{max-width:560px!important;padding:28px 16px 40px!important;margin:auto}
+.appbar,.summaryrow,.statusline,#gegevens>h2,.topintro,.bottomask{display:none!important}
+#rainbow-intro{display:block!important;margin:0 0 16px}#rainbow-intro h1{font-size:24px;margin:6px 0 4px}#rainbow-intro p{font-size:16px;margin:0 0 16px;color:var(--mut)}
+#gegevens,body.has-results:not(.editing-plan) #gegevens{display:block!important;max-width:none!important;margin:0 0 14px!important;padding:22px 20px 20px!important;background:var(--card)!important}
+#details,#details.open{display:block!important;margin:0;padding:0;border:0}.grid,.ui-fold .grid{grid-template-columns:1fr 1fr;gap:10px}.field label{font-size:13px;font-weight:400;color:var(--mut);margin-bottom:3px;line-height:1.45}.field input,.field select{font:inherit;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);min-height:0}.field .note{font-size:13px;color:var(--mut)}
+.rainbow-more{width:100%;border:1px solid #1982c4;background:var(--card);color:var(--acc);font:600 15px system-ui;border-radius:12px;padding:13px;margin-top:16px;min-height:44px}.rainbow-more small{display:block;font-size:12px;font-weight:400;margin-top:3px;color:var(--mut)}
+#rainbow-extra[hidden]{display:none!important}#rainbow-extra{margin-top:18px}.group{padding:12px 0;border:0}.grouphead h3{font-size:18px}.grouphead p{font-size:13px}.groupicon{display:none}.ui-fold{border:0;border-top:1px solid var(--line);padding:12px 0;background:transparent}.ui-fold summary{font-size:14px;color:var(--acc)}.storagebar{font-size:12px;margin-top:12px}.storagebar b{font-size:12px}.storagebar .resetbtn{font-size:12px}.assumptions-note{margin:14px 0 0;font-size:12px;color:var(--mut)}
+.result-dashboard .rainbow-result{display:block!important;padding:22px 20px 20px!important;min-height:0!important}.result-dashboard.mobile-expanded .rainbow-result{display:block!important}.rainbow-result .hero{display:flex!important;background:transparent!important;color:var(--ink)!important;padding:0!important;min-height:0;border:0;box-shadow:none}.rainbow-result .hero:before{display:none}.rainbow-result .big{font-size:32px}.rainbow-result .pill{min-width:0}.rainbow-result .pill b{font-size:20px}.rainbow-result h2{font-size:18px}.rainbow-result button{min-height:44px}.rainbow-result .row{font-size:14px}.rainbow-result .mobile-primary{width:100%;margin-top:14px;border:1px solid var(--line);background:var(--card);color:var(--acc);border-radius:12px;padding:12px;font-size:14px}.rainbow-result .decision-compare{max-width:none;margin-top:8px;white-space:normal;background:var(--bg);border:1px solid var(--line);color:var(--acc);padding:10px 12px;border-radius:10px}.result-dashboard.mobile-expanded>.result-hero{display:none!important}.result-main-grid,.result-bottom-grid{display:block}.result-dashboard .card{padding:22px 20px!important;margin-bottom:14px}.result-chart-card .chartwrap{height:260px}.result-dashboard{margin-top:0}.result-dashboard .hero{flex-direction:row}.rainbow-result label{font-size:13px;font-weight:400}.rainbow-result input[type=range]{width:100%;margin:10px 0 14px}.rainbow-result .mut{color:var(--mut)}
+@media(max-width:380px){.grid,.ui-fold .grid{grid-template-columns:1fr}.rainbow-result .pill b{font-size:18px}.rainbow-result .big{font-size:28px}}
 </style></head><body><div class="appbar"><div class="appbarin"><div class="brand">Geldcheck<small>Financiële kern v2</small></div><button class="editbtn" onclick="toggleDetails()">Mijn gegevens</button></div></div><main>
 <div class="topintro">
   <h1>Heb ik straks genoeg?</h1>
@@ -201,38 +265,26 @@ button{cursor:pointer;font-weight:650}button:focus-visible,summary:focus-visible
 <script src="../answer_engine.js?v=0.1"></script>
 <script src="../narrative_engine.js?v=0.1"></script>
 <script>
-/* Move existing controls; never replace values, listeners, storage or calculations. */
+/* Supplied rainbow interface; retain every original financial control. */
 (()=>{
-  const $=id=>document.getElementById(id);
-  const details=$('details');
-  const groups=[...details.children].filter(el=>el.classList.contains('group'));
-  const basic=document.createElement('div');basic.className='group ui-basic';
-  basic.innerHTML='<section class="input-section"><div class="input-section-heading"><span>01</span><div><h3>Vandaag</h3><p>Je inkomen, uitgaven en vermogen.</p></div></div><div class="grid" id="uiBasicFields"></div><div id="uiTodayDetails"></div></section><section class="input-section"><div class="input-section-heading"><span>02</span><div><h3>Later</h3><p>Stoppen met werken en inkomen dat daarna begint.</p></div></div><div class="grid" id="uiLaterFields"></div><div id="uiLaterDetails"></div></section><section class="input-section ui-goal"><div class="input-section-heading"><span>03</span><div><h3>Je doel</h3><p>Hoelang moet je plan meegaan, en wat wil je behouden?</p></div></div><div class="grid" id="uiGoalFields"></div><div id="uiGoalDetails"></div></section>';
-  details.prepend(basic);
-  const move=(ids,target)=>ids.forEach(id=>target.append($(id).closest('.field')));
-  move(['age','income','spend','cash','capital','cashRate'],$('uiBasicFields'));
-  move(['stopAge','workReduction','aowAge','aow','pensionAge','pension'],$('uiLaterFields'));
-  move(['endAge','endBuffer','inflation'],$('uiGoalFields'));
-  $('spend').closest('.field').querySelector('label').textContent='Uitgaven p/m (incl. hypotheek)';
-  $('pension').closest('.field').querySelector('label').textContent='Aanvullend pensioen netto p/m';
-  $('pension').closest('.field').querySelector('.note').textContent='Geen aanvullend pensioen? Vul 0 in.';
-  document.querySelectorAll('.field').forEach(field=>{const input=field.querySelector('input,select'),label=field.querySelector('label');if(input&&label)label.htmlFor=input.id;});
-  const titles=['Schulden & beleggingen','Wonen & hypotheek','Samen rekenen met je partner','Erfenis & andere veranderingen','','Meer financiële details'];
-  groups.forEach((group,i)=>{
-    if(i===4){group.remove();return;}
-    const fold=document.createElement('details');fold.className='ui-fold';
-    const summary=document.createElement('summary');summary.textContent=titles[i];fold.append(summary);fold.append(group);
-    $(i<2?'uiTodayDetails':i<4?'uiLaterDetails':'uiGoalDetails').append(fold);
-  });
-  // Every required field stays visible. Optional controls keep their existing handlers.
-  try{if(!localStorage.getItem('geldcheck-plan-v2')){details.classList.add('open');document.body.classList.add('editing-plan');}}catch(_){details.classList.add('open');document.body.classList.add('editing-plan');}
-  const intro=document.querySelector('.topintro');
-  intro.querySelector('h1').textContent='Heb ik straks genoeg?';
-  intro.querySelector('p').textContent='Breng vandaag en later bij elkaar. Je ziet wat je plan vraagt en welke aanpassing helpt.';
-  details.querySelector(':scope > .primary').textContent='Bekijk mijn Geldcheck';
-  document.addEventListener('DOMContentLoaded',()=>{if(!document.body.classList.contains('has-results'))window.toggleDetails(true);});
+const $=id=>document.getElementById(id),details=$('details');
+const groups=[...details.children].filter(e=>e.classList.contains('group'));
+const intro=document.createElement('div');intro.id='rainbow-intro';intro.innerHTML='<span class="beta">🌈 Geldcheck</span><h1>Vanaf welke leeftijd kan ik stoppen?</h1><p>Vul zes dingen in. Je antwoord verschijnt direct onder het formulier.</p>';
+document.querySelector('main').prepend(intro);
+const six=document.createElement('div');six.className='grid';six.id='rainbow-six';details.prepend(six);
+for(const id of ['age','income','spend','cash','capital','pension'])six.append($(id).closest('.field'));
+$('cash').closest('.field').querySelector('label').textContent='Spaargeld';
+$('capital').closest('.field').querySelector('label').textContent='Belegd vermogen';
+$('pension').closest('.field').querySelector('label').textContent='Aanvullend pensioen p/m (netto)';
+const extra=document.createElement('div');extra.id='rainbow-extra';extra.hidden=true;
+const more=document.createElement('button');more.type='button';more.id='rainbow-more';more.className='rainbow-more';more.setAttribute('aria-expanded','false');more.setAttribute('aria-controls','rainbow-extra');more.innerHTML='Mijn situatie is uitgebreider<small>Partner · hypotheek · erfenis · zorg · eigen doelen</small>';more.onclick=()=>window.toggleExtendedSituation();details.append(more);
+const note=document.createElement('p');note.id='rainbow-assumptions';note.className='assumptions-note';details.append(note);details.append(extra);
+const titles=['Schulden, sparen & beleggingen','Wonen & hypotheek','AOW, pensioen & partner','Erfenis & andere veranderingen','Mijn doel & buffer','Meer financiële details'];
+groups.forEach((group,i)=>{const fold=document.createElement('details');fold.className='ui-fold';const sum=document.createElement('summary');sum.textContent=titles[i];fold.append(sum,group);extra.append(fold)});
+for(const el of [...details.children])if(el!==six&&el!==more&&el!==note&&el!==extra)extra.append(el);
+document.querySelectorAll('.field').forEach(field=>{const input=field.querySelector('input,select'),label=field.querySelector('label');if(input&&label)label.htmlFor=input.id});
+window.toggleExtendedSituation=function(force){const open=typeof force==='boolean'?force:extra.hidden;extra.hidden=!open;more.setAttribute('aria-expanded',String(open));more.firstChild.textContent=open?'Verberg mijn uitgebreide situatie':'Mijn situatie is uitgebreider';};
 })();
-
 </script>
 <script>
 (function(){"use strict";
@@ -1222,6 +1274,8 @@ window.recalc=function(){
   updateDynamicQuestions();
   updateMortgageForm();
   const p=plan();
+  const assumptions=document.getElementById('rainbow-assumptions');
+  if(assumptions)assumptions.textContent='Je doel: tot '+p.endAge+' jaar · buffer '+euro(p.endBuffer)+' · inflatie '+pct(p.inflation)+'. AOW: '+euro(p.aow)+'/mnd vanaf '+p.aowAge+'; pensioen vanaf '+p.pensionAge+'.'+(window.partnerOn?' Partner meegerekend.':'')+(changes.length?' '+changes.length+' verandering(en) opgenomen.':'')+' Pas dit aan via Mijn situatie is uitgebreider.';
   const issues=planIssues(p);
   const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
   const result=document.getElementById('result');
@@ -1593,25 +1647,25 @@ window.recalc=function(){
   topRisks.forEach(r=>{if(mobileRisks.length<3)mobileRisks.push(r.text.split(/(?<=\.)\s/)[0]);});
   document.body?.classList?.add('has-results');
 
+  const rainbowEarliest5=earliestAtNominal(p,.05);
   result.innerHTML = [
     `<section class="result-dashboard${mobilePlanExpanded?' mobile-expanded':''}">`,
-    `<div class="card mobile-decision">
-      <div class="mobile-decision-head"><div><h2>Jouw Geldcheck</h2><p class="mobile-decision-subtitle">Van je situatie naar een helder plan</p></div></div>
-      <div class="mobile-answer">
-        <div class="decision-copy"><span class="decision-eyebrow">${currentPlanAt3?'Binnen je gekozen doel':'Dit vraagt aandacht'}</span><h3>${overviewVerdict}</h3><p>${overviewExplanation}</p></div>
-        <div class="mobile-answer-main"><span>${isBufferTimingProblem?'Tijdelijk buffertekort':isStructuralProblem?'Structureel eindtekort':'Benodigd rendement'}</span><b>${answerValue}</b><small>${isBufferTimingProblem||isStructuralProblem?'binnen de hoge-rendementstest':'gemiddeld nominaal per jaar'}</small></div>
-      </div>
-      <div class="decision-action"><div><span>${currentPlanAt3?'Bij 3%':'Een stap die helpt bij 3%'}</span><b>${directAction}</b></div>${suggestedComparison?`<button type="button" class="decision-compare" onclick="compareSuggestedRescue('${suggestedComparison.type}',${suggestedComparison.age},${suggestedComparison.amount})">Vergelijk deze aanpassing <span aria-hidden="true">→</span></button>`:!currentPlanAt3?'<button type="button" class="decision-compare" onclick="toggleMobilePlan();openRescueOptions()">Bekijk mogelijkheden →</button>':''}</div>
-      <div class="overview-chart-heading"><h3>Wat als je rendement anders is?</h3><span>Stoppen op ${p.stopAge} · doel tot ${p.endAge}</span></div>
-      <div class="mobile-scenarios" aria-label="Kies een rendementsscenario">${compactScenarios.map(([rate,sim,label])=>`<button type="button" class="mobile-scenario ${overviewRate===rate?'active':''}" aria-pressed="${overviewRate===rate}" onclick="setReturnExample(${rate})" ${!hasReturnEffect?'disabled aria-disabled="true"':''}><span>${label}</span><b>${compactScenarioOutcome(sim).replace(' tekort',' onder doel')}</b></button>`).join('')}</div>
-      ${!hasReturnEffect?'<p class="mobile-scenario-note">In dit plan verandert het rendement de uitkomst niet: er wordt gedurende de looptijd geen vermogen belegd.</p>':''}
-      <div class="overview-chart-result" aria-live="polite"><b>${euro(overviewSim.end)} op je ${p.endAge}e</b><span>${overviewState}${overviewGap>0?' Je komt '+euro(overviewGap)+' onder je buffer of einddoel.':''}</span></div>
-      <div class="mobile-chart-legend"><span><i style="background:var(--blue)"></i>Jouw plan bij ${overviewRate}%</span>${hasUncertainReceipt?'<span><i style="background:#8f2de2"></i>Met onzekere ontvangst</span>':''}${overviewRescue?'<span><i style="background:#1d9b68"></i>'+esc(rescueCase.label)+' · ook bij '+overviewRate+'%</span>':''}</div>
-      <div class="mobile-mini-chart">${chartSvg(overviewPath,overviewUncertain,[],[],overviewRescue,null,p.endBuffer,[],true)}</div>
-      <div class="overview-chart-foot"><span>Leeftijd → · bedragen van vandaag · k = duizend, m = miljoen</span><span>${overviewRate===7?'7% is een historisch voorbeeld, geen verwachting of garantie.':'Een vast rendement is een scenario; echte rendementen schommelen.'}</span></div>
-      ${overviewRescueSim?`<div class="overview-comparison-result"><span><b>Met je aanpassing bij ${overviewRate}%</b>${overviewRescueGap>0?'Nog '+euro(overviewRescueGap)+' onder je buffer of einddoel.':'Buffer en einddoel intact.'} Laagste vermogen: ${euro(overviewRescueSim.min)}.</span><button type="button" class="tinybtn" onclick="clearRescue()">Wis vergelijking</button></div>`:''}
-      <div class="mobile-keypoint"><b>Waarom dit telt</b><span>${esc(mobileKeyPoint)}</span></div>
-      <div class="mobile-decision-actions"><button type="button" class="mobile-primary" onclick="toggleMobilePlan(this)">Bekijk details van je plan <span aria-hidden="true">→</span></button></div>
+    `<div class="card mobile-decision rainbow-result">
+      <div class="mut">Een eerste inschatting bij 3% nominaal beleggingsrendement</div>
+      <div class="big">${earliest3!==null?'Je kunt stoppen op <span class="age">'+earliest3+'</span>':'Je plan vraagt een aanpassing'}</div>
+      <p class="mut">${earliest3!==null?'Binnen je ingevoerde doel en buffer.':'Alleen later stoppen is bij 3% niet voldoende binnen je plan.'} Geen garantie: rendementen schommelen.</p>
+      <div class="hero"><div class="pill"><span>Bij 3% rendement</span><b>${earliest3!==null?earliest3+' jaar':'Aanpassing nodig'}</b></div><div class="pill"><span>Bij 5% rendement</span><b>${rainbowEarliest5!==null?rainbowEarliest5+' jaar':'Aanpassing nodig'}</b></div></div>
+      <p class="mut">Deze leeftijden tellen zekere veranderingen mee. Onzekere ontvangsten zijn niet nodig om dit antwoord te halen. Pensioen blijft gebaseerd op je eigen invoer.</p>
+      <h2>Wat als ik eerder of later stop?</h2>
+      <label for="rainbow-stop">Stoppen op <b id="rainbow-stop-value">${p.stopAge}</b> jaar</label>
+      <input id="rainbow-stop" type="range" min="${p.age}" max="${p.endAge-1}" step="1" value="${p.stopAge}" oninput="document.getElementById('rainbow-stop-value').textContent=this.value" onchange="setRainbowStop(this.value)">
+      <div class="vd ${currentPlanAt3?'ok':'warn'}">${currentPlanAt3?'Dit lukt binnen het 3%-scenario':'Bij 3% is een aanpassing nodig'}</div>
+      <div class="row"><span>Laagste vermogen bij 3%</span><b>${euro(e3.min)}</b></div>
+      <div class="row"><span>Vermogen op je ${p.endAge}e bij 3%</span><b>${euro(e3.end)}</b></div>
+      <div class="row"><span>Benodigd nominaal rendement</span><b>${answerValue}</b></div>
+      <div class="row"><span>Je gekozen buffer</span><b>${euro(p.endBuffer)}</b></div>
+      <div style="margin-top:14px"><b>${directAction}</b>${suggestedComparison?`<br><button type="button" class="decision-compare" onclick="compareSuggestedRescue('${suggestedComparison.type}',${suggestedComparison.age},${suggestedComparison.amount});toggleMobilePlan()">Vergelijk deze aanpassing →</button>`:''}</div>
+      <button type="button" class="mobile-primary" onclick="toggleMobilePlan(this)">Bekijk volledig plan & grafiek →</button>
     </div>`,
     `<div class="card hero result-hero">
       <div class="result-hero-copy"><div class="sub">${headline}</div>
@@ -1824,6 +1878,13 @@ PLAN_FIELD_IDS.forEach(id=>{
     }
   });
 document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
+if(!savedPlan){
+  const defaults={stopAge:67,aowAge:67,aow:1400,pensionAge:67,endAge:95,endBuffer:35000,inflation:2,cashRate:1.5};
+  Object.entries(defaults).forEach(([id,value])=>{const el=document.getElementById(id);if(el&&el.value==='')el.value=String(value)});
+}
+window.setRainbowStop=function(value){const el=document.getElementById('stopAge');el.value=String(value);savePlanFields();recalc();};
+const originalDetailsToggle=window.toggleDetails;
+window.toggleDetails=function(force){originalDetailsToggle(force);if(force!==false){window.toggleExtendedSituation(true);document.getElementById('rainbow-extra').scrollIntoView({behavior:'smooth',block:'start'})}};
 updateChangeForm();
 updateDynamicQuestions();
 updateMortgageForm();
