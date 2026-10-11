@@ -1099,7 +1099,7 @@ function planIssues(p){
   const numericFields=[
     ['age','leeftijd'],['stopAge','stopmoment'],['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['cashRate','rente op cash'],['capital','belegd vermogen'],
     ['otherDebt','overige schuld'],['otherDebtRate','rente overige schuld'],['otherDebtPayment','betaling overige schuld'],['otherDebtEndAge','einddatum overige schuld'],
-    ['workReduction','minder werken'],['aowAge','AOW-leeftijd'],['aow','AOW-bedrag'],['pensionAge','pensioenleeftijd'],
+    ['workReduction','minder werken'],['aowAge','AOW-leeftijd'],['aow','AOW-bedrag'],['pensionAge','pensioenleeftijd'],['pension','pensioenbedrag'],
     ['endAge','eindleeftijd'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname'],['homeValue','woningwaarde'],['mortgage','hypotheekschuld'],
     ['mortPayment','hypotheekbetaling'],['mortRate','hypotheekrente'],['mortEndAge','hypotheek-einddatum'],['mortResidual','aflossingsvrij deel'],
     ['endTarget','gewenst eindvermogen'],['pensionIndex','pensioenindexatie'],['aowIndex','AOW-indexatie'],['wealthTax','vermogensheffing'],['investmentCost','beleggingskosten'],
@@ -1114,7 +1114,7 @@ function planIssues(p){
   });
   const nonNegativeFields=[
     ['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['capital','belegd vermogen'],['otherDebt','overige schuld'],['otherDebtRate','rente overige schuld'],['otherDebtPayment','betaling overige schuld'],
-    ['workReduction','minder werken'],['aow','AOW-bedrag'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname'],['homeValue','woningwaarde'],['mortgage','hypotheekschuld'],
+    ['workReduction','minder werken'],['aow','AOW-bedrag'],['pension','pensioenbedrag'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname'],['homeValue','woningwaarde'],['mortgage','hypotheekschuld'],
     ['mortPayment','hypotheekbetaling'],['mortRate','hypotheekrente'],['mortResidual','aflossingsvrij deel'],['endTarget','gewenst eindvermogen'],['wealthTax','vermogensheffing'],['investmentCost','beleggingskosten'],
     ['careMonthly','extra zorgkosten'],['houseRelease','bedrag uit woning'],['lockedCapital','later beschikbaar vermogen']
   ];
