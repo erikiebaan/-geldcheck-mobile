@@ -93,6 +93,7 @@ input:focus,select:focus{outline:2px solid #1982c4;outline-offset:1px}
 .beta{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(90deg,#ff595e,#ff924c,#8ac926,#1982c4,#6a4c93);padding:3px 10px;border-radius:999px;margin-bottom:8px}
 
 /* Integrate the supplied visual design with the retained financial controls. */
+.card::before{display:block!important}.optional:not(.on){display:none!important}
 :root{--muted:var(--mut);--g:var(--acc);--g2:var(--acc);--blue:#1982c4;--gold:#b45309;color-scheme:light}
 body{font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif!important}
 main,body.has-results:not(.editing-plan) main{max-width:560px!important;padding:28px 16px 40px!important;margin:auto}
@@ -273,6 +274,7 @@ const intro=document.createElement('div');intro.id='rainbow-intro';intro.innerHT
 document.querySelector('main').prepend(intro);
 const six=document.createElement('div');six.className='grid';six.id='rainbow-six';details.prepend(six);
 for(const id of ['age','income','spend','cash','capital','pension'])six.append($(id).closest('.field'));
+$('spend').closest('.field').querySelector('label').textContent='Uitgaven p/m (incl. hypotheek)';
 $('cash').closest('.field').querySelector('label').textContent='Spaargeld';
 $('capital').closest('.field').querySelector('label').textContent='Belegd vermogen';
 $('pension').closest('.field').querySelector('label').textContent='Aanvullend pensioen p/m (netto)';
