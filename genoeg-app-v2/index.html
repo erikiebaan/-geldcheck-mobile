@@ -1484,7 +1484,8 @@ window.recalc=function(){
     });
   }
 
-  const startNet=Math.max(1,p.cash+p.capital-p.otherDebt);
+  const actualStartNet=p.cash+p.capital-p.otherDebt;
+  const startNet=Math.max(1,actualStartNet);
   const grossAssets=Math.max(1,p.cash+p.capital);
   const worstMonthlyDraw=Math.max(0,...cashflowPhases.map(x=>-x.minNet));
 
@@ -1501,7 +1502,7 @@ window.recalc=function(){
     const pctNet=nominalToToday(p,di.residual,debtCutAge(di))/startNet;
     riskCandidates.push({
       score:Math.min(95,20+pctNet*170),
-      text:'Rond je '+debtCutAge(di)+'e staat naar verwachting '+euro(di.residual)+' overige schuld nominaal open. Omgerekend naar koopkracht van vandaag is dat '+pct(pctNet)+' van je huidige netto financiële vermogen.'
+      text:'Rond je '+debtCutAge(di)+'e staat naar verwachting '+euro(di.residual)+' overige schuld nominaal open.'+(actualStartNet>0?' Omgerekend naar koopkracht van vandaag is dat '+pct(nominalToToday(p,di.residual,debtCutAge(di))/actualStartNet)+' van je huidige netto financiële vermogen.':'')
     });
   }
 
@@ -1511,7 +1512,7 @@ window.recalc=function(){
     const withdrawalRate=annualDraw/startNet;
     riskCandidates.push({
       score:Math.min(90,20+withdrawalRate*500),
-      text:'Je zwaarste onttrekkingsfase is '+drawPhase.start+'–'+drawPhase.end+': tot '+euro(-drawPhase.minNet)+'/mnd, oftewel ongeveer '+pct(withdrawalRate)+' van je huidige netto financiële vermogen per jaar.'
+      text:'Je zwaarste onttrekkingsfase is '+drawPhase.start+'–'+drawPhase.end+': tot '+euro(-drawPhase.minNet)+'/mnd'+(actualStartNet>0?', oftewel ongeveer '+pct(annualDraw/actualStartNet)+' van je huidige netto financiële vermogen per jaar.':'.')
     });
   }
 
