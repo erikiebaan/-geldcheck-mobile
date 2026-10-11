@@ -93,7 +93,7 @@ input:focus,select:focus{outline:2px solid #1982c4;outline-offset:1px}
 .beta{display:inline-block;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(90deg,#ff595e,#ff924c,#8ac926,#1982c4,#6a4c93);padding:3px 10px;border-radius:999px;margin-bottom:8px}
 
 /* Integrate the supplied visual design with the retained financial controls. */
-.card::before{display:block!important}.optional:not(.on){display:none!important}
+.card::before{display:block!important}.optional:not(.on){display:none!important}#rainbow-stop{min-height:12px!important;height:12px!important}.result-dashboard .rainbow-result{overflow:hidden!important}
 :root{--muted:var(--mut);--g:var(--acc);--g2:var(--acc);--blue:#1982c4;--gold:#b45309;color-scheme:light}
 body{font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif!important}
 main,body.has-results:not(.editing-plan) main{max-width:560px!important;padding:28px 16px 40px!important;margin:auto}
@@ -1852,7 +1852,7 @@ window.toggleMobilePlan=function(button){
   const expanded=dashboard.classList.toggle('mobile-expanded');
   mobilePlanExpanded=expanded;
   const toggleButton=button||dashboard.querySelector('.mobile-decision .mobile-primary');
-  if(toggleButton)toggleButton.textContent=expanded?'Terug naar overzicht':'Bekijk details van je plan →';
+  if(toggleButton)toggleButton.textContent=expanded?'Terug naar overzicht':'Bekijk volledig plan & grafiek →';
   if(!expanded)dashboard.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
