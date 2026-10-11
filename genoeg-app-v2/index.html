@@ -356,6 +356,7 @@ function saveRescue(){persistPlan();}
 function saveReturnExample(){persistPlan();}
 loadPlanFields();
 const storedPartnerOn=savedValue('partnerOn',savedValue('geldcheckPartnerOn',null));
+window.partnerOnStorageValid=storedPartnerOn===null||storedPartnerOn===undefined||[true,false,'true','false'].includes(storedPartnerOn);
 window.partnerOn=storedPartnerOn===true||storedPartnerOn==='true'
   ? true
   : storedPartnerOn===false||storedPartnerOn==='false'
@@ -1056,6 +1057,7 @@ function planIssues(p){
   if(p.lockedCapital>0&&!['nominal','today'].includes(p.lockedCapitalUnit))addIssue('waardering later vermogen als geldige keuze');
   if(window.partnerOn&&p.survivorInsurance>0&&!['nominal','today'].includes(p.survivorInsuranceUnit))addIssue('waardering nabestaandenuitkering als geldige keuze');
   if(!['auto','save','split','invest'].includes(p.surplusMode))addIssue('bestemming toekomstige overschotten als geldige keuze');
+  if(!window.partnerOnStorageValid)addIssue('partnerkeuze als geldige aan/uit-keuze');
   if(p.mortType==='combination'&&(!filled('mortResidual')||p.mortResidual<=0))addIssue('aflossingsvrije deel van je combinatiehypotheek');
   if(p.mortgage>0&&(!filled('mortEndAge')||p.mortEndAge<=p.age))addIssue('hypotheek-einddatum na je huidige leeftijd');
   if(p.mortgage>0&&p.mortType==='linear'&&p.mortPayment<=p.mortgage*p.mortRate/12)
@@ -1218,6 +1220,7 @@ function updatePartnerVisibility(){
 }
 window.togglePartner=function(){
   window.partnerOn=!window.partnerOn;
+  window.partnerOnStorageValid=true;
   if(!window.partnerOn){
     ['partnerAge','partnerIncome','partnerStopAge','partnerPensionAge','partnerPension','survivorAge','survivorPension','survivorExpenseReduction','survivorInsurance'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   }
