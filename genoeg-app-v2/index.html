@@ -27,6 +27,7 @@ body.has-results:not(.editing-plan) .topintro,body.has-results:not(.editing-plan
 @media(max-width:760px){main{padding:14px 10px 78px}.grid,.kpis{grid-template-columns:1fr 1fr}.phasegrid,.scenario-grid,.storygrid,.moneygrid,.eventgrid{grid-template-columns:1fr}.optiongrid{grid-template-columns:1fr 1fr}.summaryrow{grid-template-columns:1fr 1fr 1fr}.hero .big{font-size:54px}.chatrow{display:block}.chatrow button{width:100%;margin-top:8px}.storagebar{align-items:flex-start;flex-direction:column}.resetbtn{width:auto}.bottomask{right:10px;bottom:10px}.bottomask.open{left:10px}.bottomask.open .bottomaskin{width:100%}.bottomask.open input{width:auto;flex:1}.chartwrap{height:270px}h1{font-size:40px}.card{padding:16px;border-radius:20px}.result-dashboard{width:100%;margin-left:0;transform:none}.result-hero{grid-template-columns:1fr;gap:10px}.result-hero .big{font-size:52px}.result-hero-status{min-width:0}.result-main-grid,.result-bottom-grid,.proof-grid{grid-template-columns:1fr}.result-chart-card .chartwrap{height:265px}.result-phases-card .phasegrid{grid-template-columns:1fr 1fr}.result-main-grid{display:flex;flex-direction:column}.result-scenario-card{order:-1}.result-mobile-hint{display:block}
 body.has-results:not(.editing-plan) .topintro,body.has-results:not(.editing-plan) #gegevens,body.has-results:not(.editing-plan) .bottomask{display:none}.mobile-decision{padding:12px!important;min-height:calc(100dvh - 112px)}.mobile-decision-head{gap:8px}.mobile-decision-head h2{font-size:18px}.mobile-edit{padding:7px 10px;font-size:12px}.mobile-answer{grid-template-columns:1.05fr .95fr;gap:8px;margin-top:9px}.mobile-answer-main{padding:11px 12px;border-radius:16px}.mobile-answer-main span{font-size:11px}.mobile-answer-main b{font-size:42px;line-height:.95;margin:5px 0 3px}.mobile-answer-main small{font-size:11px;line-height:1.25}.mobile-answer-side{grid-template-columns:1fr;gap:8px}.mobile-fact{padding:9px 10px;border-radius:14px}.mobile-fact span{font-size:10px}.mobile-fact b{margin-top:3px;font-size:13px}.mobile-chart-legend{gap:10px;margin:6px 3px -2px;font-size:10px}.mobile-chart-legend i{width:14px;height:3px}.mobile-mini-chart{height:112px;margin:3px 0 2px;border-radius:14px}.mobile-mini-chart .xaxis{font-size:15px}.mobile-mini-chart .chartbuffertext{font-size:15px}.mobile-mini-chart .chartline{stroke-width:6}.mobile-phases{gap:5px;margin-top:5px}.mobile-phase{padding:7px;border-radius:11px}.mobile-phase span{font-size:9px}.mobile-phase b{margin-top:2px;font-size:11px;line-height:1.15}.mobile-riskline{gap:5px;margin-top:6px}.mobile-risk{padding:8px;border-radius:11px;font-size:11px;line-height:1.28}.mobile-decision-actions{gap:7px;margin-top:7px}.mobile-decision-actions button{padding:9px 11px;border-radius:12px;font-size:12px}
 }
+ .overview-comparison-result{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;margin-top:14px;background:#eff7f2;border:1px solid #d5e8db;border-radius:12px;font-size:13px;color:#335b46}.overview-comparison-result b{display:block;margin-bottom:3px;color:#204b37;font-size:13px}.overview-comparison-result .tinybtn{font-size:12px;flex-shrink:0}@media(max-width:560px){.overview-comparison-result{display:block}.overview-comparison-result .tinybtn{margin-top:10px}}
 /* Geldcheck: one calm visual system. Calculations and stored field identities are retained. */
 :root{--bg:#f5f4f0;--card:#fff;--ink:#172b36;--muted:#61727b;--g:#176b68;--g2:#11514f;--blue:#286b8b;--yellow:#c8a14f;--line:#dfe5e4;--soft:#f0f5f5;--soft2:#f7f9f8;--warn:#faf5e8;--danger:#a13c36}
 body,body.has-results:not(.editing-plan){background:var(--bg);font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
@@ -651,7 +652,7 @@ function simulatePath(p, realReturn, includeChanges=true){
   }
   return out;
 }
-function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null,examplePath=null,buffer=0,scalePaths=[]){
+function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=null,examplePath=null,buffer=0,scalePaths=[],compactAxis=false){
   const w=760,h=300,padL=90,padR=18,padT=18,padB=34;
   const xs=basePath.map(d=>d.age);
   const allYs=[...basePath.map(d=>d.capital),...(changedPath?changedPath.map(d=>d.capital):[]),...(rescuePath?rescuePath.map(d=>d.capital):[]),...(examplePath?examplePath.map(d=>d.capital):[]),...scalePaths.flatMap(path=>path.map(d=>d.capital)),Number.isFinite(buffer)?buffer:0];
@@ -664,7 +665,8 @@ function chartSvg(basePath,changedPath,markers=[],changeMarkers=[],rescuePath=nu
   const baseArea=padL+','+y(0)+' '+basePts+' '+x(xs[xs.length-1])+','+y(0);
   const changedArea=changedPath?padL+','+y(0)+' '+changedPts+' '+x(xs[xs.length-1])+','+y(0):'';
   let grid='';
-  for(let i=0;i<=4;i++){const v=ymin+(ymax-ymin)*i/4,yy=y(v);grid+='<line class="chartgrid" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+yy+'" y2="'+yy+'"/><text class="chartaxis yaxis" x="4" y="'+(yy+4)+'">'+euro(v)+'</text>';}
+  const axisEuro=v=>!compactAxis||Math.abs(v)<1000?euro(v):'€ '+(Math.abs(v)>=1e6?(v/1e6).toLocaleString('nl-NL',{maximumFractionDigits:1})+'m':Math.round(v/1000)+'k');
+  for(let i=0;i<=4;i++){const v=ymin+(ymax-ymin)*i/4,yy=y(v);grid+='<line class="chartgrid" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+yy+'" y2="'+yy+'"/><text class="chartaxis yaxis" x="4" y="'+(yy+4)+'"><title>'+euro(v)+'</title>'+axisEuro(v)+'</text>';}
   let labels='';const step=Math.max(1,Math.ceil((xs[xs.length-1]-xs[0])/6));
   for(let a=xs[0];a<=xs[xs.length-1];a+=step)labels+='<text class="chartaxis xaxis" x="'+x(a)+'" y="'+(h-8)+'" text-anchor="middle">'+a+'</text>';
   const z=(0>=ymin&&0<=ymax)?'<line class="chartzero" x1="'+padL+'" x2="'+(w-padR)+'" y1="'+y(0)+'" y2="'+y(0)+'"/>':'';
@@ -1572,6 +1574,8 @@ window.recalc=function(){
   const overviewPath=overviewRate===3?pathAt3:simulatePath(p,overviewReal,'main');
   const overviewUncertain=hasUncertainReceipt?simulatePath(p,overviewReal,'all'):null;
   const overviewRescue=rescueCase?withExtraChanges(rescueCase.extra,()=>simulatePath(rescueCase.plan,overviewReal,'main')):null;
+  const overviewRescueSim=rescueCase?withExtraChanges(rescueCase.extra,()=>simulateReal(rescueCase.plan,overviewReal,'main')):null;
+  const overviewRescueGap=overviewRescueSim?Math.max(0,p.endBuffer-overviewRescueSim.min,targetEnd-overviewRescueSim.end):0;
   const overviewGap=Math.max(0,p.endBuffer-overviewSim.min,targetEnd-overviewSim.end);
   const overviewState=overviewSim.min<p.endBuffer?'Je buffer wordt onderweg te laag.':overviewSim.end<targetEnd?'Je buffer blijft intact, maar je einddoel wordt niet bereikt.':'Je buffer en einddoel blijven intact.';
   const overviewVerdict=isBufferTimingProblem?headline:isStructuralProblem?headline:currentPlanAt3?'Je plan past binnen het 3%-scenario.':'Bij 3% vraagt je plan een aanpassing.';
@@ -1603,8 +1607,9 @@ window.recalc=function(){
       ${!hasReturnEffect?'<p class="mobile-scenario-note">In dit plan verandert het rendement de uitkomst niet: er wordt gedurende de looptijd geen vermogen belegd.</p>':''}
       <div class="overview-chart-result" aria-live="polite"><b>${euro(overviewSim.end)} op je ${p.endAge}e</b><span>${overviewState}${overviewGap>0?' Je komt '+euro(overviewGap)+' onder je buffer of einddoel.':''}</span></div>
       <div class="mobile-chart-legend"><span><i style="background:var(--blue)"></i>Jouw plan bij ${overviewRate}%</span>${hasUncertainReceipt?'<span><i style="background:#8f2de2"></i>Met onzekere ontvangst</span>':''}${overviewRescue?'<span><i style="background:#1d9b68"></i>'+esc(rescueCase.label)+' · ook bij '+overviewRate+'%</span>':''}</div>
-      <div class="mobile-mini-chart">${chartSvg(overviewPath,overviewUncertain,[],[],overviewRescue,null,p.endBuffer)}</div>
-      <div class="overview-chart-foot"><span>Leeftijd → · bedragen in koopkracht van vandaag</span><span>${overviewRate===7?'7% is een historisch voorbeeld, geen verwachting of garantie.':'Een vast rendement is een scenario; echte rendementen schommelen.'}</span></div>
+      <div class="mobile-mini-chart">${chartSvg(overviewPath,overviewUncertain,[],[],overviewRescue,null,p.endBuffer,[],true)}</div>
+      <div class="overview-chart-foot"><span>Leeftijd → · bedragen van vandaag · k = duizend, m = miljoen</span><span>${overviewRate===7?'7% is een historisch voorbeeld, geen verwachting of garantie.':'Een vast rendement is een scenario; echte rendementen schommelen.'}</span></div>
+      ${overviewRescueSim?`<div class="overview-comparison-result"><span><b>Met je aanpassing bij ${overviewRate}%</b>${overviewRescueGap>0?'Nog '+euro(overviewRescueGap)+' onder je buffer of einddoel.':'Buffer en einddoel intact.'} Laagste vermogen: ${euro(overviewRescueSim.min)}.</span><button type="button" class="tinybtn" onclick="clearRescue()">Wis vergelijking</button></div>`:''}
       <div class="mobile-keypoint"><b>Waarom dit telt</b><span>${esc(mobileKeyPoint)}</span></div>
       <div class="mobile-decision-actions"><button type="button" class="mobile-primary" onclick="toggleMobilePlan(this)">Bekijk details van je plan <span aria-hidden="true">→</span></button></div>
     </div>`,
