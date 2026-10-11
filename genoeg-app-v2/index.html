@@ -947,7 +947,7 @@ function requiredReal(p){
 function earliestAtNominal(p, nominal){
   const real=(1+nominal)/(1+p.inflation)-1;
   const orig=p.stopAge;
-  for(let s=p.age;s<=p.endAge-1;s++){
+  for(let s=p.age;s<=p.endAge;s++){
     const q={...p,stopAge:s};
     { const sim=simulateReal(q,real,'main'); if(sim.end>=Math.max(p.endBuffer,p.endTarget) && sim.min>=p.endBuffer)return s; }
   }
@@ -1289,7 +1289,7 @@ window.recalc=function(){
     if(sb)sb.textContent=document.getElementById('endBuffer')?.value!==''?euro(p.endBuffer):'—';
     const breakdown=document.getElementById('sumCapitalBreakdown');
     if(breakdown)breakdown.textContent='';
-    if(result)result.innerHTML=window.validationRequested
+    if(result)result.innerHTML=(window.validationRequested||['age','income','spend','cash','capital','pension'].every(filled))
       ? '<div class="card"><h2>Nog onvoldoende gegevens</h2><p>Controleer of vul aan: <b>'+issues.map(esc).join(', ')+'</b>. Daarna kan Geldcheck een betrouwbare uitkomst geven.</p><button type="button" class="primary" onclick="toggleDetails(true)">Aanvullen</button></div>'
       : '<div class="card mutedcard"><h2>Vul eerst je basisgegevens in</h2><p>Je Geldcheck verschijnt zodra de noodzakelijke gegevens compleet zijn.</p></div>';
     return;
@@ -1660,7 +1660,7 @@ window.recalc=function(){
       <p class="mut">Deze leeftijden tellen zekere veranderingen mee. Onzekere ontvangsten zijn niet nodig om dit antwoord te halen. Pensioen blijft gebaseerd op je eigen invoer.</p>
       <h2>Wat als ik eerder of later stop?</h2>
       <label for="rainbow-stop">Stoppen op <b id="rainbow-stop-value">${p.stopAge}</b> jaar</label>
-      <input id="rainbow-stop" type="range" min="${p.age}" max="${p.endAge-1}" step="1" value="${p.stopAge}" oninput="document.getElementById('rainbow-stop-value').textContent=this.value" onchange="setRainbowStop(this.value)">
+      <input id="rainbow-stop" type="range" min="${p.age}" max="${Math.max(p.endAge,p.stopAge)}" step="1" value="${p.stopAge}" oninput="document.getElementById('rainbow-stop-value').textContent=this.value" onchange="setRainbowStop(this.value)">
       <div class="vd ${currentPlanAt3?'ok':'warn'}">${currentPlanAt3?'Dit lukt binnen het 3%-scenario':'Bij 3% is een aanpassing nodig'}</div>
       <div class="row"><span>Laagste vermogen bij 3%</span><b>${euro(e3.min)}</b></div>
       <div class="row"><span>Vermogen op je ${p.endAge}e bij 3%</span><b>${euro(e3.end)}</b></div>
@@ -1881,12 +1881,22 @@ PLAN_FIELD_IDS.forEach(id=>{
   });
 document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
 if(!savedPlan){
+  const useNewStopDefault=document.getElementById('stopAge').value==='';
   const defaults={stopAge:67,aowAge:67,aow:1400,pensionAge:67,endAge:95,endBuffer:35000,inflation:2,cashRate:1.5};
   Object.entries(defaults).forEach(([id,value])=>{const el=document.getElementById(id);if(el&&el.value==='')el.value=String(value)});
+  if(useNewStopDefault){
+    const stop=document.getElementById('stopAge');stop.dataset.newPlanDefault='1';
+    const explicitStop=()=>{delete stop.dataset.newPlanDefault};
+    stop.addEventListener('input',explicitStop);stop.addEventListener('change',explicitStop);
+    document.getElementById('age').addEventListener('input',()=>{
+      const age=n('age');
+      if(stop.dataset.newPlanDefault==='1'&&Number.isInteger(age)&&age>=18&&age<=120){stop.value=String(Math.max(67,age));scheduleRecalc();}
+    });
+  }
 }
-window.setRainbowStop=function(value){const el=document.getElementById('stopAge');el.value=String(value);savePlanFields();recalc();};
+window.setRainbowStop=function(value){const el=document.getElementById('stopAge');delete el.dataset.newPlanDefault;el.value=String(value);savePlanFields();recalc();};
 const originalDetailsToggle=window.toggleDetails;
-window.toggleDetails=function(force){originalDetailsToggle(force);if(force!==false){window.toggleExtendedSituation(true);document.getElementById('rainbow-extra').scrollIntoView({behavior:'smooth',block:'start'})}};
+window.toggleDetails=function(force){originalDetailsToggle(force);if(force!==false){window.toggleExtendedSituation(true);document.querySelectorAll('#rainbow-extra > details').forEach(el=>el.open=true);document.getElementById('rainbow-extra').scrollIntoView({behavior:'smooth',block:'start'})}};
 updateChangeForm();
 updateDynamicQuestions();
 updateMortgageForm();
