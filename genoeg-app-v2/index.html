@@ -270,10 +270,10 @@ main,body.has-results:not(.editing-plan) main{max-width:560px!important;padding:
 (()=>{
 const $=id=>document.getElementById(id),details=$('details');
 const groups=[...details.children].filter(e=>e.classList.contains('group'));
-const intro=document.createElement('div');intro.id='rainbow-intro';intro.innerHTML='<span class="beta">🌈 Geldcheck</span><h1>Vanaf welke leeftijd kan ik stoppen?</h1><p>Vul zes dingen in. Je antwoord verschijnt direct onder het formulier.</p>';
+const intro=document.createElement('div');intro.id='rainbow-intro';intro.innerHTML='<span class="beta">🌈 Geldcheck</span><h1>Vanaf welke leeftijd kan ik stoppen?</h1><p>Vul vijf gegevens in. Je eerste stopleeftijd verschijnt direct hieronder. Vul 0 in als je geen spaargeld of beleggingen hebt.</p>';
 document.querySelector('main').prepend(intro);
 const six=document.createElement('div');six.className='grid';six.id='rainbow-six';details.prepend(six);
-for(const id of ['age','income','spend','cash','capital','pension'])six.append($(id).closest('.field'));
+for(const id of ['age','income','spend','cash','capital'])six.append($(id).closest('.field'));
 $('spend').closest('.field').querySelector('label').textContent='Uitgaven p/m (incl. hypotheek)';
 $('cash').closest('.field').querySelector('label').textContent='Spaargeld';
 $('capital').closest('.field').querySelector('label').textContent='Belegd vermogen';
@@ -1070,7 +1070,7 @@ window.finishDetails=function(){
 function planIssues(p){
   const missing=[];
   const addIssue=label=>{if(!missing.includes(label))missing.push(label);};
-  [['age','leeftijd'],['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['capital','belegd vermogen'],['stopAge','stopmoment'],['aow','AOW-bedrag'],['pension','pensioenbedrag'],['endAge','eindleeftijd'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname']]
+  [['age','leeftijd'],['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['capital','belegd vermogen'],['stopAge','stopmoment'],['aow','AOW-bedrag'],['endAge','eindleeftijd'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname']]
     .forEach(([id,label])=>{if(!filled(id))addIssue(label);});
   if(filled('aow')&&p.aow>0&&!filled('aowAge'))addIssue('AOW-leeftijd');
   if(filled('pension')&&p.pension>0&&!filled('pensionAge'))addIssue('pensioenleeftijd');
@@ -1099,7 +1099,7 @@ function planIssues(p){
   const numericFields=[
     ['age','leeftijd'],['stopAge','stopmoment'],['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['cashRate','rente op cash'],['capital','belegd vermogen'],
     ['otherDebt','overige schuld'],['otherDebtRate','rente overige schuld'],['otherDebtPayment','betaling overige schuld'],['otherDebtEndAge','einddatum overige schuld'],
-    ['workReduction','minder werken'],['aowAge','AOW-leeftijd'],['aow','AOW-bedrag'],['pensionAge','pensioenleeftijd'],['pension','pensioenbedrag'],
+    ['workReduction','minder werken'],['aowAge','AOW-leeftijd'],['aow','AOW-bedrag'],['pensionAge','pensioenleeftijd'],
     ['endAge','eindleeftijd'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname'],['homeValue','woningwaarde'],['mortgage','hypotheekschuld'],
     ['mortPayment','hypotheekbetaling'],['mortRate','hypotheekrente'],['mortEndAge','hypotheek-einddatum'],['mortResidual','aflossingsvrij deel'],
     ['endTarget','gewenst eindvermogen'],['pensionIndex','pensioenindexatie'],['aowIndex','AOW-indexatie'],['wealthTax','vermogensheffing'],['investmentCost','beleggingskosten'],
@@ -1114,7 +1114,7 @@ function planIssues(p){
   });
   const nonNegativeFields=[
     ['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['capital','belegd vermogen'],['otherDebt','overige schuld'],['otherDebtRate','rente overige schuld'],['otherDebtPayment','betaling overige schuld'],
-    ['workReduction','minder werken'],['aow','AOW-bedrag'],['pension','pensioenbedrag'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname'],['homeValue','woningwaarde'],['mortgage','hypotheekschuld'],
+    ['workReduction','minder werken'],['aow','AOW-bedrag'],['endBuffer','minimale buffer'],['inflation','inflatie-aanname'],['homeValue','woningwaarde'],['mortgage','hypotheekschuld'],
     ['mortPayment','hypotheekbetaling'],['mortRate','hypotheekrente'],['mortResidual','aflossingsvrij deel'],['endTarget','gewenst eindvermogen'],['wealthTax','vermogensheffing'],['investmentCost','beleggingskosten'],
     ['careMonthly','extra zorgkosten'],['houseRelease','bedrag uit woning'],['lockedCapital','later beschikbaar vermogen']
   ];
@@ -1277,7 +1277,7 @@ window.recalc=function(){
   updateMortgageForm();
   const p=plan();
   const assumptions=document.getElementById('rainbow-assumptions');
-  if(assumptions)assumptions.textContent='Je doel: tot '+p.endAge+' jaar · buffer '+euro(p.endBuffer)+' · inflatie '+pct(p.inflation)+'. AOW: '+euro(p.aow)+'/mnd vanaf '+p.aowAge+'; pensioen vanaf '+p.pensionAge+'.'+(window.partnerOn?' Partner meegerekend.':'')+(changes.length?' '+changes.length+' verandering(en) opgenomen.':'')+' Pas dit aan via Mijn situatie is uitgebreider.';
+  if(assumptions)assumptions.textContent=(!filled('pension')?'Aanvullend pensioen nog niet ingevuld: gerekend met €0. ':'')+'Je doel: tot '+p.endAge+' jaar · buffer '+euro(p.endBuffer)+' · inflatie '+pct(p.inflation)+'. AOW: '+euro(p.aow)+'/mnd vanaf '+p.aowAge+'; pensioen vanaf '+p.pensionAge+'.'+(window.partnerOn?' Partner meegerekend.':'')+(changes.length?' '+changes.length+' verandering(en) opgenomen.':'')+' Pas dit aan via Mijn situatie is uitgebreider.';
   const issues=planIssues(p);
   const sc=document.getElementById('sumCapital'),ss=document.getElementById('sumStop'),sb=document.getElementById('sumBuffer');
   const result=document.getElementById('result');
@@ -1289,7 +1289,7 @@ window.recalc=function(){
     if(sb)sb.textContent=document.getElementById('endBuffer')?.value!==''?euro(p.endBuffer):'—';
     const breakdown=document.getElementById('sumCapitalBreakdown');
     if(breakdown)breakdown.textContent='';
-    if(result)result.innerHTML=(window.validationRequested||['age','income','spend','cash','capital','pension'].every(filled))
+    if(result)result.innerHTML=(window.validationRequested||['age','income','spend','cash','capital'].every(filled))
       ? '<div class="card"><h2>Nog onvoldoende gegevens</h2><p>Controleer of vul aan: <b>'+issues.map(esc).join(', ')+'</b>. Daarna kan Geldcheck een betrouwbare uitkomst geven.</p><button type="button" class="primary" onclick="toggleDetails(true)">Aanvullen</button></div>'
       : '<div class="card mutedcard"><h2>Vul eerst je basisgegevens in</h2><p>Je Geldcheck verschijnt zodra de noodzakelijke gegevens compleet zijn.</p></div>';
     return;
