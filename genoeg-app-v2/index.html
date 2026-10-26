@@ -1130,8 +1130,9 @@ function planIssues(p){
   ageFields.forEach(([id,label,allowsYear])=>{
     if(!filled(id))return;
     const raw=Number(document.getElementById(id).value),age=allowsYear?normalizeAge(raw,p.age,id):raw;
+    const maxAge=id==='endAge'?Math.max(120,p.age+10):120;
     if(!Number.isInteger(raw))addIssue(label+' als heel getal');
-    else if(!Number.isFinite(age)||age<0||age>120)addIssue(label+' tussen 0 en 120 jaar');
+    else if(!Number.isFinite(age)||age<0||age>maxAge)addIssue(label+' tussen 0 en '+maxAge+' jaar');
   });
 
   if(window.partnerOn&&(p.partnerIncome>0||p.partnerPension>0)&&!filled('partnerAge'))addIssue('leeftijd partner');
@@ -1658,7 +1659,7 @@ window.recalc=function(){
       <div class="big">${earliest3!==null?'Je kunt stoppen op <span class="age">'+earliest3+'</span>':'Je plan vraagt een aanpassing'}</div>
       <p class="mut">${earliest3!==null?'Binnen je ingevoerde doel en buffer.':'Alleen later stoppen is bij 3% niet voldoende binnen je plan.'} Geen garantie: rendementen schommelen.</p>
       <div class="hero"><div class="pill"><span>Bij 3% rendement</span><b>${earliest3!==null?earliest3+' jaar':'Aanpassing nodig'}</b></div><div class="pill"><span>Bij 5% rendement</span><b>${rainbowEarliest5!==null?rainbowEarliest5+' jaar':'Aanpassing nodig'}</b></div></div>
-      <p class="mut">Deze leeftijden tellen zekere veranderingen mee. Onzekere ontvangsten zijn niet nodig om dit antwoord te halen. Pensioen blijft gebaseerd op je eigen invoer.</p>
+      <p class="mut">Aannames: AOW ${euro(p.aow)}/mnd vanaf ${p.aowAge}; aanvullend pensioen ${euro(p.pension)}/mnd vanaf ${p.pensionAge} (leeg = €0); spaarrente ${pct(p.cashRate)}; inflatie ${pct(p.inflation)}; rekenen tot ${p.endAge} jaar met buffer ${euro(p.endBuffer)}. Onzekere ontvangsten tellen niet mee. Pas dit aan via Mijn situatie is uitgebreider.</p>
       <h2>Wat als ik eerder of later stop?</h2>
       <label for="rainbow-stop">Stoppen op <b id="rainbow-stop-value">${p.stopAge}</b> jaar</label>
       <input id="rainbow-stop" type="range" min="${p.age}" max="${Math.max(p.endAge,p.stopAge)}" step="1" value="${p.stopAge}" oninput="document.getElementById('rainbow-stop-value').textContent=this.value" onchange="setRainbowStop(this.value)">
@@ -1882,16 +1883,32 @@ PLAN_FIELD_IDS.forEach(id=>{
   });
 document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
 if(!savedPlan){
-  const useNewStopDefault=document.getElementById('stopAge').value==='';
+  const stop=document.getElementById('stopAge');
+  const horizon=document.getElementById('endAge');
+  const useNewStopDefault=stop.value==='';
+  const useNewHorizonDefault=horizon.value==='';
   const defaults={stopAge:67,aowAge:67,aow:1400,pensionAge:67,endAge:95,endBuffer:35000,inflation:2,cashRate:1.5};
   Object.entries(defaults).forEach(([id,value])=>{const el=document.getElementById(id);if(el&&el.value==='')el.value=String(value)});
   if(useNewStopDefault){
-    const stop=document.getElementById('stopAge');stop.dataset.newPlanDefault='1';
+    stop.dataset.newPlanDefault='1';
     const explicitStop=()=>{delete stop.dataset.newPlanDefault};
     stop.addEventListener('input',explicitStop);stop.addEventListener('change',explicitStop);
+  }
+  if(useNewHorizonDefault){
+    horizon.dataset.newPlanDefault='1';
+    const explicitHorizon=()=>{delete horizon.dataset.newPlanDefault};
+    horizon.addEventListener('input',explicitHorizon);horizon.addEventListener('change',explicitHorizon);
+  }
+  if(useNewStopDefault||useNewHorizonDefault){
     document.getElementById('age').addEventListener('input',()=>{
-      const age=n('age');
-      if(stop.dataset.newPlanDefault==='1'&&Number.isInteger(age)&&age>=18&&age<=120){stop.value=String(Math.max(67,age));scheduleRecalc();}
+      const age=n('age');let changed=false;
+      if(stop.dataset.newPlanDefault==='1'&&Number.isInteger(age)&&age>=18&&age<=120){
+        stop.value=String(Math.max(67,age));changed=true;
+      }
+      if(horizon.dataset.newPlanDefault==='1'&&Number.isInteger(age)&&age>=18&&age<=120&&age>=Number(horizon.value)){
+        horizon.value=String(Math.max(95,age+10));changed=true;
+      }
+      if(changed)scheduleRecalc();
     });
   }
 }
