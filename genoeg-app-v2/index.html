@@ -356,7 +356,9 @@ function loadPlanFields(){
     PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id)){el.value=stored[id];if(savedPlan?.touched?.includes(id))el.dataset.touched='1';if(YEAR_OR_AGE_IDS.includes(id)&&Number(stored[id])>1900){el.dataset.yearBase=String(savedPlan?.yearBases?.[id]||savedYear||new Date().getFullYear());el.dataset.ageBase=String(savedPlan?.ageBases?.[id]??savedAge);}}});
     // Keep automatically supplied stop/horizon defaults dynamic across a refresh.
     // Migrate only incomplete legacy drafts; valid stored plans remain untouched.
-    const legacyDefaults=!String(stored.age??'').trim()&&!Array.isArray(savedPlan?.defaultFields)
+    const storedAgeForDefaultMigration=Number(stored.age);
+    const legacyIncompleteAge=!String(stored.age??'').trim()||!Number.isInteger(storedAgeForDefaultMigration)||storedAgeForDefaultMigration<18||storedAgeForDefaultMigration>120;
+    const legacyDefaults=legacyIncompleteAge&&!Array.isArray(savedPlan?.defaultFields)
       ? [...(String(stored.stopAge??'')==='67'?['stopAge']:[]),...(String(stored.endAge??'')==='95'?['endAge']:[])]
       : [];
     const defaultFields=Array.isArray(savedPlan?.defaultFields)?savedPlan.defaultFields:legacyDefaults;
