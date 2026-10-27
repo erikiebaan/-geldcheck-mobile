@@ -1107,6 +1107,7 @@ function planIssues(p){
   }
   if(filled('stopAge')&&filled('age')&&p.stopAge<p.age)addIssue('stopmoment na je huidige leeftijd');
   if(filled('endAge')&&filled('age')&&p.endAge<=p.age)addIssue('eindleeftijd na je huidige leeftijd');
+  if(filled('stopAge')&&filled('endAge')&&p.stopAge>p.endAge)addIssue('eindleeftijd mag niet vóór je stopleeftijd liggen');
 
   const numericFields=[
     ['age','leeftijd'],['stopAge','stopmoment'],['income','netto inkomen'],['spend','uitgaven'],['cash','spaargeld/cash'],['cashRate','rente op cash'],['capital','belegd vermogen'],
