@@ -354,6 +354,15 @@ function loadPlanFields(){
     const savedYear=new Date(savedPlan?.updatedAt||'').getFullYear();
     const savedAge=Number(stored.age)||0;
     PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el&&Object.prototype.hasOwnProperty.call(stored,id)){el.value=stored[id];if(savedPlan?.touched?.includes(id))el.dataset.touched='1';if(YEAR_OR_AGE_IDS.includes(id)&&Number(stored[id])>1900){el.dataset.yearBase=String(savedPlan?.yearBases?.[id]||savedYear||new Date().getFullYear());el.dataset.ageBase=String(savedPlan?.ageBases?.[id]??savedAge);}}});
+    // Keep automatically supplied stop/horizon defaults dynamic across a refresh.
+    // Migrate only incomplete legacy drafts; valid stored plans remain untouched.
+    const legacyDefaults=!String(stored.age??'').trim()&&!Array.isArray(savedPlan?.defaultFields)
+      ? [...(String(stored.stopAge??'')==='67'?['stopAge']:[]),...(String(stored.endAge??'')==='95'?['endAge']:[])]
+      : [];
+    const defaultFields=Array.isArray(savedPlan?.defaultFields)?savedPlan.defaultFields:legacyDefaults;
+    defaultFields.filter(id=>id==='stopAge'||id==='endAge').forEach(id=>{
+      const el=document.getElementById(id);if(el)el.dataset.newPlanDefault='1';
+    });
   }catch(_){}
 }
 function savedTimeText(value){
@@ -367,7 +376,8 @@ function persistPlan(){
     const fields={},touched=[],yearBases={},ageBases={};
     const currentAge=Number(document.getElementById('age')?.value)||0;
     PLAN_FIELD_IDS.forEach(id=>{const el=document.getElementById(id);if(el){fields[id]=el.value;if(el.dataset.touched==='1')touched.push(id);if(YEAR_OR_AGE_IDS.includes(id)&&Number(el.value)>1900){yearBases[id]=Number(el.dataset.yearBase)||new Date().getFullYear();ageBases[id]=Number(el.dataset.ageBase)||currentAge;el.dataset.yearBase=String(yearBases[id]);el.dataset.ageBase=String(ageBases[id]);}}});
-    const snapshot={version:2,updatedAt:new Date().toISOString(),fields,touched,yearBases,ageBases,changes,partnerOn:!!window.partnerOn,rescue,returnExample,advancedOn:!!window.advancedOn};
+    const defaultFields=['stopAge','endAge'].filter(id=>document.getElementById(id)?.dataset.newPlanDefault==='1');
+    const snapshot={version:2,updatedAt:new Date().toISOString(),fields,touched,yearBases,ageBases,defaultFields,changes,partnerOn:!!window.partnerOn,rescue,returnExample,advancedOn:!!window.advancedOn};
     localStorage.setItem(PLAN_STORAGE_KEY,JSON.stringify(snapshot));
     history.replaceState({...history.state,geldcheckPlanFields:fields,geldcheckFinancialChanges:changes,geldcheckPartnerOn:!!window.partnerOn,geldcheckRescue:rescue,geldcheckReturnExample:returnExample},'');
     sessionStorage.removeItem(CHANGES_STORAGE_KEY);
@@ -1882,36 +1892,32 @@ PLAN_FIELD_IDS.forEach(id=>{
     }
   });
 document.getElementById('changeType')?.addEventListener('change',updateChangeForm);
+const stop=document.getElementById('stopAge');
+const horizon=document.getElementById('endAge');
 if(!savedPlan){
-  const stop=document.getElementById('stopAge');
-  const horizon=document.getElementById('endAge');
   const useNewStopDefault=stop.value==='';
   const useNewHorizonDefault=horizon.value==='';
   const defaults={stopAge:67,aowAge:67,aow:1400,pensionAge:67,endAge:95,endBuffer:35000,inflation:2,cashRate:1.5};
   Object.entries(defaults).forEach(([id,value])=>{const el=document.getElementById(id);if(el&&el.value==='')el.value=String(value)});
-  if(useNewStopDefault){
-    stop.dataset.newPlanDefault='1';
-    const explicitStop=()=>{delete stop.dataset.newPlanDefault};
-    stop.addEventListener('input',explicitStop);stop.addEventListener('change',explicitStop);
-  }
-  if(useNewHorizonDefault){
-    horizon.dataset.newPlanDefault='1';
-    const explicitHorizon=()=>{delete horizon.dataset.newPlanDefault};
-    horizon.addEventListener('input',explicitHorizon);horizon.addEventListener('change',explicitHorizon);
-  }
-  if(useNewStopDefault||useNewHorizonDefault){
-    document.getElementById('age').addEventListener('input',()=>{
-      const age=n('age');let changed=false;
-      if(stop.dataset.newPlanDefault==='1'&&Number.isInteger(age)&&age>=18&&age<=120){
-        stop.value=String(Math.max(67,age));changed=true;
-      }
-      if(horizon.dataset.newPlanDefault==='1'&&Number.isInteger(age)&&age>=18&&age<=120&&age>=Number(horizon.value)){
-        horizon.value=String(Math.max(95,age+10));changed=true;
-      }
-      if(changed)scheduleRecalc();
-    });
-  }
+  if(useNewStopDefault)stop.dataset.newPlanDefault='1';
+  if(useNewHorizonDefault)horizon.dataset.newPlanDefault='1';
 }
+// Clear a marker only after a person edits that specific field. The listeners
+// also apply to saved defaults restored after a refresh.
+const clearStopDefault=()=>{delete stop.dataset.newPlanDefault;};
+const clearHorizonDefault=()=>{delete horizon.dataset.newPlanDefault;};
+stop.addEventListener('input',clearStopDefault);stop.addEventListener('change',clearStopDefault);
+horizon.addEventListener('input',clearHorizonDefault);horizon.addEventListener('change',clearHorizonDefault);
+document.getElementById('age').addEventListener('input',()=>{
+  const age=n('age');let changed=false;
+  if(stop.dataset.newPlanDefault==='1'&&Number.isInteger(age)&&age>=18&&age<=120){
+    stop.value=String(Math.max(67,age));changed=true;
+  }
+  if(horizon.dataset.newPlanDefault==='1'&&Number.isInteger(age)&&age>=18&&age<=120&&age>=Number(horizon.value)){
+    horizon.value=String(Math.max(95,age+10));changed=true;
+  }
+  if(changed)scheduleRecalc();
+});
 window.setRainbowStop=function(value){const el=document.getElementById('stopAge');delete el.dataset.newPlanDefault;el.value=String(value);savePlanFields();recalc();};
 const originalDetailsToggle=window.toggleDetails;
 window.toggleDetails=function(force){originalDetailsToggle(force);if(force!==false){window.toggleExtendedSituation(true);document.querySelectorAll('#rainbow-extra > details').forEach(el=>el.open=true);document.getElementById('rainbow-extra').scrollIntoView({behavior:'smooth',block:'start'})}};
